@@ -1,19 +1,36 @@
-import { useState, useEffect } from "react";
-import classes from "./Layout.module.css";
 import { Outlet } from "react-router-dom";
+import { useState } from "react";
 import Navbar from "../Navbar/Navbar";
-import Footer from "../Footer/Footer";
+import Sidebar from "../SideBar/SideBar";
+import { useContext } from "react";
+import { LanguageContext } from "../../context/LanguageContext";
 
 export default function Layout() {
+  const [isOpen, setIsOpen] = useState(true);
+
+  const { lang } = useContext(LanguageContext);
+
   return (
-    <>
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <section className="py-20">
-        <div className="container mx-auto">
-          <Outlet />
-        </div>
-      </section>
-      <Footer />
-    </>
+
+      <Sidebar
+        lang={lang}
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+      />
+
+      <div
+        className={`pt-16 transition-all duration-300 ${
+          isOpen
+            ? lang === "ar"
+              ? "mr-64"
+              : "ml-64"
+            : "ml-0 mr-0"
+        }`}
+      >
+        <Outlet />
+      </div>
+    </div>
   );
 }

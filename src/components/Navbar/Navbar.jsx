@@ -1,206 +1,177 @@
-import { useState, useEffect, useContext } from "react";
-import classes from "./Navbar.module.css";
-import Logo from "../../assets/freshcart-logo.svg";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
-import { CartContext } from "../../context/CartContext";
-export default function Navbar() {
-  const [state, setState] = useState(false);
-  const { token, setToken } = useContext(AuthContext);
-  const { numOfCartItems, cartOwner } = useContext(CartContext);
+import { LanguageContext } from "../../context/LanguageContext";
+import { Globe, ChevronDown, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+export default function Navbar({ isSidebarOpen }) {
+  const { lang, setLang, t } = useContext(LanguageContext);
+  const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
-  const handelLogout = () => {
-    setToken(null);
-    localStorage.removeItem("token");
-    navigate("/login");
+
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const getInitials = (name = "") => {
+    return name
+      .split(" ")
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase();
   };
 
-  useEffect(() => {
-    document.onclick = (e) => {
-      const target = e.target;
-      if (!target.closest(".menu-btn")) setState(false);
-    };
-  }, []);
-
   return (
-    <nav
-      className={`fixed top-0 end-0 start-0 z-50 bg-slate-50 pb-3 mb-6 md:text-sm ${
-        state
-          ? "shadow-lg rounded-xl border mx-2 mt-2 md:shadow-none md:border-none md:mx-2 md:mt-0"
-          : ""
-      }`}
-    >
-      <div className="gap-x-14 items-center max-w-screen-xl mx-auto px-4 md:flex md:px-8">
-        <div className="flex items-center justify-between py-5 md:block">
-          <NavLink to={"/"}>
-            <img src={Logo} alt="Fresh Cart logo" />
-          </NavLink>
-          <div className="md:hidden">
-            <button
-              className="menu-btn text-gray-500 hover:text-gray-800"
-              onClick={() => setState(!state)}
+    <>
+      {/* Custom Scrollbar Styles */}
+      <style data-global-scrollbar>{`
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+          transition: background 0.3s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+      `}</style>
+
+      <header
+        className={`bg-white shadow-sm border-b border-gray-200 fixed top-0 right-0 z-30 transition-all duration-300 ${
+          lang === "ar"
+            ? isSidebarOpen
+              ? "left-0 right-64"
+              : "left-0 right-0"
+            : isSidebarOpen
+            ? "left-64 right-0"
+            : "left-0 right-0"
+        }`}
+        style={{ height: "4rem" }}
+      >
+        <div className="h-full px-6 flex justify-between items-center">
+          {/* Logo & Title clickable */}
+          <div
+            onClick={() => navigate("/")}
+            className="flex items-center gap-3 cursor-pointer select-none group"
+          >
+            <svg
+              className="size-10 transition-transform group-hover:scale-105"
+              width="26"
+              height="26"
+              viewBox="0 0 26 26"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              {state ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+              {/* Building Base */}
+              <rect x="4" y="8" width="6" height="14" rx="1" fill="currentColor" className="fill-blue-600" />
+              <rect x="11" y="4" width="6" height="18" rx="1" fill="currentColor" className="fill-blue-500" />
+              <rect x="18" y="10" width="4" height="12" rx="1" fill="currentColor" className="fill-blue-400" />
+              {/* Windows */}
+              <rect x="6" y="10" width="2" height="2" fill="white" />
+              <rect x="6" y="14" width="2" height="2" fill="white" />
+              <rect x="13" y="7" width="2" height="2" fill="white" />
+              <rect x="13" y="11" width="2" height="2" fill="white" />
+              <rect x="13" y="15" width="2" height="2" fill="white" />
+            </svg>
+
+            <h1 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
+              {lang === "ar" ? "نظام إدارة الشركات" : "ERP Mega Build"}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* USER AREA */}
+            {!user ? (
+              <button
+                onClick={() => navigate("/login")}
+                className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors shadow-sm"
+              >
+                {lang === "ar" ? "تسجيل الدخول" : "Login"}
+              </button>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu((s) => !s)}
+                  className="flex items-center gap-3 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
+                  <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold shadow-sm">
+                    {getInitials(user.name)}
+                  </div>
+
+                  <div className={`${lang === "ar" ? "text-right" : "text-left"}`}>
+                    <p className="text-sm font-medium text-gray-800">{user.name}</p>
+                    <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                  </div>
+
+                  <ChevronDown
+                    size={16}
+                    className={`text-gray-500 transition-transform duration-200 ${
+                      showUserMenu ? "rotate-180" : ""
+                    }`}
                   />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-6 h-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-                  />
-                </svg>
-              )}
+                </button>
+
+                {showUserMenu && (
+                  <div
+                    className={`absolute ${lang === "ar" ? "left-0" : "right-0"} mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50`}
+                  >
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-lg font-semibold shadow-md">
+                          {getInitials(user.name)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-800 truncate">{user.name}</p>
+                          <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                          <p className="text-xs text-gray-400 mt-1 capitalize">{user.role}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-2">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setShowUserMenu(false);
+                          navigate("/login");
+                        }}
+                        className={`w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 ${
+                          lang === "ar" ? "flex-row-reverse" : ""
+                        }`}
+                      >
+                        <LogOut size={16} />
+                        <span className="font-medium">{lang === "ar" ? "تسجيل الخروج" : "Logout"}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* LANGUAGE TOGGLE */}
+            <button
+              onClick={() => setLang(lang === "en" ? "ar" : "en")}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors shadow-sm"
+            >
+              <Globe size={20} />
+              <span className="font-medium">{lang === "en" ? "AR" : "EN"}</span>
             </button>
           </div>
         </div>
-        <div
-          className={`flex-1 items-center justify-between mt-8 md:mt-0 md:flex ${
-            state ? "block" : "hidden"
-          } `}
-        >
-          {token && (
-            <div className="">
-              <ul className="flex flex-wrap items-center -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400">
-                <li className="me-1">
-                  <NavLink
-                    to={"/"}
-                    className="inline-flex items-center justify-center pt-2 pe-2 pb-2 rounded-t-lg hover:text-blue-800 hover:border-gray-300 dark:hover:text-gray-300 group"
-                  >
-                    Home
-                    <i className="fas fa-home ms-2"></i>
-                  </NavLink>
-                </li>
-                <li className="me-1">
-                  <NavLink
-                    to={"/products"}
-                    className="inline-flex items-center justify-center pt-2 pe-2 pb-2 hover:text-blue-800 dark:hover:text-gray-300 group  "
-                    aria-current="page"
-                  >
-                    Products
-                    <i className="fas fa-cubes ms-2"></i>
-                  </NavLink>
-                </li>
-                <li className="me-1">
-                  <NavLink
-                    to={"/categories"}
-                    className="inline-flex items-center justify-center pt-2 pe-2 pb-2  rounded-t-lg hover:text-blue-800 dark:hover:text-gray-300 group"
-                  >
-                    Category
-                    <i className="fas fa-layer-group ms-2"></i>
-                  </NavLink>
-                </li>
-                <li className="me-1">
-                  <NavLink
-                    to={"/brands"}
-                    className="inline-flex items-center justify-center pt-2 pe-2 pb-2  rounded-t-lg hover:text-blue-800 dark:hover:text-gray-300 group"
-                  >
-                    Brands
-                    <i className="fas fa-tags ms-2"></i>
-                  </NavLink>
-                </li>
-                <li className="me-1">
-                  <NavLink
-                    to={`/orders/user/${cartOwner}`}
-                    className="inline-flex items-center justify-center pt-2 pe-2 pb-2  rounded-t-lg hover:text-blue-800 dark:hover:text-gray-300 group"
-                  >
-                    Orders
-                    <i className="fas fa-receipt ms-1"></i>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to={"/cart"}
-                    className="inline-flex items-center justify-center pt-2 pe-2 pb-2  rounded-t-lg hover:text-blue-800 dark:hover:text-gray-300 group"
-                  >
-                    <button
-                      type="button"
-                      className="relative inline-flex items-center p-1   text-sm font-medium text-center bg- rounded-lg   "
-                    >
-                      <span className="me-1">Cart</span>
-                      <i className="fas fa-shopping-cart me-2 "> </i>
-                      <div className="absolute inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full -top-2 -end-2 dark:border-gray-900">
-                        {numOfCartItems}
-                      </div>
-                    </button>
-                  </NavLink>
-                </li>
-              </ul>
-            </div>
-          )}
-          <div className="flex-1 gap-x-6 items-center justify-end mt-6 space-y-6 md:flex md:ms-auto md:space-y-0 md:mt-0">
-            <ul className="flex items-center mt-2 mb-1 sm:order-last md:order-first">
-              <li className=" flex ">
-                <a
-                  href=""
-                  className="fab fa-instagram mx-2 hover:text-pink-700"
-                ></a>
-                <a
-                  href=""
-                  className="fab fa-facebook mx-2 hover:text-blue-700"
-                ></a>
-                <a href="" className="fab fa-tiktok mx-2"></a>
-                <a
-                  href=""
-                  className="fab fa-twitter mx-2 hover:text-blue-400"
-                ></a>
-                <a
-                  href=""
-                  className="fab fa-linkedin mx-2 hover:text-blue-700"
-                ></a>
-                <a
-                  href=""
-                  className="fab fa-youtube mx-2 hover:text-red-600"
-                ></a>
-              </li>
-            </ul>
-            {token && (
-              <>
-                <button
-                  onClick={handelLogout}
-                  className="block text-gray-700 hover:text-blue-700"
-                >
-                  Logout
-                </button>
-              </>
-            )}
-            {!token && (
-              <>
-                <NavLink
-                  to={"/login"}
-                  className="block text-gray-700 hover:text-blue-700"
-                >
-                  Log in
-                </NavLink>
-                <NavLink
-                  to={"/register"}
-                  className="block text-gray-700 hover:text-blue-700"
-                >
-                  Register
-                </NavLink>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </nav>
+
+        {/* Click outside to close menu */}
+        {showUserMenu && <div className="fixed inset-0 z-20" onClick={() => setShowUserMenu(false)} />}
+      </header>
+    </>
   );
 }

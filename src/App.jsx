@@ -1,156 +1,150 @@
 import "./App.css";
-import {
-  createBrowserRouter,
-  RouterProvider,
-  createHashRouter,
-} from "react-router-dom";
+import { RouterProvider, createHashRouter } from "react-router-dom";
 import Layout from "./components/Layout/Layout";
 import Home from "./components/Home/Home";
-import Products from "./components/Products/Products";
-import Cart from "./components/Cart/Cart";
-import Brands from "./components/Brands/Brands";
-import Brand from "./components/Brand/Brand";
-import Categories from "./components/Categories/Categories";
-import Register from "./components/Register/Register";
+
 import Login from "./components/Login/Login";
 import Error from "./components/Error/Error";
 import NotFound from "./components/NotFound/NotFound";
 import AuthContextProvider from "./context/AuthContext";
-import CartContextProvider from "./context/CartContext";
 import ProtectedRoute from "./components/protectedRoute/ProtectedRoute";
-import ProductDetails from "./components/ProductDetails/ProductDetails";
-import Category from "./components/Category/Category";
+
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import CheckOut from "./components/checkOut/CheckOut";
-import MyOrders from "./components/MyOrders/MyOrders";
-import WishListContextProvider from "./context/WishListContext";
-import ForgetPassword from "./components/ForgetPassword/ForgetPassword";
-import VerifyCode from "./components/VerifyCode/VerifyCode";
-import ResetCode from "./components/ResetCode/ResetCode";
+import VerifyLogin from "./components/VerifyLogin/VerifyLogin";
+
+// ===== ERP =====
+import Dashboard from "./components/Dashboard/Dashboard";
+import Suppliers from "./components/Supplier/Supplier";
+import Supplies from "./components/Supplies/Supplies";
+import Units from "./components/units/units";
+import PurchaseOrders from "./components/PurchaseOrders/PurchaseOrders";
+import PurchaseReturns from "./components/PurchaseReturn/PurchaseReturn";
+import CreatePurchaseReturn from "./components/PurchaseReturnForm/PurchaseReturnForm";
+import SupplierPayments from "./components/SupplierPayment/SupplierPayment";
+import SupplierRefundForm from "./components/SupplierRefundForm/SupplierRefundForm";
+import SupplierLedger from "./components/SupplierLedger/SupplierLedger";
+import ClientLedger from "./components/ClientLedger/ClientLedger";
+import LanguageProvider from "./context/LanguageContext";
+import SupplierRefundsList from "./components/SupplierRefund/SupplierRefund";
+
+// User Management
+import UsersList from "./components/Users/Users";
+import CreateUser from "./components/CreateUser/CreateUser";
+import EditUser from "./components/EditUser/EditUser";
+import Clients from "./components/Clients/Clients";
+import CreateClient from "./components/ClientModal/ClientModal";
+import CreateProject from "./components/CreateProject/CreateProject";
+import ProjectsList from "./components/Projects/Projects";
+import ProjectDetails from "./components/ProjectDetails/ProjectDetails";
+import CreateMaterialIssue from "./components/MaterialIssue/MaterialIssue";
+import PaymentsList from './components/ClientsPayment/ClientsPayment';
+import CreateClientPayment from "./components/CreateClientPayment/CreateClientPayment";
+import PaymentDetails from './components/ClientsPaymentDetails/ClientsPaymentDetails';
+import CreateSupplierPayment from "./components/CreateSupplierPayment/CreateSupplierPayment";
+import StockAdjustment from "./components/Adjustment/Adjustment";
+import ReportsPage from "./components/Reports/Reports";
+import Assets from "./components/Assets/Assets";
+import ProjectLaborDetails from "./components/ProjectLaborDetails/ProjectLaborDetails";
+import ProjectEquipmentDetails from "./components/ProjectEquipmentDetails/ProjectEquipmentDetails";
+import ProjectMiscellaneousDetails from "./components/ProjectMiscellaneousDetails/ProjectMiscellaneousDetails";
+import ProjectMaterialDetails from "./components/ProjectMaterialDetails/ProjectMaterialDetails";
+import GeneralExpenses from "./components/General-Expenses/General-Expenses";
+import ExpenseDetails from './components/General-ExpensesDetails/General-ExpensesDetails';
 
 function App() {
-  const router = createHashRouter([
-    {
-      path: "",
-      element: <Layout />,
-      errorElement: <Error />,
-      children: [
-        {
-          index: true,
-          element: <Home />,
-        },
-        {
-          path: "products",
-          element: (
-            <ProtectedRoute>
-              <Products />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "cart",
-          element: (
-            <ProtectedRoute>
-              <Cart />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "checkout",
-          element: (
-            <ProtectedRoute>
-              <CheckOut />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "orders/user/:id",
-          element: (
-            <ProtectedRoute>
-              <MyOrders />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "brands",
-          element: (
-            <ProtectedRoute>
-              <Brands />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "brands/:id",
-          element: (
-            <ProtectedRoute>
-              <Brand />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "categories",
-          element: (
-            <ProtectedRoute>
-              <Categories />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "categories/:id",
-          element: (
-            <ProtectedRoute>
-              <Category />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "products/:id/:category",
-          element: (
-            <ProtectedRoute>
-              <ProductDetails />
-            </ProtectedRoute>
-          ),
-        },
-        {
-          path: "register",
-          element: <Register />,
-        },
-        {
-          path: "login",
-          element: <Login />,
-        },
-        {
-          path: "forgotPasswords",
-          element: <ForgetPassword />,
-        },
-        {
-          path: "verifyCode",
-          element: <VerifyCode />,
-        },
-        {
-          path: "resetPassword",
-          element: <ResetCode />,
-        },
-        {
-          path: "notFound",
-          element: <NotFound />,
-        },
-      ],
-    },
-  ]);
+ const router = createHashRouter([
+  // ================= Public Routes =================
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/verify-login",
+    element: <VerifyLogin />,
+  },
+
+  // ================= Protected Layout =================
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
+    errorElement: <Error />,
+    children: [
+      { index: true, element: <Dashboard /> },
+
+      { path: "suppliers", element: <Suppliers /> },
+      { path: "materials", element: <Supplies /> },
+      { path: "assets", element: <Assets /> },
+      { path: "units", element: <Units /> },
+      { path: "adjustments", element: <StockAdjustment /> },
+
+      { path: "purchases", element: <PurchaseOrders /> },
+      { path: "purchases/returns", element: <PurchaseReturns /> },
+      { path: "purchases/returns/create", element: <CreatePurchaseReturn /> },
+
+      { path: "projects", element: <ProjectsList /> },
+      { path: "projects/create", element: <CreateProject /> },
+      { path: "projects/:id", element: <ProjectDetails /> },
+      { path: "projects/:id/labor", element: <ProjectLaborDetails /> },
+      { path: "projects/:id/equipment", element: <ProjectEquipmentDetails /> },
+      { path: "projects/:id/miscellaneous", element: <ProjectMiscellaneousDetails /> },
+      { path: "projects/material-issue/project/:id", element: <ProjectMaterialDetails /> },
+
+      { path: "material-issue/create", element: <CreateMaterialIssue /> },
+
+      { path: "clients", element: <Clients /> },
+      { path: "clients/create", element: <CreateClient /> },
+
+      { path: "finance/supplier-payments", element: <SupplierPayments /> },
+      { path: "finance/supplier-payments/create", element: <CreateSupplierPayment /> },
+      { path: "finance/supplier-refunds", element: <SupplierRefundsList /> },
+      { path: "finance/supplier-refunds/create", element: <SupplierRefundForm /> },
+      { path: "finance/client-payments", element: <PaymentsList /> },
+      { path: "finance/client-payments/create", element: <CreateClientPayment /> },
+      { path: "finance/client-payments/:id", element: <PaymentDetails /> },
+      { path: "finance/general-expenses", element: <GeneralExpenses /> },
+      { path: "finance/general-expenses/:id", element: <ExpenseDetails /> },
+
+      { path: "ledger/suppliers", element: <SupplierLedger /> },
+      { path: "ledger/clients", element: <ClientLedger /> },
+
+      { path: "users", element: <UsersList /> },
+      { path: "users/create", element: <CreateUser /> },
+      { path: "users/edit/:id", element: <EditUser /> },
+
+      { path: "reports", element: <ReportsPage /> },
+    ],
+  },
+
+  // ================= Catch All =================
+  {
+    path: "*",
+    element: <NotFound />,
+  },
+]);
+
 
   return (
-    <>
-      <AuthContextProvider>
-        <CartContextProvider>
-          <WishListContextProvider>
-            <RouterProvider router={router} />
-          </WishListContextProvider>
-          <ToastContainer />
-        </CartContextProvider>
-      </AuthContextProvider>
-    </>
+    <AuthContextProvider>
+      <LanguageProvider>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
+        <RouterProvider router={router} />
+      </LanguageProvider>
+    </AuthContextProvider>
   );
 }
 
