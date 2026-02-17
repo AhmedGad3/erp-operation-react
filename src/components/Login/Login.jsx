@@ -1,16 +1,47 @@
-import { useState, useContext } from "react";
-import { LogIn, Mail } from "lucide-react";
+import { useState, useContext, useEffect } from "react";
+import { Mail } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
+
+const TYPING_TEXT = "Welcome to MEGA BUILD Construction";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [displayedText, setDisplayedText] = useState("");
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
   const { setToken } = useContext(AuthContext);
+
+  useEffect(() => {
+    let timeout;
+
+    if (!isDeleting && charIndex < TYPING_TEXT.length) {
+      // Typing forward
+      timeout = setTimeout(() => {
+        setDisplayedText(TYPING_TEXT.slice(0, charIndex + 1));
+        setCharIndex((prev) => prev + 1);
+      }, 70);
+    } else if (!isDeleting && charIndex === TYPING_TEXT.length) {
+      // Pause at end before deleting
+      timeout = setTimeout(() => setIsDeleting(true), 1800);
+    } else if (isDeleting && charIndex > 0) {
+      // Deleting
+      timeout = setTimeout(() => {
+        setDisplayedText(TYPING_TEXT.slice(0, charIndex - 1));
+        setCharIndex((prev) => prev - 1);
+      }, 40);
+    } else if (isDeleting && charIndex === 0) {
+      // Pause before typing again
+      timeout = setTimeout(() => setIsDeleting(false), 600);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [charIndex, isDeleting]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -39,40 +70,95 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-full mb-4">
-            <LogIn className="text-white" size={32} />
+    <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-end pr-16">
+
+      {/* Full-screen background image with blur */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: "url('../public/assets/megabuild.png')",
+          filter: "blur(3px) brightness(0.7)",
+          transform: "scale(1.05)",
+        }}
+      />
+
+      {/* Dark vignette overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-black/10" />
+
+      {/* Typing headline bottom-left */}
+      <div className="absolute bottom-12 left-12 z-10 max-w-lg">
+        <h2
+          className="text-white text-4xl font-extrabold leading-tight drop-shadow-2xl"
+          style={{ fontFamily: "'Georgia', serif", letterSpacing: "0.03em" }}
+        >
+          {displayedText}
+          <span className="inline-block w-0.5 h-9 bg-yellow-400 ml-1 align-middle animate-pulse" />
+        </h2>
+        <p className="mt-3 text-gray-300 text-base font-light tracking-widest uppercase">
+          Building the future, one project at a time.
+        </p>
+      </div>
+
+      {/* Glassmorphism login card */}
+      <div
+        className="relative z-10 w-full max-w-md rounded-3xl p-10"
+        style={{
+          background: "rgba(255, 255, 255, 0.12)",
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+          border: "1px solid rgba(255, 255, 255, 0.25)",
+          boxShadow: "0 8px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
+        }}
+      >
+        <div className="flex flex-col items-center mb-8">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              border: "1px solid rgba(255,255,255,0.35)",
+            }}
+          >
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <polyline points="9 22 9 12 15 12 15 22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Login
-          </h1>
-          <p className="text-gray-600">
-            Enter your email to receive verification code
+          <h1 className="text-white text-3xl font-bold tracking-wide">Login</h1>
+          <p className="text-white/70 text-sm mt-1 text-center">
+            Enter your email to receive a verification code
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div
+              className="text-red-200 text-sm px-4 py-3 rounded-xl"
+              style={{ background: "rgba(220,38,38,0.25)", border: "1px solid rgba(220,38,38,0.4)" }}
+            >
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-white/80 text-sm font-medium mb-2">
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <Mail
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50"
+                size={20}
+              />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full h-12 pr-10 px-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isLoading}
+                className="w-full h-12 pr-10 px-4 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 transition"
+                style={{
+                  background: "rgba(255,255,255,0.12)",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                }}
               />
             </div>
           </div>
@@ -80,7 +166,12 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-500 hover:bg-blue-600 h-12 text-lg font-semibold text-white rounded-lg disabled:opacity-50"
+            className="w-full h-12 rounded-xl text-white font-semibold text-base transition-all duration-200 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+            style={{
+              background: "rgba(59, 130, 246, 0.85)",
+              border: "1px solid rgba(147, 197, 253, 0.4)",
+              boxShadow: "0 4px 20px rgba(59,130,246,0.4)",
+            }}
           >
             {isLoading ? "Sending code..." : "Send Code"}
           </button>
