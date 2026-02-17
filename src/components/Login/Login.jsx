@@ -76,7 +76,7 @@ export default function Login() {
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: "url('../public/assets/megabuild.png')",
+          backgroundImage: "url('/assets/megabuild.png')",
           filter: "blur(3px) brightness(0.7)",
           transform: "scale(1.05)",
         }}

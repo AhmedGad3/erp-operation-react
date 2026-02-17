@@ -61,36 +61,11 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
       label: lang === "ar" ? "المستودع" : "Warehouse",
       icon: Box,
       items: [
-        { 
-          id: "units", 
-          icon: Wrench, 
-          label: lang === "ar" ? "الوحدات" : "Units",
-          path: "/units"
-        },
-        { 
-          id: "materials", 
-          icon: Package, 
-          label: lang === "ar" ? "المواد" : "Materials",
-          path: "/materials"
-        },
-        { 
-          id: "suppliers", 
-          icon: Users, 
-          label: lang === "ar" ? "الموردين" : "Suppliers",
-          path: "/suppliers"
-        },
-        { 
-          id: "assets", 
-          icon: Landmark, 
-          label: lang === "ar" ? "الأصول" : "Assets",
-          path: "/assets"
-        },
-        { 
-          id: "adjustments", 
-          icon: ArrowLeftRight, 
-          label: lang === "ar" ? "التسويات" : "Adjustments",
-          path: "/adjustments"
-        }
+        { id: "units", icon: Wrench, label: lang === "ar" ? "الوحدات" : "Units", path: "/units" },
+        { id: "materials", icon: Package, label: lang === "ar" ? "المواد" : "Materials", path: "/materials" },
+        { id: "suppliers", icon: Users, label: lang === "ar" ? "الموردين" : "Suppliers", path: "/suppliers" },
+        { id: "assets", icon: Landmark, label: lang === "ar" ? "الأصول" : "Assets", path: "/assets" },
+        { id: "adjustments", icon: ArrowLeftRight, label: lang === "ar" ? "التسويات" : "Adjustments", path: "/adjustments" }
       ]
     },
     {
@@ -98,24 +73,9 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
       label: lang === "ar" ? "العمليات" : "Operations",
       icon: ShoppingCart,
       items: [
-        { 
-          id: "purchases", 
-          icon: ShoppingCart, 
-          label: lang === "ar" ? "أوامر الشراء" : "Purchase Orders",
-          path: "/purchases"
-        },
-        { 
-          id: "purchase-returns", 
-          icon: TrendingUp, 
-          label: lang === "ar" ? "مرتجعات الشراء" : "Purchase Returns",
-          path: "/purchases/returns"
-        },
-        { 
-          id: "material-issue", 
-          icon: ClipboardList, 
-          label: lang === "ar" ? "صرف المواد" : "Material Issue",
-          path: "/material-issue/create"
-        }
+        { id: "purchases", icon: ShoppingCart, label: lang === "ar" ? "أوامر الشراء" : "Purchase Orders", path: "/purchases" },
+        { id: "purchase-returns", icon: TrendingUp, label: lang === "ar" ? "مرتجعات الشراء" : "Purchase Returns", path: "/purchases/returns" },
+        { id: "material-issue", icon: ClipboardList, label: lang === "ar" ? "صرف المواد" : "Material Issue", path: "/material-issue/create" }
       ]
     },
     {
@@ -123,18 +83,8 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
       label: lang === "ar" ? "المشاريع و العملاء" : "Projects & Clients",
       icon: Briefcase,
       items: [
-        { 
-          id: "projects", 
-          icon: Briefcase, 
-          label: lang === "ar" ? "المشاريع" : "Projects",
-          path: "/projects"
-        },
-        { 
-          id: "clients", 
-          icon: Users, 
-          label: lang === "ar" ? "العملاء" : "Clients",
-          path: "/clients"
-        }
+        { id: "projects", icon: Briefcase, label: lang === "ar" ? "المشاريع" : "Projects", path: "/projects" },
+        { id: "clients", icon: Users, label: lang === "ar" ? "العملاء" : "Clients", path: "/clients" }
       ]
     },
     {
@@ -142,42 +92,12 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
       label: lang === "ar" ? "المالية" : "Finance",
       icon: DollarSign,
       items: [
-        { 
-          id: "supplier-payments", 
-          icon: CreditCard, 
-          label: lang === "ar" ? "مدفوعات الموردين" : "Supplier Payments",
-          path: "/finance/supplier-payments"
-        },
-        { 
-          id: "supplier-refunds", 
-          icon: Receipt, 
-          label: lang === "ar" ? "مرتجعات الموردين" : "Supplier Refunds",
-          path: "/finance/supplier-refunds"
-        },
-        { 
-          id: "client-payments", 
-          icon: CreditCard, 
-          label: lang === "ar" ? "مدفوعات العملاء" : "Client Payments",
-          path: "/finance/client-payments"
-        },
-        { 
-          id: "general-expenses", 
-          icon: FileText, 
-          label: lang === "ar" ? "المصروفات العامة" : "General Expenses",
-          path: "/finance/general-expenses"
-        },
-        { 
-          id: "supplier-ledger", 
-          icon: FileSpreadsheet, 
-          label: lang === "ar" ? "دفتر الموردين" : "Supplier Ledger",
-          path: "/ledger/suppliers"
-        },
-        { 
-          id: "client-ledger", 
-          icon: FileSpreadsheet, 
-          label: lang === "ar" ? "دفتر العملاء" : "Client Ledger",
-          path: "/ledger/clients"
-        }
+        { id: "supplier-payments", icon: CreditCard, label: lang === "ar" ? "مدفوعات الموردين" : "Supplier Payments", path: "/finance/supplier-payments" },
+        { id: "supplier-refunds", icon: Receipt, label: lang === "ar" ? "مرتجعات الموردين" : "Supplier Refunds", path: "/finance/supplier-refunds" },
+        { id: "client-payments", icon: CreditCard, label: lang === "ar" ? "مدفوعات العملاء" : "Client Payments", path: "/finance/client-payments" },
+        { id: "general-expenses", icon: FileText, label: lang === "ar" ? "المصروفات العامة" : "General Expenses", path: "/finance/general-expenses" },
+        { id: "supplier-ledger", icon: FileSpreadsheet, label: lang === "ar" ? "دفتر الموردين" : "Supplier Ledger", path: "/ledger/suppliers" },
+        { id: "client-ledger", icon: FileSpreadsheet, label: lang === "ar" ? "دفتر العملاء" : "Client Ledger", path: "/ledger/clients" }
       ]
     },
     {
@@ -185,12 +105,7 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
       label: lang === "ar" ? "الموارد البشرية" : "Human Resources",
       icon: UserCircle,
       items: [
-        { 
-          id: "users", 
-          icon: Users, 
-          label: lang === "ar" ? "المستخدمين" : "Users",
-          path: "/users"
-        }
+        { id: "users", icon: Users, label: lang === "ar" ? "المستخدمين" : "Users", path: "/users" }
       ]
     },
     {
@@ -198,28 +113,21 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
       label: lang === "ar" ? "التقارير" : "Reports",
       icon: FileText,
       items: [
-        { 
-          id: "reports", 
-          icon: FileText, 
-          label: lang === "ar" ? "التقارير" : "Reports",
-          path: "/reports"
-        }
+        { id: "reports", icon: FileText, label: lang === "ar" ? "التقارير" : "Reports", path: "/reports" }
       ]
     }
   ];
 
   return (
     <>
-      
+      {/* Toggle button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed top-1/2 -translate-y-1/2 ${
           lang === "ar" 
             ? isOpen ? "right-52" : "right-0"
             : isOpen ? "left-52" : "left-0"
-        } z-50 bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-xl rounded-r-xl p-1 border-y border-r border-blue-500 hover:from-blue-700 hover:to-blue-800 transition-all duration-300 hover:scale-105 ${
-          lang === "ar" ? "rounded-l-xl rounded-r-none border-l border-r-0" : ""
-        }`}
+        } z-50 bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-xl p-1 border-y border-blue-500 hover:from-blue-700 hover:to-blue-800 transition-all duration-300 hover:scale-105`}
         style={{
           borderTopLeftRadius: lang === "ar" ? "0.75rem" : "0",
           borderBottomLeftRadius: lang === "ar" ? "0.75rem" : "0",
@@ -243,7 +151,6 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
             const SectionIcon = section.icon;
             const isExpanded = expandedSections[section.id];
             
-            // Handle dashboard (no submenu)
             if (!section.items) {
               const isActive = section.exact 
                 ? location.pathname === section.path
@@ -268,7 +175,6 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
             
             return (
               <div key={section.id} className="mb-2">
-                {/* Section Header */}
                 <button
                   onClick={() => toggleSection(section.id)}
                   className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 hover:bg-white hover:shadow-md transition-all duration-200 font-medium"
@@ -284,7 +190,6 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
                   )}
                 </button>
 
-                {/* Section Items */}
                 {isExpanded && (
                   <ul className="mt-2 space-y-1">
                     {section.items.map((item) => {
@@ -317,7 +222,7 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
         </div>
       </aside>
 
-      {/* Overlay for mobile */}
+      {/* Overlay — mobile only */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
@@ -325,21 +230,13 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
         />
       )}
 
-      {/* Custom Scrollbar Styles */}
       <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: linear-gradient(to bottom, #3b82f6, #2563eb);
           border-radius: 10px;
         }
-        
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(to bottom, #2563eb, #1d4ed8);
         }
