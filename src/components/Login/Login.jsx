@@ -21,22 +21,18 @@ export default function Login() {
     let timeout;
 
     if (!isDeleting && charIndex < TYPING_TEXT.length) {
-      // Typing forward
       timeout = setTimeout(() => {
         setDisplayedText(TYPING_TEXT.slice(0, charIndex + 1));
         setCharIndex((prev) => prev + 1);
       }, 70);
     } else if (!isDeleting && charIndex === TYPING_TEXT.length) {
-      // Pause at end before deleting
       timeout = setTimeout(() => setIsDeleting(true), 1800);
     } else if (isDeleting && charIndex > 0) {
-      // Deleting
       timeout = setTimeout(() => {
         setDisplayedText(TYPING_TEXT.slice(0, charIndex - 1));
         setCharIndex((prev) => prev - 1);
       }, 40);
     } else if (isDeleting && charIndex === 0) {
-      // Pause before typing again
       timeout = setTimeout(() => setIsDeleting(false), 600);
     }
 
@@ -70,7 +66,7 @@ export default function Login() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-end pr-16">
+    <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center md:justify-end md:pr-16 px-4 py-8">
 
       {/* Full-screen background image with blur */}
       <div
@@ -85,8 +81,8 @@ export default function Login() {
       {/* Dark vignette overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-black/10" />
 
-      {/* Typing headline bottom-left */}
-      <div className="absolute bottom-12 left-12 z-10 max-w-lg">
+      {/* Typing headline - hidden on mobile, shown on md+ */}
+      <div className="absolute bottom-12 left-12 z-10 max-w-lg hidden md:block">
         <h2
           className="text-white text-4xl font-extrabold leading-tight drop-shadow-2xl"
           style={{ fontFamily: "'Georgia', serif", letterSpacing: "0.03em" }}
@@ -101,7 +97,7 @@ export default function Login() {
 
       {/* Glassmorphism login card */}
       <div
-        className="relative z-10 w-full max-w-md rounded-3xl p-10"
+        className="relative z-10 w-full max-w-md rounded-3xl p-6 sm:p-10"
         style={{
           background: "rgba(255, 255, 255, 0.12)",
           backdropFilter: "blur(20px) saturate(180%)",
@@ -110,20 +106,34 @@ export default function Login() {
           boxShadow: "0 8px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
         }}
       >
-        <div className="flex flex-col items-center mb-8">
+        {/* Mobile-only typing headline inside card */}
+        <div className="md:hidden mb-6 text-center">
+          <h2
+            className="text-white text-xl font-extrabold leading-tight drop-shadow-2xl"
+            style={{ fontFamily: "'Georgia', serif", letterSpacing: "0.03em" }}
+          >
+            {displayedText}
+            <span className="inline-block w-0.5 h-5 bg-yellow-400 ml-1 align-middle animate-pulse" />
+          </h2>
+          <p className="mt-1 text-gray-300 text-xs font-light tracking-widest uppercase">
+            Building the future, one project at a time.
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center mb-6 sm:mb-8">
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-4"
             style={{
               background: "rgba(255,255,255,0.2)",
               border: "1px solid rgba(255,255,255,0.35)",
             }}
           >
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="sm:w-8 sm:h-8">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <polyline points="9 22 9 12 15 12 15 22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <h1 className="text-white text-3xl font-bold tracking-wide">Login</h1>
+          <h1 className="text-white text-2xl sm:text-3xl font-bold tracking-wide">Login</h1>
           <p className="text-white/70 text-sm mt-1 text-center">
             Enter your email to receive a verification code
           </p>
@@ -154,7 +164,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 disabled={isLoading}
-                className="w-full h-12 pr-10 px-4 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 transition"
+                className="w-full h-12 pr-10 px-4 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 transition text-base"
                 style={{
                   background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.25)",
@@ -166,7 +176,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-12 rounded-xl text-white font-semibold text-base transition-all duration-200 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full h-12 rounded-xl text-white font-semibold text-base transition-all duration-200 disabled:opacity-50 active:scale-[0.98] touch-manipulation"
             style={{
               background: "rgba(59, 130, 246, 0.85)",
               border: "1px solid rgba(147, 197, 253, 0.4)",

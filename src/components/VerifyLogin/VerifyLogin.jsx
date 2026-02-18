@@ -95,7 +95,7 @@ export default function VerifyLogin() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-end pr-16">
+    <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center md:justify-end md:pr-16 px-4 py-8">
 
       {/* Full-screen background image with blur */}
       <div
@@ -110,8 +110,8 @@ export default function VerifyLogin() {
       {/* Dark vignette overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-black/10" />
 
-      {/* Bottom-left label */}
-      <div className="absolute bottom-12 left-12 z-10">
+      {/* Bottom-left label - hidden on mobile */}
+      <div className="absolute bottom-12 left-12 z-10 hidden md:block">
         <h2
           className="text-white text-4xl font-extrabold drop-shadow-2xl"
           style={{ fontFamily: "'Georgia', serif", letterSpacing: "0.03em" }}
@@ -125,7 +125,7 @@ export default function VerifyLogin() {
 
       {/* Glassmorphism card */}
       <div
-        className="relative z-10 w-full max-w-md rounded-3xl p-10 text-center"
+        className="relative z-10 w-full max-w-md rounded-3xl p-6 sm:p-10 text-center"
         style={{
           background: "rgba(255, 255, 255, 0.12)",
           backdropFilter: "blur(20px) saturate(180%)",
@@ -134,22 +134,29 @@ export default function VerifyLogin() {
           boxShadow: "0 8px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
         }}
       >
+        {/* Mobile-only brand label inside card */}
+        <div className="md:hidden mb-4">
+          <p className="text-white/60 text-xs font-light tracking-widest uppercase">
+            MEGA BUILD Construction
+          </p>
+        </div>
+
         {/* Icon */}
         <div className="flex justify-center mb-4">
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center"
             style={{
               background: "rgba(255,255,255,0.2)",
               border: "1px solid rgba(255,255,255,0.35)",
             }}
           >
-            <ShieldCheck className="text-white" size={32} />
+            <ShieldCheck className="text-white" size={28} />
           </div>
         </div>
 
-        <h2 className="text-white text-3xl font-bold mb-2">Verify Login</h2>
+        <h2 className="text-white text-2xl sm:text-3xl font-bold mb-2">Verify Login</h2>
         <p className="text-white/60 text-sm mb-1">Enter the 6-digit code sent to</p>
-        <p className="text-yellow-300 font-medium mb-6">{email}</p>
+        <p className="text-yellow-300 font-medium mb-5 sm:mb-6 text-sm sm:text-base break-all px-2">{email}</p>
 
         {error && (
           <div
@@ -163,7 +170,7 @@ export default function VerifyLogin() {
         {/* OTP inputs */}
         <div
           ref={fieldsRef}
-          className="flex justify-center gap-2 mb-6"
+          className="flex justify-center gap-1.5 sm:gap-2 mb-5 sm:mb-6"
           onPaste={handlePaste}
         >
           {codes.map((code, index) => (
@@ -176,7 +183,7 @@ export default function VerifyLogin() {
               onChange={(e) => handleChange(index, e.target.value)}
               onKeyUp={(e) => handleKeyUp(e, index)}
               disabled={isLoading}
-              className="w-12 h-12 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:ring-2 focus:ring-white/50 transition"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl text-center text-xl sm:text-2xl font-bold text-white focus:outline-none focus:ring-2 focus:ring-white/50 transition touch-manipulation"
               style={{
                 background: "rgba(255,255,255,0.12)",
                 border: code
@@ -192,7 +199,7 @@ export default function VerifyLogin() {
         <button
           onClick={handleVerify}
           disabled={isLoading || otp.length !== 6}
-          className="w-full h-12 rounded-xl text-white font-semibold text-base transition-all duration-200 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+          className="w-full h-12 rounded-xl text-white font-semibold text-base transition-all duration-200 disabled:opacity-50 active:scale-[0.98] touch-manipulation"
           style={{
             background: "rgba(59, 130, 246, 0.85)",
             border: "1px solid rgba(147, 197, 253, 0.4)",
@@ -207,7 +214,7 @@ export default function VerifyLogin() {
           {canResend ? (
             <button
               onClick={handleResend}
-              className="text-yellow-300 hover:text-yellow-200 font-medium transition"
+              className="text-yellow-300 hover:text-yellow-200 font-medium transition touch-manipulation py-2"
             >
               Resend Code
             </button>
@@ -220,7 +227,7 @@ export default function VerifyLogin() {
         <button
           onClick={() => navigate("/login")}
           disabled={isLoading}
-          className="mt-4 text-white/40 hover:text-white/70 text-sm transition"
+          className="mt-3 text-white/40 hover:text-white/70 text-sm transition touch-manipulation py-2"
         >
           ← Back to login
         </button>
