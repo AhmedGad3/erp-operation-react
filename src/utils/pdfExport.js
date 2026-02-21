@@ -1,28 +1,10 @@
-/**
- * ═══════════════════════════════════════════════════════════════
- *  الحل النهائي الصح 100% لمشكلة العربي في PDF
- * ═══════════════════════════════════════════════════════════════
- * 
- *  المشكلة: jsPDF لا يدعم العربية بشكل صحيح مهما حاولنا
- *  
- *  الحلول المتاحة:
- *  1. استخدام html2pdf (تحويل HTML إلى PDF) ✅ الأسهل
- *  2. استخدام pdfmake مع خطوط عربية ✅ احترافي
- *  3. استخدام canvas وتحويله لـ PDF ✅ يشتغل
- */
 
+ 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
-// ═══════════════════════════════════════════════════════════
-//  الحل 1: تحويل جدول HTML إلى PDF (الأفضل للعربي)
-// ═══════════════════════════════════════════════════════════
 
-/**
- * تصدير جدول HTML موجود في الصفحة إلى PDF
- * هذا الحل يحافظ على تنسيق العربي بشكل مثالي
- */
 export const exportTableToPDF = async (tableId, fileName, title = '') => {
   try {
     const element = document.getElementById(tableId);
@@ -30,7 +12,6 @@ export const exportTableToPDF = async (tableId, fileName, title = '') => {
       throw new Error('Table element not found');
     }
 
-    // تحويل الجدول إلى صورة
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,

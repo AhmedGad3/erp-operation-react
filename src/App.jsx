@@ -51,6 +51,8 @@ import ProjectMiscellaneousDetails from "./components/ProjectMiscellaneousDetail
 import ProjectMaterialDetails from "./components/ProjectMaterialDetails/ProjectMaterialDetails";
 import GeneralExpenses from "./components/General-Expenses/General-Expenses";
 import ExpenseDetails from './components/General-ExpensesDetails/General-ExpensesDetails';
+import ProjectSubcontractorWork from "./components/SubContractorWorks/SubContractorWorks";
+import SupplierRefundDetails from "./components/SupplierRefundDetails/SupplierRefundDetails";
 
 function App() {
  const router = createHashRouter([
@@ -92,6 +94,7 @@ function App() {
       { path: "projects/:id/labor", element: <ProjectLaborDetails /> },
       { path: "projects/:id/equipment", element: <ProjectEquipmentDetails /> },
       { path: "projects/:id/miscellaneous", element: <ProjectMiscellaneousDetails /> },
+      { path: "projects/:id/subcontractor-work", element: <ProjectSubcontractorWork /> }, 
       { path: "projects/material-issue/project/:id", element: <ProjectMaterialDetails /> },
 
       { path: "material-issue/create", element: <CreateMaterialIssue /> },
@@ -103,6 +106,7 @@ function App() {
       { path: "finance/supplier-payments/create", element: <CreateSupplierPayment /> },
       { path: "finance/supplier-refunds", element: <SupplierRefundsList /> },
       { path: "finance/supplier-refunds/create", element: <SupplierRefundForm /> },
+      { path:"/finance/supplier-refunds/:id" ,element: <SupplierRefundDetails />},
       { path: "finance/client-payments", element: <PaymentsList /> },
       { path: "finance/client-payments/create", element: <CreateClientPayment /> },
       { path: "finance/client-payments/:id", element: <PaymentDetails /> },

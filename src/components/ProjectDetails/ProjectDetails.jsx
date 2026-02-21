@@ -9,11 +9,11 @@ import {
   DollarSign,
   TrendingUp,
   AlertCircle,
-  CheckCircle,
   Edit,
   Trash2,
   Package,
   Truck,
+  HardHat,
 } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
@@ -132,15 +132,16 @@ const ProjectDetails = () => {
 
   const status = getStatusBadge(project.status);
 
-  // Chart data
+  // Chart data — now includes subcontractor costs
   const costBreakdownData = [
     { name: lang === 'ar' ? 'المواد' : 'Materials', value: project.materialCosts, color: '#1e3a8a' },
     { name: lang === 'ar' ? 'العمالة' : 'Labor', value: project.laborCosts, color: '#f59e0b' },
     { name: lang === 'ar' ? 'المعدات' : 'Equipment', value: project.equipmentCosts, color: '#10b981' },
+    { name: lang === 'ar' ? 'المقاولين' : 'Subcontractors', value: project.subcontractorCosts, color: '#f97316' },
     { name: lang === 'ar' ? 'أخرى' : 'Other', value: project.otherCosts, color: '#3b82f6' },
-  ];
+  ].filter((item) => item.value > 0); // hide zero-value slices
 
-  const COLORS = ['#1e3a8a', '#f59e0b', '#10b981', '#3b82f6'];
+  const COLORS = costBreakdownData.map((d) => d.color);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
@@ -216,7 +217,7 @@ const ProjectDetails = () => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Left Side - Project Details & Charts */}
+          {/* Left Side */}
           <div className="lg:col-span-2 space-y-6">
             {/* Project Info */}
             <div className="bg-white rounded-xl shadow-lg p-6">
@@ -278,8 +279,8 @@ const ProjectDetails = () => {
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={costBreakdownData}>
-                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
                       <Tooltip formatter={(value) => formatCurrency(value)} />
                       <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                         {costBreakdownData.map((entry, index) => (
@@ -318,99 +319,67 @@ const ProjectDetails = () => {
               </div>
             </div>
 
-            {/* Cost Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Materials Card */}
-              <div
+            {/* Cost Cards — 3-column grid to fit 5 cards nicely */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {/* Materials */}
+              <CostCard
                 onClick={() => navigate(`/projects/material-issue/project/${id}`)}
-                className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-green-500 group"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Package className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-900">{lang === 'ar' ? 'المواد' : 'Materials'}</h4>
-                      <p className="text-sm text-gray-500">{lang === 'ar' ? 'تكاليف المواد' : 'Material Costs'}</p>
-                    </div>
-                  </div>
-                  <ArrowLeft
-                    className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors"
-                    style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }}
-                  />
-                </div>
-                <div className="text-3xl font-bold text-blue-600">{formatCurrency(project.materialCosts)}</div>
-              </div>
+                icon={<Package className="w-6 h-6 text-white" />}
+                iconBg="from-blue-500 to-blue-600"
+                title={lang === 'ar' ? 'المواد' : 'Materials'}
+                subtitle={lang === 'ar' ? 'تكاليف المواد' : 'Material Costs'}
+                amount={formatCurrency(project.materialCosts)}
+                amountColor="text-blue-600"
+                lang={lang}
+              />
 
-              {/* Labor Card */}
-              <div
+              {/* Labor */}
+              <CostCard
                 onClick={() => navigate(`/projects/${id}/labor`)}
-                className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-green-500 group"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Users className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-900">{lang === 'ar' ? 'العمالة' : 'Labor'}</h4>
-                      <p className="text-sm text-gray-500">{lang === 'ar' ? 'تكاليف العمالة' : 'Labor Costs'}</p>
-                    </div>
-                  </div>
-                  <ArrowLeft
-                    className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors"
-                    style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }}
-                  />
-                </div>
-                <div className="text-3xl font-bold text-orange-600">{formatCurrency(project.laborCosts)}</div>
-              </div>
+                icon={<Users className="w-6 h-6 text-white" />}
+                iconBg="from-orange-500 to-orange-600"
+                title={lang === 'ar' ? 'العمالة' : 'Labor'}
+                subtitle={lang === 'ar' ? 'تكاليف العمالة' : 'Labor Costs'}
+                amount={formatCurrency(project.laborCosts)}
+                amountColor="text-orange-600"
+                lang={lang}
+              />
 
-              {/* Equipment Card */}
-              <div
+              {/* Equipment */}
+              <CostCard
                 onClick={() => navigate(`/projects/${id}/equipment`)}
-                className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-green-500 group"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Truck className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-900">{lang === 'ar' ? 'المعدات' : 'Equipment'}</h4>
-                      <p className="text-sm text-gray-500">{lang === 'ar' ? 'تكاليف المعدات' : 'Equipment Costs'}</p>
-                    </div>
-                  </div>
-                  <ArrowLeft
-                    className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors"
-                    style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }}
-                  />
-                </div>
-                <div className="text-3xl font-bold text-green-600">{formatCurrency(project.equipmentCosts)}</div>
-              </div>
+                icon={<Truck className="w-6 h-6 text-white" />}
+                iconBg="from-green-500 to-green-600"
+                title={lang === 'ar' ? 'المعدات' : 'Equipment'}
+                subtitle={lang === 'ar' ? 'تكاليف المعدات' : 'Equipment Costs'}
+                amount={formatCurrency(project.equipmentCosts)}
+                amountColor="text-green-600"
+                lang={lang}
+              />
 
-              {/* Other Costs Card */}
-              <div
+              {/* Subcontractors ✅ NEW */}
+              <CostCard
+                onClick={() => navigate(`/projects/${id}/subcontractor-work`)}
+                icon={<HardHat className="w-6 h-6 text-white" />}
+                iconBg="from-amber-500 to-amber-600"
+                title={lang === 'ar' ? 'المقاولين' : 'Subcontractors'}
+                subtitle={lang === 'ar' ? 'أعمال المقاولين' : 'Subcontractor Work'}
+                amount={formatCurrency(project.subcontractorCosts ?? 0)}
+                amountColor="text-amber-600"
+                lang={lang}
+              />
+
+              {/* Other */}
+              <CostCard
                 onClick={() => navigate(`/projects/${id}/miscellaneous`)}
-                className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-green-500 group"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <DollarSign className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-900">{lang === 'ar' ? 'أخرى' : 'Others'}</h4>
-                      <p className="text-sm text-gray-500">{lang === 'ar' ? 'مصروفات أخرى' : 'Other Expenses'}</p>
-                    </div>
-                  </div>
-                  <ArrowLeft
-                    className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors"
-                    style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }}
-                  />
-                </div>
-                <div className="text-3xl font-bold text-purple-600">{formatCurrency(project.otherCosts)}</div>
-              </div>
+                icon={<DollarSign className="w-6 h-6 text-white" />}
+                iconBg="from-purple-500 to-purple-600"
+                title={lang === 'ar' ? 'أخرى' : 'Others'}
+                subtitle={lang === 'ar' ? 'مصروفات أخرى' : 'Other Expenses'}
+                amount={formatCurrency(project.otherCosts)}
+                amountColor="text-purple-600"
+                lang={lang}
+              />
             </div>
           </div>
 
@@ -531,5 +500,34 @@ const ProjectDetails = () => {
     </div>
   );
 };
+
+
+function CostCard({ onClick, icon, iconBg, title, subtitle, amount, amountColor, lang }) {
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-green-500 group"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-12 h-12 bg-gradient-to-br ${iconBg} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform`}
+          >
+            {icon}
+          </div>
+          <div>
+            <h4 className="text-lg font-bold text-gray-900">{title}</h4>
+            <p className="text-sm text-gray-500">{subtitle}</p>
+          </div>
+        </div>
+        <ArrowLeft
+          className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors"
+          style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }}
+        />
+      </div>
+      <div className={`text-3xl font-bold ${amountColor}`}>{amount}</div>
+    </div>
+  );
+}
 
 export default ProjectDetails;

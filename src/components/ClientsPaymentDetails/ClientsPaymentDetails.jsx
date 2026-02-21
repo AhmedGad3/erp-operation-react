@@ -1,28 +1,60 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  CreditCard,
-  Download,
-} from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import megabuildLogo from '../../assets/megabuild1.svg';
 
+/* ── Brand colors ── */
+const RED        = '#C41E3A';
+const BLUE       = '#003764';
+const LIGHT_GREEN = '#F0FFF4';
+const LIGHT_BLUE  = '#F0F4FA';
+
+/* ── Logo ── */
+const MegaBuildLogo = ({ size = 68 }) => (
+  <img
+    src={megabuildLogo}
+    alt="Mega Build Logo"
+    style={{ width: size, height: size, objectFit: 'contain' }}
+  />
+);
+
+/* ── Footer bar ── */
+const FooterBar = () => (
+  <div style={{ display: 'flex', height: 28 }}>
+    <div style={{ width: '38%', background: BLUE }} />
+    <div style={{ width: '2%',  background: '#fff' }} />
+    <div style={{ flex: 1,      background: RED }} />
+  </div>
+);
+
+/* ── InfoRow ── */
+const InfoRow = ({ label, value, align = 'left' }) => (
+  <div style={{ textAlign: align }}>
+    <p style={{ fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+      {label}
+    </p>
+    <p style={{ fontSize: 14, fontWeight: 700, color: '#1a1a2e', margin: 0 }}>{value}</p>
+  </div>
+);
+
+/* ════════════════════════════════════════ */
 const PaymentDetails = () => {
-  const { id } = useParams();
+  const { id }   = useParams();
   const navigate = useNavigate();
-  const { lang, t } = useContext(LanguageContext);
+  const { lang } = useContext(LanguageContext);
+  const isAr     = lang === 'ar';
+  const t        = (ar, en) => isAr ? ar : en;
 
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPayment();
-  }, [id]);
+  useEffect(() => { fetchPayment(); }, [id]);
 
   const fetchPayment = async () => {
     try {
@@ -31,334 +63,321 @@ const PaymentDetails = () => {
       setPayment(response.data.result);
     } catch (error) {
       console.error('Error fetching payment:', error);
-      toast.error(lang === 'ar' ? 'حدث خطأ أثناء تحميل بيانات الدفعة' : 'Error loading payment data');
+      toast.error(t('حدث خطأ أثناء تحميل بيانات الدفعة', 'Error loading payment data'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handlePDF = async () => {
     try {
-      const element = document.getElementById('receipt-container');
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
+      const element    = document.getElementById('receipt-container');
+      const canvas     = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
+      const imgData    = canvas.toDataURL('image/png');
+      const pdf        = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth  = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20; // 10mm margin on each side
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 10; // 10mm top margin
-
+      const imgWidth   = pageWidth - 20;
+      const imgHeight  = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft   = imgHeight;
+      let position     = 10;
       pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
       heightLeft -= pageHeight - 20;
-
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-
       pdf.save(`payment-receipt-${payment.paymentNo}.pdf`);
-      
-      toast.success(lang === 'ar' ? 'تم تحميل PDF بنجاح' : 'PDF downloaded successfully');
+      toast.success(t('تم تحميل PDF بنجاح', 'PDF downloaded successfully'));
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error(lang === 'ar' ? 'حدث خطأ أثناء إنشاء PDF' : 'Error generating PDF');
+      toast.error(t('حدث خطأ أثناء إنشاء PDF', 'Error generating PDF'));
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  const formatDate = (d) =>
+    d ? new Date(d).toLocaleDateString(isAr ? 'ar-EG' : 'en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    }) : '—';
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
-      style: 'currency',
-      currency: 'EGP',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat(isAr ? 'ar-EG' : 'en-US', {
+      style: 'currency', currency: 'EGP', minimumFractionDigits: 0
+    }).format(amount ?? 0);
 
   const getMethodLabel = (method) => {
-    const methodMap = {
-      CASH: lang === 'ar' ? 'نقد' : 'Cash',
-      CHEQUE: lang === 'ar' ? 'شيك' : 'Cheque',
-      TRANSFER: lang === 'ar' ? 'تحويل بنكي' : 'Transfer'
+    const map = {
+      CASH:     t('نقد', 'Cash'),
+      CHEQUE:   t('شيك', 'Cheque'),
+      TRANSFER: t('تحويل بنكي', 'Bank Transfer'),
     };
-    return methodMap[method] || method;
+    return map[method] || method;
   };
 
-  if (loading) {
-    return <FullPageLoader text={lang === 'ar' ? 'جاري تحميل الإيصال...' : 'Loading receipt...'} />;
-  }
+  if (loading) return <FullPageLoader text={t('جاري تحميل الإيصال...', 'Loading receipt...')} />;
 
-  if (!payment) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          <button
-            onClick={() => navigate('/finance/client-payments')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            {lang === 'ar' ? 'رجوع' : 'Back'}
-          </button>
-          <div className="bg-white rounded-lg p-8 text-center shadow-sm">
-            <p className="text-gray-500">
-              {lang === 'ar' ? 'الدفعة غير موجودة' : 'Payment not found'}
-            </p>
-          </div>
+  if (!payment) return (
+    <div style={{ minHeight: '100vh', background: '#F3F4F6', padding: '32px 16px', fontFamily: 'Segoe UI,Tahoma,Arial,sans-serif' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto' }}>
+        <button onClick={() => navigate('/finance/client-payments')}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, color: BLUE, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14, marginBottom: 16 }}>
+          <ArrowLeft size={16} /> {t('رجوع', 'Back')}
+        </button>
+        <div style={{ background: '#fff', borderRadius: 8, padding: 40, textAlign: 'center', color: '#888' }}>
+          {t('الدفعة غير موجودة', 'Payment not found')}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  const previousBalance = payment.amount + (payment.projectId?.totalPaid || payment.amount);
+  const previousBalance  = payment.amount + (payment.projectId?.totalPaid || payment.amount);
   const remainingBalance = (payment.projectId?.contractAmount || 0) - (payment.projectId?.totalPaid || 0);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 print:bg-white print:p-0 print:py-0">
-      {/* Top Action Buttons */}
-      <div className="max-w-3xl mx-auto mb-6 print:hidden flex gap-3">
-        <button
-          onClick={() => navigate('/finance/client-payments')}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition font-semibold"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {lang === 'ar' ? 'رجوع' : 'Back'}
+    <div style={{
+      minHeight: '100vh',
+      background: '#F3F4F6',
+      padding: '32px 16px',
+      fontFamily: isAr ? 'Tahoma,Arial,sans-serif' : 'Segoe UI,Arial,sans-serif',
+      direction: isAr ? 'rtl' : 'ltr',
+    }}>
+
+      {/* ── Buttons ── */}
+      <div className="print:hidden" style={{ maxWidth: 760, margin: '0 auto 24px', display: 'flex', gap: 12 }}>
+        <button onClick={() => navigate('/finance/client-payments')}
+          style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 20px', background:BLUE, color:'#fff', border:'none', borderRadius:8, fontWeight:700, cursor:'pointer', fontSize:14 }}>
+          <ArrowLeft size={16} /> {t('رجوع', 'Back')}
         </button>
-        <button
-          onClick={handlePDF}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold"
-        >
-          <Download className="w-4 h-4" />
-          {lang === 'ar' ? 'تحميل PDF' : 'Download PDF'}
+        <button onClick={handlePDF}
+          style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 20px', background:RED, color:'#fff', border:'none', borderRadius:8, fontWeight:700, cursor:'pointer', fontSize:14 }}>
+          <Download size={16} /> {t('تحميل PDF', 'Download PDF')}
         </button>
       </div>
 
-      {/* Receipt Container */}
-      <div className="max-w-3xl mx-auto bg-white shadow-lg print:shadow-none rounded-lg print:rounded-none overflow-hidden" id="receipt-container">
-        {/* Header Section */}
-        <div className="p-8 border-b print:border-b">
-          <div className="flex items-start justify-between mb-8">
-            {/* Company Info */}
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center">
-                <CreditCard className="w-8 h-8 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {lang === 'ar' ? 'ميجا بيلد للأنشاءات' : 'Mega Build Construction'}
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  {lang === 'ar' ? '123 شارع الأعمال، المدينة' : '123 Business Street, City State 12345'}
-                </p>
-                <p className="text-sm text-gray-600">
-                  contact@MegaBuild.com | +1 (555) 123-4567
-                </p>
-              </div>
-            </div>
+      {/* ══════════ RECEIPT ══════════ */}
+      <div id="receipt-container" style={{
+        maxWidth: 760, margin: '0 auto', background: '#fff',
+        borderRadius: 12, overflow: 'hidden',
+        boxShadow: '0 4px 32px rgba(0,0,0,0.10)',
+      }}>
 
-            {/* Receipt Title */}
-            <div className="text-right">
-              <h2 className="text-2xl font-bold text-blue-600 mb-1">
-                {lang === 'ar' ? 'إيصال الدفع' : 'Payment Receipt'}
-              </h2>
-              <p className="text-sm text-gray-600">
-                {lang === 'ar' ? 'رقم الإيصال:' : 'Receipt #:'} RCP-{payment.paymentNo}
-              </p>
-              <p className="text-sm text-gray-600">
-                {lang === 'ar' ? 'بواسطة :' : 'By : '} {payment.createdBy.email}
+        {/* ══ HEADER ══ */}
+        <div style={{ padding: '24px 36px 18px', borderBottom: '1px solid #eee' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+
+            {/* يسار: اللوجو */}
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start' }}>
+              <MegaBuildLogo size={68} />
+              <p style={{ fontSize:8, color:'#aaa', marginTop:3, letterSpacing:0.8 }}>
+                {t('نبني القيمة', 'We Build Value')}
               </p>
             </div>
-          </div>
 
-          {/* Bill To & Details */}
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-xs text-gray-500 uppercase font-semibold mb-2">
-                {lang === 'ar' ? 'فاتورة إلى' : 'Bill To'}
-              </p>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                {lang === 'ar' ? payment.clientId?.nameAr : payment.clientId?.nameEn}
-              </h3>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>{lang === 'ar' ? 'الكود:' : 'Code:'} {payment.clientId?.code}</p>
-                <p>{lang === 'ar' ? 'الهاتف:' : 'Phone:'} {payment.clientId?.phone}</p>
-                <p>{lang === 'ar' ? 'البريد:' : 'Email:'} {payment.clientId?.email}</p>
+            {/* يمين: MEGA BUILD + بيانات + badge */}
+            <div style={{ display:'flex', flexDirection:'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap:5 }}>
+
+              {/* اسم الشركة */}
+              <div style={{ display:'flex', alignItems:'baseline', gap:7 }}>
+                <span style={{ fontSize:26, fontWeight:900, color:RED,  letterSpacing:2, lineHeight:1 }}>MEGA</span>
+                <span style={{ fontSize:26, fontWeight:900, color:BLUE, letterSpacing:2, lineHeight:1 }}>BUILD</span>
               </div>
-            </div>
+              <p style={{ fontSize:10, color:'#999', fontStyle:'italic', margin:0 }}>We Build Value</p>
 
-            <div className="text-right">
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                  {lang === 'ar' ? 'تاريخ الدفع' : 'Payment Date'}
-                </p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {formatDate(payment.paymentDate)}
-                </p>
+              {/* بيانات الاتصال */}
+              <div style={{ display:'flex', flexDirection:'column', gap:2, alignItems: isAr ? 'flex-start' : 'flex-end', marginTop:4 }}>
+                {[
+                  '23 RD Of July St, Suez – Suez P.O. Box: 43511',
+                  'C.R: 59034    T.C: 454-990-006',
+                  'Tel: 062 3456452    Mob: 01111696211',
+                  'Meegabuild@gmail.com',
+                  'www.Megbuild.com',
+                ].map((line, i) => (
+                  <p key={i} style={{ fontSize:10.5, color:'#444', margin:0 }}>{line}</p>
+                ))}
               </div>
 
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                  {lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'}
-                </p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {getMethodLabel(payment.method)}
-                </p>
-              </div>
-
-              {payment.method === 'CHEQUE' && payment.chequeNo && (
-                <div className="mt-4">
-                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                    {lang === 'ar' ? 'رقم الشيك' : 'Cheque #'}
-                  </p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {payment.chequeNo}
-                  </p>
+              {/* Receipt badge + رقم */}
+              <div style={{ marginTop:8, display:'flex', flexDirection:'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap:4 }}>
+                <div style={{ background:BLUE, color:'#fff', padding:'5px 16px', borderRadius:5 }}>
+                  <span style={{ fontSize:14, fontWeight:800, letterSpacing:1 }}>
+                    {t('إيصال دفعة', 'PAYMENT RECEIPT')}
+                  </span>
                 </div>
-              )}
-
-              {payment.method === 'TRANSFER' && payment.transferRef && (
-                <div className="mt-4">
-                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                    {lang === 'ar' ? 'رقم التحويل' : 'Transfer #'}
+                <p style={{ fontSize:12, color:'#555', margin:0 }}>
+                  <span style={{ fontWeight:700, color:BLUE }}>{t('رقم:', 'No:')}</span>{' '}
+                  RCP-{payment.paymentNo}
+                </p>
+                {payment.createdBy?.email && (
+                  <p style={{ fontSize:12, color:'#555', margin:0 }}>
+                    <span style={{ fontWeight:700, color:BLUE }}>{t('بواسطة:', 'By:')}</span>{' '}
+                    {payment.createdBy.email}
                   </p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {payment.transferRef}
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Project Info */}
-        <div className="px-8 py-4 bg-gray-50 border-b">
-          <p className="text-xs text-gray-500 uppercase font-semibold mb-2">
-            {lang === 'ar' ? 'المشروع' : 'Project'}
-          </p>
-          <h3 className="text-lg font-bold text-gray-900">
-            {lang === 'ar' ? payment.projectId?.nameAr : payment.projectId?.nameEn}
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">
-            {lang === 'ar' ? 'الكود:' : 'Code:'} {payment.projectId?.code}
-          </p>
-        </div>
+        {/* ── Divider ── */}
+        <div style={{ height:3, background:RED }} />
+        <div style={{ height:1, background:'#eee' }} />
 
-        {/* Payment Details Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-100 border-b">
-                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-700 uppercase">
-                  {lang === 'ar' ? 'الوصف' : 'Description'}
-                </th>
-                <th className="px-8 py-4 text-right text-xs font-semibold text-gray-700 uppercase">
-                  {lang === 'ar' ? 'المبلغ' : 'Amount'}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b">
-                <td className="px-8 py-4 text-gray-700">
-                  {lang === 'ar' ? 'الرصيد السابق' : 'Previous Balance'}
-                </td>
-                <td className="px-8 py-4 text-right text-gray-700 font-semibold">
-                  {formatCurrency(previousBalance)}
-                </td>
-              </tr>
-              <tr className="border-b bg-green-50">
-                <td className="px-8 py-4 text-gray-700 font-semibold">
-                  {lang === 'ar' ? 'المبلغ المدفوع' : 'Amount Paid'}
-                </td>
-                <td className="px-8 py-4 text-right text-green-600 font-bold">
-                  - {formatCurrency(payment.amount)}
-                </td>
-              </tr>
-              <tr className="border-b bg-gray-50">
-                <td className="px-8 py-4 text-gray-900 font-bold">
-                  {lang === 'ar' ? 'المبلغ المتبقي' : 'remaining to be paid'}
-                </td>
-                <td className="px-8 py-4 text-right text-gray-900 font-bold text-lg">
-                  {formatCurrency(remainingBalance)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Payment Confirmation */}
-        <div className="px-8 py-6 bg-green-50 border-b">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-bold">✓</span>
-            </div>
-            <p className="text-green-700 font-semibold">
-              {lang === 'ar' ? 'تم استلام الدفعة:' : 'Payment Received:'} {formatCurrency(payment.amount)}
+        {/* ══ CLIENT INFO / DATE / METHOD ══ */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr' }}>
+          {/* العميل */}
+          <div style={{ padding:'20px 36px', borderBottom:'1px solid #eee', borderInlineEnd:'1px solid #eee' }}>
+            <p style={{ fontSize:10, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1, marginBottom:6 }}>
+              {t('فاتورة إلى', 'Bill To')}
             </p>
+            <p style={{ fontSize:16, fontWeight:800, color:'#1a1a2e', margin:0 }}>
+              {isAr ? payment.clientId?.nameAr : payment.clientId?.nameEn}
+            </p>
+            <div style={{ marginTop:6, display:'flex', flexDirection:'column', gap:3 }}>
+              {payment.clientId?.code && (
+                <p style={{ fontSize:12, color:'#666', margin:0 }}>
+                  {t('الكود:', 'Code:')} {payment.clientId.code}
+                </p>
+              )}
+              {payment.clientId?.phone && (
+                <p style={{ fontSize:12, color:'#666', margin:0 }}>
+                  {t('الهاتف:', 'Phone:')} {payment.clientId.phone}
+                </p>
+              )}
+              {payment.clientId?.email && (
+                <p style={{ fontSize:12, color:'#666', margin:0 }}>
+                  {t('البريد:', 'Email:')} {payment.clientId.email}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* التاريخ وطريقة الدفع */}
+          <div style={{ padding:'20px 36px', borderBottom:'1px solid #eee', display:'flex', flexDirection:'column', gap:12 }}>
+            <InfoRow label={t('تاريخ الدفع','Payment Date')} value={formatDate(payment.paymentDate)} align={isAr?'left':'right'} />
+            <InfoRow label={t('طريقة الدفع','Payment Method')} value={getMethodLabel(payment.method)} align={isAr?'left':'right'} />
+            {/* رقم الشيك يظهر بس لو كاش شيك */}
+            {payment.method === 'CHEQUE' && payment.chequeNo && (
+              <InfoRow label={t('رقم الشيك','Cheque #')} value={payment.chequeNo} align={isAr?'left':'right'} />
+            )}
+            {/* رقم التحويل يظهر بس لو تحويل */}
+            {payment.method === 'TRANSFER' && payment.transferRef && (
+              <InfoRow label={t('رقم التحويل','Transfer #')} value={payment.transferRef} align={isAr?'left':'right'} />
+            )}
           </div>
         </div>
 
-        {/* Notes Section */}
+        {/* ══ PROJECT BAR ══ */}
+        <div style={{ background:LIGHT_BLUE, padding:'14px 36px', borderBottom:'1px solid #dde4f0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <div>
+            <p style={{ fontSize:10, fontWeight:700, color:BLUE, textTransform:'uppercase', letterSpacing:1, marginBottom:3 }}>
+              {t('المشروع','Project')}
+            </p>
+            <p style={{ fontSize:15, fontWeight:800, color:BLUE, margin:0 }}>
+              {isAr ? payment.projectId?.nameAr : payment.projectId?.nameEn}
+            </p>
+            {payment.projectId?.code && (
+              <p style={{ fontSize:12, color:'#555', marginTop:2 }}>
+                {t('الكود:','Code:')} {payment.projectId.code}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ══ TABLE ══ */}
+        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <thead>
+            <tr style={{ background:BLUE }}>
+              <th style={{ padding:'12px 36px', textAlign:isAr?'right':'left', fontSize:11, fontWeight:700, color:'#fff', textTransform:'uppercase', letterSpacing:1 }}>
+                {t('الوصف','Description')}
+              </th>
+              <th style={{ padding:'12px 36px', textAlign:isAr?'left':'right', fontSize:11, fontWeight:700, color:'#fff', textTransform:'uppercase', letterSpacing:1 }}>
+                {t('المبلغ','Amount')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* الرصيد السابق */}
+            <tr style={{ borderBottom:'1px solid #eee' }}>
+              <td style={{ padding:'14px 36px', fontSize:13, color:'#555' }}>
+                {t('الرصيد السابق','Previous Balance')}
+              </td>
+              <td style={{ padding:'14px 36px', textAlign:isAr?'left':'right', fontSize:14, fontWeight:600, color:'#555' }}>
+                {formatCurrency(previousBalance)}
+              </td>
+            </tr>
+            {/* المبلغ المدفوع */}
+            <tr style={{ background:LIGHT_GREEN, borderBottom:'2px solid #bbf7d0' }}>
+              <td style={{ padding:'14px 36px', fontSize:14, fontWeight:700, color:'#166534' }}>
+                {t('المبلغ المدفوع','Amount Paid')}
+              </td>
+              <td style={{ padding:'14px 36px', textAlign:isAr?'left':'right', fontSize:22, fontWeight:900, color:'#16a34a' }}>
+                - {formatCurrency(payment.amount)}
+              </td>
+            </tr>
+            {/* المبلغ المتبقي */}
+            <tr style={{ background:'#fafafa' }}>
+              <td style={{ padding:'14px 36px', fontSize:13, fontWeight:700, color:'#333' }}>
+                {t('المبلغ المتبقي','Remaining Balance')}
+              </td>
+              <td style={{ padding:'14px 36px', textAlign:isAr?'left':'right', fontSize:18, fontWeight:900, color:BLUE }}>
+                {formatCurrency(remainingBalance)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* ══ PAYMENT CONFIRMATION ══ */}
+        <div style={{ background:'#16a34a', padding:'12px 36px', display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:24, height:24, background:'#fff', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <span style={{ color:'#16a34a', fontWeight:900, fontSize:16 }}>✓</span>
+          </div>
+          <p style={{ color:'#fff', fontWeight:700, fontSize:14, margin:0 }}>
+            {t('تم استلام الدفعة:','Payment Received:')}{' '}
+            <span style={{ fontSize:16 }}>{formatCurrency(payment.amount)}</span>
+          </p>
+        </div>
+
+        {/* ══ NOTES (dynamic) ══ */}
         {payment.notes && (
-          <div className="px-8 py-6 border-b">
-            <p className="text-sm text-gray-600 mb-2 font-semibold">
-              {lang === 'ar' ? 'ملاحظات:' : 'Notes:'}
+          <div style={{ padding:'18px 36px', borderBottom:'1px solid #eee', background:'#fafafa' }}>
+            <p style={{ fontSize:11, fontWeight:700, color:BLUE, textTransform:'uppercase', letterSpacing:1, marginBottom:6 }}>
+              {t('ملاحظات','Notes')}
             </p>
-            <p className="text-gray-700">{payment.notes}</p>
+            <p style={{ fontSize:13, color:'#444', lineHeight:1.6, margin:0 }}>{payment.notes}</p>
           </div>
         )}
 
-        {/* Signature Section */}
-        <div className="px-8 py-8">
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-sm text-gray-600 mb-12">
-                {lang === 'ar' ? 'التوقيع المصرح' : 'Authorized Signature'}
-              </p>
-              <div className="border-t border-gray-300"></div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600 mb-12">
-                {lang === 'ar' ? 'توقيع العميل' : 'Client Signature'}
-              </p>
-              <div className="border-t border-gray-300"></div>
-            </div>
+        {/* ══ SIGNATURES ══ */}
+        <div style={{ padding:'28px 36px 24px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:48 }}>
+          <div>
+            <p style={{ fontSize:12, color:'#666', marginBottom:48 }}>{t('التوقيع المصرح','Authorized Signature')}</p>
+            <div style={{ borderTop:'1.5px solid #bbb' }} />
+            <p style={{ fontSize:11, color:'#888', marginTop:6 }}>{payment.createdBy?.name || ''}</p>
+          </div>
+          <div style={{ textAlign:isAr?'left':'right' }}>
+            <p style={{ fontSize:12, color:'#666', marginBottom:48 }}>{t('توقيع العميل','Client Signature')}</p>
+            <div style={{ borderTop:'1.5px solid #bbb' }} />
+            <p style={{ fontSize:11, color:'#888', marginTop:6 }}>
+              {isAr ? payment.clientId?.nameAr : payment.clientId?.nameEn}
+            </p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-6 bg-gray-50 border-t text-center text-xs text-gray-600 print:text-gray-500">
-          <p className="mb-1">
-            {lang === 'ar' ? 'شكراً على دفعتك!' : 'Thank you for your payment!'}
-          </p>
-          <p>
-            {lang === 'ar' 
-              ? 'هذا إيصال من إنتاج الكمبيوتر ولا يتطلب توقيعاً فعلياً'
-              : 'This is a computer-generated receipt and does not require a physical signature.'}
+        {/* ══ FOOTER TEXT ══ */}
+        <div style={{ padding:'12px 36px', borderTop:'1px solid #eee', textAlign:'center', background:'#fafafa' }}>
+          <p style={{ fontSize:12, fontWeight:700, color:BLUE, marginBottom:4 }}>{t('شكراً على دفعتك!','Thank you for your payment!')}</p>
+          <p style={{ fontSize:11, color:'#888', margin:0 }}>
+            {t(
+              'هذا إيصال من إنتاج الكمبيوتر ولا يتطلب توقيعاً فعلياً',
+              'This is a computer-generated receipt and does not require a physical signature.'
+            )}
           </p>
         </div>
+
+        {/* ══ FOOTER BAR ══ */}
+        <FooterBar />
       </div>
     </div>
   );

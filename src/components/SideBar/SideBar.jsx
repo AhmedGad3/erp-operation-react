@@ -74,49 +74,68 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
   ];
 
   const NavItems = () => (
-    <>
-      {menuSections.map((section) => {
+    <nav className="space-y-1">
+      {menuSections.map((section, idx) => {
         const SectionIcon = section.icon;
         const isExpanded = expandedSections[section.id];
 
+        /* ── standalone item (Dashboard) ── */
         if (!section.items) {
           const isActive = section.exact
             ? location.pathname === section.path
             : isActivePath(section.path);
           return (
-            <div key={section.id} className="mb-2">
+            <div key={section.id}>
               <button
                 onClick={() => handleNavigate(section.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
-                    : "text-slate-700 hover:bg-white hover:shadow-md"
+                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md"
+                    : "text-slate-800 hover:bg-white hover:shadow-sm"
                 }`}
               >
-                <SectionIcon size={20} className={isActive ? "text-white" : "text-slate-600"} />
-                <span className="text-sm">{section.label}</span>
+                <SectionIcon size={19} className={isActive ? "text-white" : "text-blue-600"} />
+                <span className="text-sm font-semibold">{section.label}</span>
               </button>
+
+              {/* divider after dashboard */}
+              <div className="my-2 border-t border-slate-200" />
             </div>
           );
         }
 
+        /* ── collapsible section ── */
+        const hasActiveChild = section.items.some((i) => isActivePath(i.path));
+
         return (
-          <div key={section.id} className="mb-2">
+          <div key={section.id}>
+            {/* Section header */}
             <button
               onClick={() => toggleSection(section.id)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 hover:bg-white hover:shadow-md transition-all duration-200 font-medium"
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                hasActiveChild && !isExpanded
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-slate-800 hover:bg-white hover:shadow-sm"
+              }`}
             >
               <div className="flex items-center gap-3">
-                <SectionIcon size={20} className="text-slate-600" />
-                <span className="text-sm">{section.label}</span>
+                {/* colored accent bar */}
+                <span className={`w-1 h-5 rounded-full ${hasActiveChild ? "bg-blue-500" : "bg-slate-300"}`} />
+                <SectionIcon size={19} className={hasActiveChild ? "text-blue-600" : "text-slate-500"} />
+                <span className="text-sm font-bold tracking-wide">{section.label}</span>
               </div>
               {isExpanded
-                ? <ChevronUp size={16} className="text-slate-400" />
-                : <ChevronDown size={16} className="text-slate-400" />}
+                ? <ChevronUp   size={15} className="text-slate-400 flex-shrink-0" />
+                : <ChevronDown size={15} className="text-slate-400 flex-shrink-0" />}
             </button>
 
+            {/* Sub-items */}
             {isExpanded && (
-              <ul className="mt-2 space-y-1">
+              <ul
+                className={`mt-1 mb-1 space-y-0.5 border-l-2 border-slate-200 ${
+                  lang === "ar" ? "mr-5 pr-2" : "ml-5 pl-2"
+                }`}
+              >
                 {section.items.map((item) => {
                   const ItemIcon = item.icon;
                   const isActive = isActivePath(item.path);
@@ -124,26 +143,29 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
                     <li key={item.id}>
                       <button
                         onClick={() => handleNavigate(item.path)}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
-                          lang === "ar" ? "pr-12" : "pl-12"
-                        } ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 text-sm ${
                           isActive
-                            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
-                            : "text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm"
+                            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md font-semibold"
+                            : "text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm font-medium"
                         }`}
                       >
-                        <ItemIcon size={18} className={isActive ? "text-white" : ""} />
-                        <span className="font-medium">{item.label}</span>
+                        <ItemIcon size={15} className={isActive ? "text-white" : "text-slate-400"} />
+                        <span>{item.label}</span>
                       </button>
                     </li>
                   );
                 })}
               </ul>
             )}
+
+            {/* thin divider between sections */}
+            {idx < menuSections.length - 1 && (
+              <div className="my-2 border-t border-dashed border-slate-200" />
+            )}
           </div>
         );
       })}
-    </>
+    </nav>
   );
 
   return (
@@ -188,7 +210,6 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
       {/* ══════════════════════════════════════════
           DESKTOP: fixed side panel (lg+)
       ══════════════════════════════════════════ */}
-      {/* Desktop toggle button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed top-1/2 -translate-y-1/2 hidden lg:flex z-50 bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-xl p-1 border-y border-blue-500 hover:from-blue-700 hover:to-blue-800 transition-all duration-300 ${

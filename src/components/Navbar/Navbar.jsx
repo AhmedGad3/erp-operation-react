@@ -3,6 +3,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { LanguageContext } from "../../context/LanguageContext";
 import { Globe, ChevronDown, LogOut, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import logo from "../../assets/megabuild1.svg";
 
 export default function Navbar({ isSidebarOpen, onToggleSidebar }) {
   const { lang, setLang } = useContext(LanguageContext);
@@ -40,26 +41,16 @@ export default function Navbar({ isSidebarOpen, onToggleSidebar }) {
               <Menu size={20} className="text-gray-700" />
             </button>
 
-            {/* Logo */}
+            
             <div
               onClick={() => navigate("/")}
               className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group"
             >
-              <svg
-                className="w-8 h-8 sm:w-10 sm:h-10 transition-transform group-hover:scale-105 flex-shrink-0"
-                viewBox="0 0 26 26"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <rect x="4"  y="8"  width="6" height="14" rx="1" className="fill-blue-600" />
-                <rect x="11" y="4"  width="6" height="18" rx="1" className="fill-blue-500" />
-                <rect x="18" y="10" width="4" height="12" rx="1" className="fill-blue-400" />
-                <rect x="6"  y="10" width="2" height="2"  fill="white" />
-                <rect x="6"  y="14" width="2" height="2"  fill="white" />
-                <rect x="13" y="7"  width="2" height="2"  fill="white" />
-                <rect x="13" y="11" width="2" height="2"  fill="white" />
-                <rect x="13" y="15" width="2" height="2"  fill="white" />
-              </svg>
+             <img
+  src={logo}
+  alt="MegaBuild Logo"
+  className="w-8 h-8 sm:w-10 sm:h-10 transition-transform group-hover:scale-105 flex-shrink-0"
+/>
               <h1 className="text-base sm:text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
                 <span className="hidden sm:inline">
                   {lang === "ar" ? "نظام إدارة الشركات" : "ERP Mega Build"}
@@ -69,7 +60,7 @@ export default function Navbar({ isSidebarOpen, onToggleSidebar }) {
             </div>
           </div>
 
-          {/* ── RIGHT: User menu + Language ── */}
+         
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             {!user ? (
               <button

@@ -1,49 +1,80 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Receipt,
-  Download,
-} from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toast } from 'react-toastify';
+import megabuildLogo from '../../assets/megabuild1.svg';
 
 const EXPENSE_CATEGORIES = {
-  RENT: { labelAr: 'إيجارات', labelEn: 'Rent' },
-  UTILITIES: { labelAr: 'مرافق', labelEn: 'Utilities' },
-  MAINTENANCE: { labelAr: 'صيانة', labelEn: 'Maintenance' },
-  OFFICE_SUPPLIES: { labelAr: 'أدوات مكتبية', labelEn: 'Office Supplies' },
-  HOSPITALITY: { labelAr: 'ضيافة', labelEn: 'Hospitality' },
-  COMMUNICATION: { labelAr: 'اتصالات', labelEn: 'Communication' },
-  TRANSPORTATION: { labelAr: 'مواصلات', labelEn: 'Transportation' },
-  PROFESSIONAL_FEES: { labelAr: 'رسوم مهنية', labelEn: 'Professional Fees' },
-  INSURANCE: { labelAr: 'تأمينات', labelEn: 'Insurance' },
-  MARKETING: { labelAr: 'تسويق', labelEn: 'Marketing' },
-  SALARIES: { labelAr: 'رواتب', labelEn: 'Salaries' },
-  OTHERS: { labelAr: 'أخرى', labelEn: 'Others' },
+  RENT:              { labelAr: 'إيجارات',     labelEn: 'Rent' },
+  UTILITIES:         { labelAr: 'مرافق',        labelEn: 'Utilities' },
+  MAINTENANCE:       { labelAr: 'صيانة',        labelEn: 'Maintenance' },
+  OFFICE_SUPPLIES:   { labelAr: 'أدوات مكتبية', labelEn: 'Office Supplies' },
+  HOSPITALITY:       { labelAr: 'ضيافة',        labelEn: 'Hospitality' },
+  COMMUNICATION:     { labelAr: 'اتصالات',      labelEn: 'Communication' },
+  TRANSPORTATION:    { labelAr: 'مواصلات',      labelEn: 'Transportation' },
+  PROFESSIONAL_FEES: { labelAr: 'رسوم مهنية',   labelEn: 'Professional Fees' },
+  INSURANCE:         { labelAr: 'تأمينات',      labelEn: 'Insurance' },
+  MARKETING:         { labelAr: 'تسويق',        labelEn: 'Marketing' },
+  SALARIES:          { labelAr: 'رواتب',        labelEn: 'Salaries' },
+  OTHERS:            { labelAr: 'أخرى',         labelEn: 'Others' },
 };
 
 const PAYMENT_METHODS = {
-  CASH: { labelAr: 'نقد', labelEn: 'Cash' },
+  CASH:     { labelAr: 'نقد',         labelEn: 'Cash' },
   TRANSFER: { labelAr: 'تحويل بنكي', labelEn: 'Bank Transfer' },
-  CHEQUE: { labelAr: 'شيك', labelEn: 'Cheque' },
+  CHEQUE:   { labelAr: 'شيك',        labelEn: 'Cheque' },
 };
 
+/* ── Brand colors ── */
+const RED        = '#C41E3A';
+const BLUE       = '#003764';
+const LIGHT_RED  = '#FFF5F6';
+const LIGHT_BLUE = '#F0F4FA';
+
+const MegaBuildLogo = ({ size = 56 }) => (
+  <img
+    src={megabuildLogo}
+    alt="Mega Build Logo"
+    style={{ width: size, height: size, objectFit: 'contain' }}
+  />
+);
+
+/* ── Footer bar ── */
+const FooterBar = () => (
+  <div style={{ display: 'flex', height: 28 }}>
+    <div style={{ width: '38%', background: BLUE }} />
+    <div style={{ width: '2%',  background: '#fff' }} />
+    <div style={{ flex: 1,      background: RED }} />
+  </div>
+);
+
+/* ── InfoRow ── */
+const InfoRow = ({ label, value, align = 'left' }) => (
+  <div style={{ textAlign: align }}>
+    <p style={{ fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+      {label}
+    </p>
+    <p style={{ fontSize: 14, fontWeight: 700, color: '#1a1a2e', margin: 0 }}>{value}</p>
+  </div>
+);
+
+/* ════════════════════════════════════════ */
 const ExpenseDetails = () => {
-  const { id } = useParams();
+  const { id }   = useParams();
   const navigate = useNavigate();
   const { lang } = useContext(LanguageContext);
+  const isAr     = lang === 'ar';
+  const t        = (ar, en) => isAr ? ar : en;
 
   const [expense, setExpense] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchExpense();
-  }, [id]);
+  useEffect(() => { fetchExpense(); }, [id]);
 
   const fetchExpense = async () => {
     try {
@@ -59,349 +90,313 @@ const ExpenseDetails = () => {
 
   const handlePDF = async () => {
     try {
-      const element = document.getElementById('expense-receipt-container');
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
+      const element   = document.getElementById('expense-receipt-container');
+      const canvas    = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
+      const imgData   = canvas.toDataURL('image/png');
+      const pdf       = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth  = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 10;
-
+      const imgWidth   = pageWidth - 20;
+      const imgHeight  = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft   = imgHeight;
+      let position     = 10;
       pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
       heightLeft -= pageHeight - 20;
-
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-      toast.success(lang === 'ar' ? 'تم تحميل PDF بنجاح' : 'PDF downloaded successfully');
+      toast.success(t('تم تحميل PDF بنجاح', 'PDF downloaded successfully'));
       pdf.save(`expense-receipt-${expense.expenseNo}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error(lang === 'ar' ? 'خطأ في إنشاء PDF' : 'Error generating PDF');
+      toast.error(t('خطأ في إنشاء PDF', 'Error generating PDF'));
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  const formatDate = (d) =>
+    d ? new Date(d).toLocaleDateString(isAr ? 'ar-EG' : 'en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    }) : '—';
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
-      style: 'currency',
-      currency: 'EGP',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat(isAr ? 'ar-EG' : 'en-US', {
+      style: 'currency', currency: 'EGP', minimumFractionDigits: 0
+    }).format(amount ?? 0);
 
-  const getCategoryLabel = (category) => {
-    return EXPENSE_CATEGORIES[category]?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || category;
-  };
+  const getCategoryLabel = (cat) =>
+    EXPENSE_CATEGORIES[cat]?.[isAr ? 'labelAr' : 'labelEn'] || cat || '—';
 
-  const getMethodLabel = (method) => {
-    return PAYMENT_METHODS[method]?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || method;
-  };
+  const getMethodLabel = (m) =>
+    PAYMENT_METHODS[m]?.[isAr ? 'labelAr' : 'labelEn'] || m || '—';
 
-  if (loading) {
-    return <FullPageLoader text={lang === 'ar' ? 'جاري تحميل الإيصال...' : 'Loading receipt...'} />;
-  }
+  if (loading) return <FullPageLoader text={t('جاري تحميل الإيصال...', 'Loading receipt...')} />;
 
-  if (!expense) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          <button
-            onClick={() => navigate('/general-expenses')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            {lang === 'ar' ? 'رجوع' : 'Back'}
-          </button>
-          <div className="bg-white rounded-lg p-8 text-center shadow-sm">
-            <p className="text-gray-500">
-              {lang === 'ar' ? 'المصروف غير موجود' : 'Expense not found'}
-            </p>
-          </div>
+  if (!expense) return (
+    <div style={{ minHeight: '100vh', background: '#F3F4F6', padding: '32px 16px', fontFamily: 'Segoe UI,Tahoma,Arial,sans-serif' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto' }}>
+        <button onClick={() => navigate('/general-expenses')}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, color: BLUE, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14, marginBottom: 16 }}>
+          <ArrowLeft size={16} /> {t('رجوع', 'Back')}
+        </button>
+        <div style={{ background: '#fff', borderRadius: 8, padding: 40, textAlign: 'center', color: '#888' }}>
+          {t('المصروف غير موجود', 'Expense not found')}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 print:bg-white print:p-0 print:py-0">
-      {/* Top Action Buttons */}
-      <div className="max-w-3xl mx-auto mb-6 print:hidden flex gap-3">
-        <button
-          onClick={() => navigate('/finance/general-expenses')}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition font-semibold"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {lang === 'ar' ? 'رجوع' : 'Back'}
+    <div style={{
+      minHeight: '100vh',
+      background: '#F3F4F6',
+      padding: '32px 16px',
+      fontFamily: isAr ? 'Tahoma,Arial,sans-serif' : 'Segoe UI,Arial,sans-serif',
+      direction: isAr ? 'rtl' : 'ltr',
+    }}>
+
+      {/* ── Buttons ── */}
+      <div className="print:hidden" style={{ maxWidth: 760, margin: '0 auto 24px', display: 'flex', gap: 12 }}>
+        <button onClick={() => navigate('/finance/general-expenses')}
+          style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 20px', background:BLUE, color:'#fff', border:'none', borderRadius:8, fontWeight:700, cursor:'pointer', fontSize:14 }}>
+          <ArrowLeft size={16} /> {t('رجوع', 'Back')}
         </button>
-        <button
-          onClick={handlePDF}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold"
-        >
-          <Download className="w-4 h-4" />
-          {lang === 'ar' ? 'تحميل PDF' : 'Download PDF'}
+        <button onClick={handlePDF}
+          style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 20px', background:RED, color:'#fff', border:'none', borderRadius:8, fontWeight:700, cursor:'pointer', fontSize:14 }}>
+          <Download size={16} /> {t('تحميل PDF', 'Download PDF')}
         </button>
       </div>
 
-      {/* Receipt Container */}
-      <div className="max-w-3xl mx-auto bg-white shadow-lg print:shadow-none rounded-lg print:rounded-none overflow-hidden" id="expense-receipt-container">
-        {/* Header Section */}
-        <div className="p-8 border-b print:border-b">
-          <div className="flex items-start justify-between mb-8">
-            {/* Company Info */}
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <Receipt className="w-8 h-8 text-emerald-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {lang === 'ar' ? 'ميجا بيلد للإنشاءات' : 'Mega Build Construction'}
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  {lang === 'ar' ? '123 شارع الأعمال، المدينة' : '123 Business Street, City State 12345'}
-                </p>
-                <p className="text-sm text-gray-600">
-                  contact@MegaBuild.com | +1 (555) 123-4567
-                </p>
-              </div>
-            </div>
+      {/* ══════════ RECEIPT ══════════ */}
+      <div id="expense-receipt-container" style={{
+        maxWidth: 760, margin: '0 auto', background: '#fff',
+        borderRadius: 12, overflow: 'hidden',
+        boxShadow: '0 4px 32px rgba(0,0,0,0.10)',
+      }}>
 
-            {/* Receipt Title */}
-            <div className="text-right">
-              <h2 className="text-2xl font-bold text-emerald-600 mb-1">
-                {lang === 'ar' ? 'إيصال مصروف' : 'Expense Receipt'}
-              </h2>
-              <p className="text-sm text-gray-600">
-                {lang === 'ar' ? 'رقم الإيصال:' : 'Receipt #:'} EXP-{expense.expenseNo}
-              </p>
-              <p className="text-sm text-gray-600">
-                {lang === 'ar' ? 'بواسطة:' : 'By:'} {expense.createdBy?.email}
+        {/* ══ HEADER: لوجو يسار — MEGA BUILD + كونتاكت يمين ══ */}
+        <div style={{ padding: '24px 36px 18px', borderBottom: '1px solid #eee' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+
+            {/* يسار: اللوجو فقط */}
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start' }}>
+              <MegaBuildLogo size={68} />
+              <p style={{ fontSize:8, color:'#aaa', marginTop:3, letterSpacing:0.8 }}>
+                {t('نبني القيمة', 'We Build Value')}
               </p>
             </div>
-          </div>
 
-          {/* Expense Details */}
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-xs text-gray-500 uppercase font-semibold mb-2">
-                {lang === 'ar' ? 'المستفيد' : 'Paid To'}
-              </p>
-              {expense.vendorName ? (
-                <>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    {expense.vendorName}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {lang === 'ar' ? 'مورد/جهة خارجية' : 'Vendor/External Party'}
-                  </p>
-                </>
-              ) : (
-                <p className="text-gray-600">
-                  {lang === 'ar' ? 'غير محدد' : 'Not specified'}
-                </p>
-              )}
-            </div>
+            {/* يمين: MEGA BUILD + بيانات + badge */}
+            <div style={{ display:'flex', flexDirection:'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap:5 }}>
 
-            <div className="text-right">
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                  {lang === 'ar' ? 'تاريخ المصروف' : 'Expense Date'}
-                </p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {formatDate(expense.expenseDate)}
-                </p>
+              {/* اسم الشركة */}
+              <div style={{ display:'flex', alignItems:'baseline', gap:7 }}>
+                <span style={{ fontSize:26, fontWeight:900, color:RED,  letterSpacing:2, lineHeight:1 }}>MEGA</span>
+                <span style={{ fontSize:26, fontWeight:900, color:BLUE, letterSpacing:2, lineHeight:1 }}>BUILD</span>
+              </div>
+              <p style={{ fontSize:10, color:'#999', fontStyle:'italic', margin:0 }}>We Build Value</p>
+
+              {/* بيانات الاتصال */}
+              <div style={{ display:'flex', flexDirection:'column', gap:2, alignItems: isAr ? 'flex-start' : 'flex-end', marginTop:4 }}>
+                {[
+                  '23 RD Of July St, Suez – Suez P.O. Box: 43511',
+                  'C.R: 59034    T.C: 454-990-006',
+                  'Tel: 062 3456452    Mob: 01111696211',
+                  'Meegabuild@gmail.com',
+                  'www.Megbuild.com',
+                ].map((line, i) => (
+                  <p key={i} style={{ fontSize:10.5, color:'#444', margin:0 }}>{line}</p>
+                ))}
               </div>
 
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                  {lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'}
-                </p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {getMethodLabel(expense.paymentMethod)}
-                </p>
-              </div>
-
-              {expense.referenceNo && (
-                <div className="mt-4">
-                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                    {lang === 'ar' ? 'رقم المرجع' : 'Reference #'}
-                  </p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {expense.referenceNo}
-                  </p>
+              {/* Receipt badge + رقم */}
+              <div style={{ marginTop:8, display:'flex', flexDirection:'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap:4 }}>
+                <div style={{ background:RED, color:'#fff', padding:'5px 16px', borderRadius:5 }}>
+                  <span style={{ fontSize:14, fontWeight:800, letterSpacing:1 }}>
+                    {t('إيصال مصروف', 'EXPENSE RECEIPT')}
+                  </span>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Expense Category Info */}
-        <div className="px-8 py-4 bg-gray-50 border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                {lang === 'ar' ? 'الفئة' : 'Category'}
-              </p>
-              <h3 className="text-lg font-bold text-gray-900">
-                {getCategoryLabel(expense.mainCategory)}
-              </h3>
-              {expense.subCategory && (
-                <p className="text-sm text-gray-600 mt-1">
-                  {expense.subCategory}
+                <p style={{ fontSize:12, color:'#555', margin:0 }}>
+                  <span style={{ fontWeight:700, color:BLUE }}>{t('رقم:', 'No:')}</span>{' '}
+                  EXP-{expense.expenseNo}
                 </p>
-              )}
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                {lang === 'ar' ? 'العنوان' : 'Title'}
-              </p>
-              <h3 className="text-lg font-bold text-gray-900">
-                {expense.title}
-              </h3>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Details Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-100 border-b">
-                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-700 uppercase">
-                  {lang === 'ar' ? 'الوصف' : 'Description'}
-                </th>
-                <th className="px-8 py-4 text-right text-xs font-semibold text-gray-700 uppercase">
-                  {lang === 'ar' ? 'المبلغ' : 'Amount'}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b bg-red-50">
-                <td className="px-8 py-4 text-gray-700 font-semibold">
-                  {expense.title}
-                </td>
-                <td className="px-8 py-4 text-right text-red-600 font-bold text-xl">
-                  {formatCurrency(expense.amount)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Payment Confirmation */}
-        <div className="px-8 py-6 bg-red-50 border-b">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-bold">-</span>
-            </div>
-            <p className="text-red-700 font-semibold">
-              {lang === 'ar' ? 'تم صرف المبلغ:' : 'Amount Paid:'} {formatCurrency(expense.amount)}
-            </p>
-          </div>
-        </div>
-
-        {/* Notes Section */}
-        {expense.notes && (
-          <div className="px-8 py-6 border-b">
-            <p className="text-sm text-gray-600 mb-2 font-semibold">
-              {lang === 'ar' ? 'ملاحظات:' : 'Notes:'}
-            </p>
-            <p className="text-gray-700">{expense.notes}</p>
-          </div>
-        )}
-
-        {/* Metadata Section */}
-        <div className="px-8 py-6 border-b bg-gray-50">
-          <div className="grid grid-cols-2 gap-6 text-sm">
-            <div>
-              <p className="text-gray-600 mb-1">
-                {lang === 'ar' ? 'تاريخ الإنشاء:' : 'Created At:'}
-              </p>
-              <p className="font-semibold text-gray-900">
-                {formatDate(expense.createdAt)}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-gray-600 mb-1">
-                {lang === 'ar' ? 'آخر تحديث:' : 'Last Updated:'}
-              </p>
-              <p className="font-semibold text-gray-900">
-                {formatDate(expense.updatedAt)}
-              </p>
-            </div>
-            {expense.updatedBy && (
-              <>
-                <div className="col-span-2">
-                  <p className="text-gray-600 mb-1">
-                    {lang === 'ar' ? 'تم التحديث بواسطة:' : 'Updated By:'}
+                {expense.createdBy?.email && (
+                  <p style={{ fontSize:12, color:'#555', margin:0 }}>
+                    <span style={{ fontWeight:700, color:BLUE }}>{t('بواسطة:', 'By:')}</span>{' '}
+                    {expense.createdBy.email}
                   </p>
-                  <p className="font-semibold text-gray-900">
-                    {expense.updatedBy.name} ({expense.updatedBy.email})
-                  </p>
-                </div>
-              </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Divider ── */}
+        <div style={{ height:3, background:RED }} />
+        <div style={{ height:1, background:'#eee' }} />
+
+        {/* ══ PAID TO / DATE / METHOD ══ */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr' }}>
+          <div style={{ padding:'20px 36px', borderBottom:'1px solid #eee', borderInlineEnd:'1px solid #eee' }}>
+            <p style={{ fontSize:10, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1, marginBottom:6 }}>
+              {t('المستفيد', 'Paid To')}
+            </p>
+            <p style={{ fontSize:16, fontWeight:800, color:'#1a1a2e', margin:0 }}>
+              {expense.vendorName || t('غير محدد', 'Not specified')}
+            </p>
+            {expense.vendorName && (
+              <p style={{ fontSize:12, color:'#777', marginTop:4, margin:0 }}>
+                {t('مورد / جهة خارجية', 'Vendor / External Party')}
+              </p>
+            )}
+          </div>
+          <div style={{ padding:'20px 36px', borderBottom:'1px solid #eee', display:'flex', flexDirection:'column', gap:12 }}>
+            <InfoRow label={t('تاريخ المصروف','Expense Date')} value={formatDate(expense.expenseDate)} align={isAr?'left':'right'} />
+            <InfoRow label={t('طريقة الدفع','Payment Method')} value={getMethodLabel(expense.paymentMethod)} align={isAr?'left':'right'} />
+            {/* رقم المرجع يظهر بس لو موجود */}
+            {expense.referenceNo && (
+              <InfoRow label={t('رقم المرجع','Reference #')} value={expense.referenceNo} align={isAr?'left':'right'} />
             )}
           </div>
         </div>
 
-        {/* Signature Section */}
-        <div className="px-8 py-8">
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-sm text-gray-600 mb-12">
-                {lang === 'ar' ? 'التوقيع المصرح' : 'Authorized Signature'}
-              </p>
-              <div className="border-t border-gray-300"></div>
-              <p className="text-xs text-gray-500 mt-2">
-                {expense.createdBy?.name}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600 mb-12">
-                {lang === 'ar' ? 'توقيع المستلم' : 'Receiver Signature'}
-              </p>
-              <div className="border-t border-gray-300"></div>
-              <p className="text-xs text-gray-500 mt-2">
-                {expense.vendorName || (lang === 'ar' ? 'غير محدد' : 'Not specified')}
-              </p>
-            </div>
+        {/* ══ CATEGORY BAR ══ */}
+        <div style={{ background:LIGHT_BLUE, padding:'14px 36px', borderBottom:'1px solid #dde4f0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <div>
+            <p style={{ fontSize:10, fontWeight:700, color:BLUE, textTransform:'uppercase', letterSpacing:1, marginBottom:3 }}>
+              {t('الفئة','Category')}
+            </p>
+            <p style={{ fontSize:15, fontWeight:800, color:BLUE, margin:0 }}>
+              {getCategoryLabel(expense.mainCategory)}
+            </p>
+            {/* sub-category يظهر بس لو موجود */}
+            {expense.subCategory && (
+              <p style={{ fontSize:12, color:'#555', marginTop:2 }}>{expense.subCategory}</p>
+            )}
+          </div>
+          <div style={{ textAlign: isAr ? 'left' : 'right' }}>
+            <p style={{ fontSize:10, fontWeight:700, color:BLUE, textTransform:'uppercase', letterSpacing:1, marginBottom:3 }}>
+              {t('العنوان','Title')}
+            </p>
+            <p style={{ fontSize:15, fontWeight:800, color:BLUE, margin:0 }}>{expense.title}</p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-6 bg-gray-50 border-t text-center text-xs text-gray-600 print:text-gray-500">
-          <p className="mb-1">
-            {lang === 'ar' ? 'شكراً لكم!' : 'Thank you!'}
-          </p>
-          <p>
-            {lang === 'ar' 
-              ? 'هذا إيصال من إنتاج الكمبيوتر ولا يتطلب توقيعاً فعلياً'
-              : 'This is a computer-generated receipt and does not require a physical signature.'}
+        {/* ══ TABLE ══ */}
+        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <thead>
+            <tr style={{ background:BLUE }}>
+              <th style={{ padding:'12px 36px', textAlign:isAr?'right':'left', fontSize:11, fontWeight:700, color:'#fff', textTransform:'uppercase', letterSpacing:1 }}>
+                {t('الوصف','Description')}
+              </th>
+              <th style={{ padding:'12px 36px', textAlign:isAr?'left':'right', fontSize:11, fontWeight:700, color:'#fff', textTransform:'uppercase', letterSpacing:1 }}>
+                {t('المبلغ','Amount')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={{ background:LIGHT_RED, borderBottom:'2px solid #f5c0c8' }}>
+              <td style={{ padding:'16px 36px', fontSize:14, fontWeight:600, color:'#333' }}>
+                {expense.title}
+              </td>
+              <td style={{ padding:'16px 36px', textAlign:isAr?'left':'right', fontSize:22, fontWeight:900, color:RED }}>
+                {formatCurrency(expense.amount)}
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style={{ background:'#fafafa' }}>
+              <td style={{ padding:'14px 36px', fontSize:13, fontWeight:700, color:'#555' }}>
+                {t('إجمالي المصروف','Total Expense')}
+              </td>
+              <td style={{ padding:'14px 36px', textAlign:isAr?'left':'right', fontSize:18, fontWeight:900, color:RED }}>
+                {formatCurrency(expense.amount)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        {/* ══ PAYMENT CONFIRMATION ══ */}
+        <div style={{ background:RED, padding:'12px 36px', display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:24, height:24, background:'#fff', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <span style={{ color:RED, fontWeight:900, fontSize:16 }}>✓</span>
+          </div>
+          <p style={{ color:'#fff', fontWeight:700, fontSize:14, margin:0 }}>
+            {t('تم صرف المبلغ:','Amount Paid:')}{' '}
+            <span style={{ fontSize:16 }}>{formatCurrency(expense.amount)}</span>
           </p>
         </div>
+
+        {/* ══ NOTES (dynamic) ══ */}
+        {expense.notes && (
+          <div style={{ padding:'18px 36px', borderBottom:'1px solid #eee', background:'#fafafa' }}>
+            <p style={{ fontSize:11, fontWeight:700, color:BLUE, textTransform:'uppercase', letterSpacing:1, marginBottom:6 }}>
+              {t('ملاحظات','Notes')}
+            </p>
+            <p style={{ fontSize:13, color:'#444', lineHeight:1.6, margin:0 }}>{expense.notes}</p>
+          </div>
+        )}
+
+        {/* ══ METADATA ══ */}
+        <div style={{ padding:'18px 36px', borderBottom:'1px solid #eee', background:LIGHT_BLUE }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+            <div>
+              <p style={{ fontSize:10, color:'#888', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>
+                {t('تاريخ الإنشاء','Created At')}
+              </p>
+              <p style={{ fontSize:13, fontWeight:700, color:'#1a1a2e', margin:0 }}>{formatDate(expense.createdAt)}</p>
+            </div>
+            <div style={{ textAlign:isAr?'left':'right' }}>
+              <p style={{ fontSize:10, color:'#888', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>
+                {t('آخر تحديث','Last Updated')}
+              </p>
+              <p style={{ fontSize:13, fontWeight:700, color:'#1a1a2e', margin:0 }}>{formatDate(expense.updatedAt)}</p>
+            </div>
+            {/* updatedBy يظهر بس لو موجود */}
+            {expense.updatedBy && (
+              <div style={{ gridColumn:'1 / -1' }}>
+                <p style={{ fontSize:10, color:'#888', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>
+                  {t('تم التحديث بواسطة','Updated By')}
+                </p>
+                <p style={{ fontSize:13, fontWeight:700, color:'#1a1a2e', margin:0 }}>
+                  {expense.updatedBy.name} ({expense.updatedBy.email})
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ══ SIGNATURES ══ */}
+        <div style={{ padding:'28px 36px 24px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:48 }}>
+          <div>
+            <p style={{ fontSize:12, color:'#666', marginBottom:48 }}>{t('التوقيع المصرح','Authorized Signature')}</p>
+            <div style={{ borderTop:'1.5px solid #bbb' }} />
+            <p style={{ fontSize:11, color:'#888', marginTop:6 }}>{expense.createdBy?.name || ''}</p>
+          </div>
+          <div style={{ textAlign:isAr?'left':'right' }}>
+            <p style={{ fontSize:12, color:'#666', marginBottom:48 }}>{t('توقيع المستلم','Receiver Signature')}</p>
+            <div style={{ borderTop:'1.5px solid #bbb' }} />
+            <p style={{ fontSize:11, color:'#888', marginTop:6 }}>
+              {expense.vendorName || t('غير محدد','Not specified')}
+            </p>
+          </div>
+        </div>
+
+        {/* ══ FOOTER TEXT ══ */}
+        <div style={{ padding:'12px 36px', borderTop:'1px solid #eee', textAlign:'center', background:'#fafafa' }}>
+          <p style={{ fontSize:12, fontWeight:700, color:BLUE, marginBottom:4 }}>{t('شكراً لكم!','Thank you!')}</p>
+          <p style={{ fontSize:11, color:'#888', margin:0 }}>
+            {t(
+              'هذا إيصال من إنتاج الكمبيوتر ولا يتطلب توقيعاً فعلياً',
+              'This is a computer-generated receipt and does not require a physical signature.'
+            )}
+          </p>
+        </div>
+
+        {/* ══ FOOTER BAR ══ */}
+        <FooterBar />
       </div>
     </div>
   );
