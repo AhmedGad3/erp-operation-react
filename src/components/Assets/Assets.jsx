@@ -1,5 +1,8 @@
-import { useState, useEffect, useMemo, useContext } from 'react';
-import { Plus, Edit, Trash2, Wrench, Search, X, RefreshCw, Download } from 'lucide-react';
+import { useState, useEffect, useMemo, useContext, useRef } from 'react';
+import {
+  Wrench, Search, Plus, Edit, Trash2, CheckCircle,
+  ChevronUp, ChevronDown, MoreHorizontal, X, Download, RefreshCw
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../utils/axiosInstance';
 import * as XLSX from 'xlsx';
@@ -7,840 +10,558 @@ import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 
 const ASSET_STATUS = [
-  { value: 'AVAILABLE', labelAr: 'متاح', labelEn: 'Available' },
-  { value: 'IN_USE', labelAr: 'قيد الاستخدام', labelEn: 'In Use' },
-  { value: 'MAINTENANCE', labelAr: 'في الصيانة', labelEn: 'Maintenance' },
-  { value: 'RETIRED', labelAr: 'متقاعد', labelEn: 'Retired' },
+  { value: 'AVAILABLE',   labelAr: 'متاح',           labelEn: 'Available'   },
+  { value: 'IN_USE',      labelAr: 'قيد الاستخدام',  labelEn: 'In Use'      },
+  { value: 'MAINTENANCE', labelAr: 'في الصيانة',      labelEn: 'Maintenance' },
+  { value: 'RETIRED',     labelAr: 'متقاعد',          labelEn: 'Retired'     },
 ];
 
+// ── Sortable column header ─────────────────────────────────
+const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
+  <th
+    className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer select-none"
+    onClick={() => onSort(field)}
+  >
+    <span className="inline-flex items-center gap-1">
+      {label}
+      <span className="flex flex-col leading-none">
+        <ChevronUp   className={`w-3 h-3 ${sortField === field && sortDir === 'asc'  ? 'text-gray-900' : 'text-gray-300'}`} />
+        <ChevronDown className={`w-3 h-3 ${sortField === field && sortDir === 'desc' ? 'text-gray-900' : 'text-gray-300'}`} />
+      </span>
+    </span>
+  </th>
+);
+
+// ── Active/Inactive badge ──────────────────────────────────
+const ActiveBadge = ({ isActive, lang }) => {
+  if (isActive === false)
+    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</span>;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? 'نشط' : 'Active'}</span>;
+};
+
+// ── Asset status badge ─────────────────────────────────────
+const StatusBadge = ({ status, lang }) => {
+  const colorMap = {
+    AVAILABLE:   'bg-green-100 text-green-700',
+    IN_USE:      'bg-blue-100 text-blue-700',
+    MAINTENANCE: 'bg-yellow-100 text-yellow-700',
+    RETIRED:     'bg-gray-100 text-gray-600',
+  };
+  const label = ASSET_STATUS.find(s => s.value === status)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || status;
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${colorMap[status] || 'bg-gray-100 text-gray-600'}`}>
+      {label}
+    </span>
+  );
+};
+
+// ── Three-dots menu ────────────────────────────────────────
+const ActionsMenu = ({ asset, lang, onEdit, onDelete, onActivate }) => {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const ref = useRef();
+  const btnRef = useRef();
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+  const handleOpen = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const menuHeight = 80; // زرارين
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      const top = spaceBelow < menuHeight
+        ? rect.top - menuHeight - 4
+        : rect.bottom + 4;
+
+      setMenuPos({ top, left: rect.right - 160 });
+    }
+    setOpen(o => !o);
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        ref={btnRef}
+        onClick={handleOpen}
+        className="p-1.5 rounded-md hover:bg-gray-100 transition text-gray-500"
+      >
+        <MoreHorizontal className="w-5 h-5" />
+      </button>
+
+      {open && (
+        <div
+          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
+          className="w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1"
+        >
+          <button
+            onClick={() => { setOpen(false); onEdit(asset); }}
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+          >
+            <Edit className="w-4 h-4" />
+            {lang === 'ar' ? 'تعديل' : 'Edit'}
+          </button>
+
+          {asset.isActive === false && (
+            <button
+              onClick={() => { setOpen(false); onActivate(asset); }}
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+            >
+              <CheckCircle className="w-4 h-4" />
+              {lang === 'ar' ? 'تفعيل' : 'Activate'}
+            </button>
+          )}
+
+          {asset.isActive !== false && (
+            <button
+              onClick={() => { setOpen(false); onDelete(asset); }}
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
+            >
+              <Trash2 className="w-4 h-4" />
+              {lang === 'ar' ? 'حذف' : 'Delete'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Add/Edit Modal ─────────────────────────────────────────
+const AssetModal = ({ lang, mode, asset: editAsset, onClose, onSaved }) => {
+  const [form, setForm] = useState({
+    nameAr:      editAsset?.nameAr      || '',
+    nameEn:      editAsset?.nameEn      || '',
+    code:        editAsset?.code        || '',
+    assetTypeAr: editAsset?.assetTypeAr || '',
+    assetTypeEn: editAsset?.assetTypeEn || '',
+    status:      editAsset?.status      || 'AVAILABLE',
+    notes:       editAsset?.notes       || '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!form.nameAr.trim() || !form.nameEn.trim()) {
+      toast.error(lang === 'ar' ? 'اسم الأصل مطلوب' : 'Asset name is required'); return;
+    }
+    if (!form.code.trim()) {
+      toast.error(lang === 'ar' ? 'الكود مطلوب' : 'Code is required'); return;
+    }
+    if (!form.assetTypeAr.trim() || !form.assetTypeEn.trim()) {
+      toast.error(lang === 'ar' ? 'نوع الأصل مطلوب' : 'Asset type is required'); return;
+    }
+
+    try {
+      setSubmitting(true);
+      const payload = {
+        nameAr:      form.nameAr.trim(),
+        nameEn:      form.nameEn.trim(),
+        code:        form.code.trim().toUpperCase(),
+        assetTypeAr: form.assetTypeAr.trim(),
+        assetTypeEn: form.assetTypeEn.trim(),
+        status:      form.status,
+        notes:       form.notes.trim() || '',
+      };
+
+      if (mode === 'add') await axiosInstance.post('/assets', payload);
+      else await axiosInstance.put(`/assets/${editAsset._id}`, payload);
+
+      toast.success(lang === 'ar' ? 'تم الحفظ بنجاح' : 'Saved successfully');
+      onSaved();
+      onClose();
+    } catch (err) {
+      const msg = (Array.isArray(err.response?.data?.message)
+        ? err.response.data.message.join(', ')
+        : err.response?.data?.message) || err.message;
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {mode === 'add' ? (lang === 'ar' ? 'إضافة أصل جديد' : 'Add New Asset') : (lang === 'ar' ? 'تعديل الأصل' : 'Edit Asset')}
+          </h2>
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)'} <span className="text-red-500">*</span></label>
+              <input type="text" dir="rtl" value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)'} <span className="text-red-500">*</span></label>
+              <input type="text" dir="ltr" value={form.nameEn} onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الكود' : 'Code'} <span className="text-red-500">*</span></label>
+            <input type="text" placeholder="EXCAVATOR-001" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'النوع بالعربية' : 'Type (Arabic)'} <span className="text-red-500">*</span></label>
+              <input type="text" dir="rtl" placeholder="حفار" value={form.assetTypeAr} onChange={e => setForm(f => ({ ...f, assetTypeAr: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'النوع بالإنجليزية' : 'Type (English)'} <span className="text-red-500">*</span></label>
+              <input type="text" dir="ltr" placeholder="Excavator" value={form.assetTypeEn} onChange={e => setForm(f => ({ ...f, assetTypeEn: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الحالة' : 'Status'}</label>
+            <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50">
+              {ASSET_STATUS.map(s => <option key={s.value} value={s.value}>{lang === 'ar' ? s.labelAr : s.labelEn}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'ملاحظات' : 'Notes'}</label>
+            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows="2" dir={lang === 'ar' ? 'rtl' : 'ltr'} placeholder={lang === 'ar' ? 'أضف ملاحظات...' : 'Add notes...'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none" />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+          </button>
+          <button onClick={handleSubmit} disabled={submitting} className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50">
+            {submitting ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (lang === 'ar' ? 'حفظ' : 'Save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Confirm Modal ──────────────────────────────────────────
+const ConfirmModal = ({ type, asset, lang, onConfirm, onClose }) => {
+  const isDelete = type === 'delete';
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center ${isDelete ? 'bg-red-100' : 'bg-green-100'}`}>
+            {isDelete ? <Trash2 className="w-5 h-5 text-red-600" /> : <CheckCircle className="w-5 h-5 text-green-600" />}
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">
+              {isDelete ? (lang === 'ar' ? 'تأكيد الحذف' : 'Confirm Delete') : (lang === 'ar' ? 'تأكيد التفعيل' : 'Confirm Activation')}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {isDelete ? (lang === 'ar' ? 'هل أنت متأكد من حذف هذا الأصل؟' : 'Are you sure you want to delete this asset?') : (lang === 'ar' ? 'هل أنت متأكد من تفعيل هذا الأصل؟' : 'Are you sure you want to activate this asset?')}
+            </p>
+          </div>
+        </div>
+        <div className="bg-gray-50 rounded-xl p-4 mb-4">
+          <p className="font-medium text-gray-900 text-sm">{lang === 'ar' ? asset?.nameAr : asset?.nameEn}</p>
+          <p className="text-xs text-gray-500">{lang === 'ar' ? 'الكود: ' : 'Code: '}{asset?.code}</p>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+          </button>
+          <button onClick={onConfirm} className={`flex-1 px-4 py-2.5 text-white rounded-xl transition font-medium text-sm ${isDelete ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}>
+            {isDelete ? (lang === 'ar' ? 'حذف' : 'Delete') : (lang === 'ar' ? 'تفعيل' : 'Activate')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main Component ─────────────────────────────────────────
 export default function Assets() {
   const { lang, t } = useContext(LanguageContext);
-  
-  const [assets, setAssets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  
-  const [showModal, setShowModal] = useState(false);
-  const [editingAsset, setEditingAsset] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('ALL');
-  
-  const [formData, setFormData] = useState({
-    nameAr: '',
-    nameEn: '',
-    code: '',
-    assetTypeAr: '',
-    assetTypeEn: '',
-    purchaseDate: '',
-    purchasePrice: '',
-    status: 'AVAILABLE',
-    notes: '',
-  });
 
-  // ================= FETCH =================
+  const [assets,        setAssets]        = useState([]);
+  const [loading,       setLoading]       = useState(false);
+  const [searchTerm,    setSearchTerm]    = useState('');
+  const [filterStatus,  setFilterStatus]  = useState('ALL');
+  const [sortField,     setSortField]     = useState('nameEn');
+  const [sortDir,       setSortDir]       = useState('asc');
+  const [addModal,      setAddModal]      = useState(false);
+  const [editTarget,    setEditTarget]    = useState(null);
+  const [deleteModal,   setDeleteModal]   = useState({ show: false, asset: null });
+  const [activateModal, setActivateModal] = useState({ show: false, asset: null });
+
+  useEffect(() => { fetchAssets(); }, []);
+
   const fetchAssets = async () => {
     try {
       setLoading(true);
       const { data } = await axiosInstance.get('/assets');
       setAssets(data.result || data || []);
-    } catch (err) {
-      console.error(err);
-      toast.error(
-        lang === "ar" ? "خطأ في تحميل الأصول" : "Error loading assets",
-        { position: "top-right", autoClose: 3000 }
-      );
+    } catch {
+      toast.error(lang === 'ar' ? 'فشل تحميل الأصول' : 'Failed to load assets');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAssets();
-  }, []);
-
-  // ================= FILTER =================
-  const filteredAssets = useMemo(() => {
-    let filtered = assets;
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(asset => 
-        asset.nameEn?.toLowerCase().includes(term) ||
-        asset.nameAr?.includes(term) ||
-        asset.code?.toLowerCase().includes(term) ||
-        asset.assetTypeEn?.toLowerCase().includes(term) ||
-        asset.assetTypeAr?.includes(term)
-      );
-    }
-
-    if (filterStatus !== 'ALL') {
-      if (filterStatus === 'ACTIVE') {
-        filtered = filtered.filter(asset => asset.isActive !== false);
-      } else if (filterStatus === 'INACTIVE') {
-        filtered = filtered.filter(asset => asset.isActive === false);
-      } else {
-        filtered = filtered.filter(asset => asset.status === filterStatus);
-      }
-    }
-
-    return filtered;
-  }, [assets, searchTerm, filterStatus]);
-
-  // ================= EXPORT TO EXCEL =================
-  const handleExportToExcel = () => {
+  const handleDelete = async () => {
     try {
-      const exportData = filteredAssets.map(asset => ({
-        [lang === "ar" ? "الكود" : "Code"]: asset.code,
-        [lang === "ar" ? "الاسم بالعربية" : "Name (Arabic)"]: asset.nameAr,
-        [lang === "ar" ? "الاسم بالإنجليزية" : "Name (English)"]: asset.nameEn,
-        [lang === "ar" ? "النوع بالعربية" : "Type (Arabic)"]: asset.assetTypeAr,
-        [lang === "ar" ? "النوع بالإنجليزية" : "Type (English)"]: asset.assetTypeEn,
-        [lang === "ar" ? "تاريخ الشراء" : "Purchase Date"]: asset.purchaseDate 
-          ? new Date(asset.purchaseDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US') 
-          : '-',
-        [lang === "ar" ? "سعر الشراء" : "Purchase Price"]: asset.purchasePrice || '-',
-        [lang === "ar" ? "الحالة" : "Status"]: ASSET_STATUS.find(s => s.value === asset.status)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || asset.status,
-        [lang === "ar" ? "نشط/غير نشط" : "Active Status"]: asset.isActive !== false 
-          ? (lang === 'ar' ? 'نشط' : 'Active') 
-          : (lang === 'ar' ? 'غير نشط' : 'Inactive'),
-        [lang === "ar" ? "ملاحظات" : "Notes"]: asset.notes || '-'
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      
-      const columnWidths = [
-        { wch: 12 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, 
-        { wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, 
-        { wch: 12 }, { wch: 25 }
-      ];
-      ws['!cols'] = columnWidths;
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, lang === "ar" ? "الأصول" : "Assets");
-      
-      const fileName = `Assets_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      
-      toast.success(
-        lang === "ar" ? "تم تصدير البيانات بنجاح" : "Data exported successfully",
-        { position: "top-right", autoClose: 2000 }
-      );
-    } catch (error) {
-      toast.error(
-        lang === "ar" ? "فشل التصدير" : "Export failed", 
-        { position: "top-right", autoClose: 3000 }
-      );
-      console.error("Export error:", error);
-    }
-  };
-
-  // ================= SAVE =================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.nameAr?.trim() || !formData.nameEn?.trim()) {
-      toast.error(
-        lang === "ar" ? "اسم الأصل مطلوب" : "Asset name is required",
-        { position: "top-right", autoClose: 3000 }
-      );
-      return;
-    }
-
-    if (!formData.code?.trim()) {
-      toast.error(
-        lang === "ar" ? "الكود مطلوب" : "Code is required",
-        { position: "top-right", autoClose: 3000 }
-      );
-      return;
-    }
-
-    if (!formData.assetTypeAr?.trim() || !formData.assetTypeEn?.trim()) {
-      toast.error(
-        lang === "ar" ? "نوع الأصل مطلوب" : "Asset type is required",
-        { position: "top-right", autoClose: 3000 }
-      );
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      const payload = {
-        nameAr: formData.nameAr.trim(),
-        nameEn: formData.nameEn.trim(),
-        code: formData.code.trim().toUpperCase(),
-        assetTypeAr: formData.assetTypeAr.trim(),
-        assetTypeEn: formData.assetTypeEn.trim(),
-        status: formData.status,
-        purchaseDate: formData.purchaseDate || undefined,
-        purchasePrice: formData.purchasePrice ? Number(formData.purchasePrice) : undefined,
-        notes: formData.notes?.trim() || '',
-      };
-
-      Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
-
-      if (editingAsset) {
-        await axiosInstance.put(`/assets/${editingAsset._id}`, payload);
-        toast.success(
-          lang === "ar" ? "تم تحديث الأصل بنجاح" : "Asset updated successfully",
-          { position: "top-right", autoClose: 2000 }
-        );
-      } else {
-        await axiosInstance.post("/assets", payload);
-        toast.success(
-          lang === "ar" ? "تم إضافة الأصل بنجاح" : "Asset added successfully",
-          { position: "top-right", autoClose: 2000 }
-        );
-      }
-      
-      setShowModal(false);
-      setEditingAsset(null);
-      resetForm();
-      await fetchAssets();
-      
-    } catch (err) {
-      console.error("Error saving asset:", err);
-      
-      let errorMsg = lang === "ar" ? "خطأ في حفظ الأصل" : "Error saving asset";
-      
-      if (err.response?.data?.message && Array.isArray(err.response.data.message)) {
-        errorMsg = err.response.data.message.join(", ");
-      } else if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err.response?.data?.error) {
-        errorMsg = err.response.data.error;
-      }
-      
-      toast.error(errorMsg, {
-        position: "top-right",
-        autoClose: 4000,
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleEdit = (asset) => {
-    setEditingAsset(asset);
-    setFormData({
-      nameAr: asset.nameAr || '',
-      nameEn: asset.nameEn || '',
-      code: asset.code || '',
-      assetTypeAr: asset.assetTypeAr || '',
-      assetTypeEn: asset.assetTypeEn || '',
-    
-      status: asset.status || 'AVAILABLE',
-      notes: asset.notes || '',
-    });
-    setShowModal(true);
-  };
-
-  // ================= DELETE/ACTIVATE HANDLERS =================
-  const handleDeleteClick = (asset) => {
-    setConfirmDelete({ asset, action: 'delete' });
-  };
-
-  const handleActivateClick = (asset) => {
-    setConfirmDelete({ asset, action: 'activate' });
-  };
-
-  const confirmDeleteAction = async () => {
-    if (!confirmDelete || !confirmDelete.asset) {
-      console.error('No asset to delete/activate');
-      return;
-    }
-
-    const { asset, action } = confirmDelete;
-
-    if (!asset._id) {
-      toast.error(
-        lang === "ar" ? "معرف الأصل غير موجود" : "Asset ID is missing",
-        { position: "top-right", autoClose: 3000 }
-      );
-      return;
-    }
-
-    try {
-      if (asset.isActive !== false) {
-        await axiosInstance.delete(`/assets/${asset._id}`);
-      } else {
-        await axiosInstance.patch(`/assets/${asset._id}/activate`);
-      }
-
-      const message = action === 'delete'
-        ? (lang === "ar" ? "تم حذف الأصل بنجاح" : "Asset deleted successfully")
-        : (lang === "ar" ? "تم تفعيل الأصل بنجاح" : "Asset activated successfully");
-
-      toast.success(message, { position: "top-right", autoClose: 2000 });
-
-      setConfirmDelete(null);
+      await axiosInstance.delete(`/assets/${deleteModal.asset._id}`);
+      toast.success(lang === 'ar' ? 'تم حذف الأصل بنجاح' : 'Asset deleted');
+      setDeleteModal({ show: false, asset: null });
       fetchAssets();
     } catch (err) {
-      console.error('Error:', err);
-      
-      let errorMsg = lang === "ar" ? "خطأ في تحديث الأصل" : "Error updating asset";
-      
-      if (err.response?.status === 404) {
-        errorMsg = lang === "ar" 
-          ? "الأصل غير موجود أو تم حذفه بالفعل" 
-          : "Asset not found or already deleted";
-      } else if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err.message) {
-        errorMsg = err.message;
-      }
-      
-      toast.error(errorMsg, { position: "top-right", autoClose: 3000 });
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      nameAr: '',
-      nameEn: '',
-      code: '',
-      assetTypeAr: '',
-      assetTypeEn: '',
-      purchaseDate: '',
-      purchasePrice: '',
-      status: 'AVAILABLE',
-      notes: '',
-    });
-  };
-
-  const getStatusLabel = (status) => {
-    return ASSET_STATUS.find(s => s.value === status)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || status;
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'AVAILABLE':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'IN_USE':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'MAINTENANCE':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'RETIRED':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+  const handleActivate = async () => {
+    try {
+      await axiosInstance.patch(`/assets/${activateModal.asset._id}/activate`);
+      toast.success(lang === 'ar' ? 'تم تفعيل الأصل بنجاح' : 'Asset activated');
+      setActivateModal({ show: false, asset: null });
+      fetchAssets();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 
-  if (loading && assets.length === 0) {
-    return <FullPageLoader text={lang === "ar" ? "جاري تحميل الأصول..." : "Loading assets..."} />;
-  }
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
+  };
 
-  const activeAssets = filteredAssets.filter(a => a.isActive !== false).length;
-  const inactiveAssets = filteredAssets.filter(a => a.isActive === false).length;
-  const availableAssets = filteredAssets.filter(a => a.status === 'AVAILABLE' && a.isActive !== false).length;
-  const inUseAssets = filteredAssets.filter(a => a.status === 'IN_USE' && a.isActive !== false).length;
+  const handleExport = () => {
+    try {
+      const data = displayed.map(a => ({
+        [lang === 'ar' ? 'الكود' : 'Code']: a.code,
+        [lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)']: a.nameAr,
+        [lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)']: a.nameEn,
+        [lang === 'ar' ? 'النوع بالعربية' : 'Type (Arabic)']: a.assetTypeAr,
+        [lang === 'ar' ? 'النوع بالإنجليزية' : 'Type (English)']: a.assetTypeEn,
+        [lang === 'ar' ? 'الحالة' : 'Status']: ASSET_STATUS.find(s => s.value === a.status)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || a.status,
+        [lang === 'ar' ? 'نشط/غير نشط' : 'Active']: a.isActive !== false ? (lang === 'ar' ? 'نشط' : 'Active') : (lang === 'ar' ? 'غير نشط' : 'Inactive'),
+        [lang === 'ar' ? 'ملاحظات' : 'Notes']: a.notes || '',
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, lang === 'ar' ? 'الأصول' : 'Assets');
+      XLSX.writeFile(wb, `Assets_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success(lang === 'ar' ? 'تم التصدير بنجاح' : 'Exported successfully');
+    } catch {
+      toast.error(lang === 'ar' ? 'فشل التصدير' : 'Export failed');
+    }
+  };
+
+  // Filter + Sort
+  const displayed = useMemo(() => {
+    return assets
+      .filter(a => {
+        const q = searchTerm.toLowerCase();
+        const matchSearch = !q || a.nameEn?.toLowerCase().includes(q) || a.nameAr?.includes(q) || a.code?.toLowerCase().includes(q) || a.assetTypeEn?.toLowerCase().includes(q) || a.assetTypeAr?.includes(q);
+        const matchStatus =
+          filterStatus === 'ALL' ||
+          (filterStatus === 'ACTIVE'   && a.isActive !== false) ||
+          (filterStatus === 'INACTIVE' && a.isActive === false) ||
+          a.status === filterStatus;
+        return matchSearch && matchStatus;
+      })
+      .sort((a, b) => {
+        let va = a[sortField] ?? '';
+        let vb = b[sortField] ?? '';
+        if (typeof va === 'string') va = va.toLowerCase();
+        if (typeof vb === 'string') vb = vb.toLowerCase();
+        return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+      });
+  }, [assets, searchTerm, filterStatus, sortField, sortDir]);
+
+  if (loading && assets.length === 0)
+    return <FullPageLoader text={lang === 'ar' ? 'جاري تحميل الأصول...' : 'Loading assets...'} />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Wrench className="w-8 h-8 text-white" />
-                <div>
-                  <h1 className="text-2xl font-bold text-white">
-                    {lang === "ar" ? "الأصول والمعدات" : "Assets & Equipment"}
-                  </h1>
-                  <p className="text-blue-100 mt-1">
-                    {lang === "ar" 
-                      ? "عرض وإدارة الأصول والمعدات الخاصة بالشركة" 
-                      : "View and manage company assets and equipment"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={fetchAssets}
-                  disabled={loading}
-                  className="flex items-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg transition font-semibold"
-                  title={lang === "ar" ? "تحديث" : "Refresh"}
-                >
-                  <div className={loading ? "animate-spin" : ""}>
-                    <RefreshCw className="w-5 h-5" />
-                  </div>
-                </button>
-                <button
-                  onClick={handleExportToExcel}
-                  className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition font-semibold shadow-md"
-                >
-                  <Download className="w-5 h-5" />
-                  <span>{lang === "ar" ? "تصدير" : "Export"}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingAsset(null);
-                    resetForm();
-                    setShowModal(true);
-                  }}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold shadow-md"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>{lang === "ar" ? "إضافة أصل جديد" : "Add New Asset"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-gray-50">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "إجمالي الأصول" : "Total Assets"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{filteredAssets.length}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "متاح" : "Available"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{availableAssets}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-purple-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "قيد الاستخدام" : "In Use"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{inUseAssets}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-red-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "غير نشط" : "Inactive"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{inactiveAssets}</p>
-            </div>
+        {/* ── Page Header ── */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {lang === 'ar' ? 'الأصول والمعدات' : 'Assets & Equipment'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {lang === 'ar' ? 'عرض وإدارة الأصول والمعدات الخاصة بالشركة' : 'View and manage company assets and equipment.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchAssets}
+              disabled={loading}
+              className="p-2.5 border border-gray-200 text-gray-500 bg-white rounded-xl hover:bg-gray-50 transition shadow-sm"
+              title={lang === 'ar' ? 'تحديث' : 'Refresh'}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              {lang === 'ar' ? 'تصدير' : 'Export'}
+            </button>
+            <button
+              onClick={() => setAddModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              {lang === 'ar' ? 'إضافة أصل' : 'Add Asset'}
+            </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder={lang === "ar" ? "البحث في الأصول..." : "Search assets..."}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              >
-                <option value="ALL">{lang === "ar" ? "كل الحالات" : "All Status"}</option>
-                <option value="ACTIVE">{lang === "ar" ? "نشط" : "Active"}</option>
-                <option value="INACTIVE">{lang === "ar" ? "غير نشط" : "Inactive"}</option>
-                {ASSET_STATUS.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {lang === "ar" ? status.labelAr : status.labelEn}
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* ── Filters ── */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={lang === 'ar' ? 'بحث في الأصول...' : 'Search assets...'}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            />
           </div>
 
-          {/* Clear Filters */}
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+          >
+            <option value="ALL">{lang === 'ar' ? 'كل الحالات' : 'All Status'}</option>
+            <option value="ACTIVE">{lang === 'ar' ? 'نشط' : 'Active'}</option>
+            <option value="INACTIVE">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</option>
+            {ASSET_STATUS.map(s => (
+              <option key={s.value} value={s.value}>{lang === 'ar' ? s.labelAr : s.labelEn}</option>
+            ))}
+          </select>
+
           {(searchTerm || filterStatus !== 'ALL') && (
             <button
-              onClick={() => {
-                setSearchTerm('');
-                setFilterStatus('ALL');
-              }}
-              className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              onClick={() => { setSearchTerm(''); setFilterStatus('ALL'); }}
+              className="text-sm text-indigo-600 hover:underline"
             >
-              {lang === "ar" ? "مسح الفلاتر" : "Clear Filters"}
+              {lang === 'ar' ? 'مسح الفلاتر' : 'Clear'}
             </button>
           )}
         </div>
 
-        {/* Assets Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {filteredAssets.length === 0 ? (
-            <div className="p-12 text-center">
-              <Wrench className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {lang === "ar" ? "لا توجد أصول" : "No Assets Found"}
-              </h3>
-              <p className="text-gray-600 mb-6">
-                {lang === "ar" ? "لم يتم العثور على أصول مطابقة للفلاتر المحددة" : "No assets match your current filters"}
+        {/* ── Table ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          {displayed.length === 0 ? (
+            <div className="p-16 text-center">
+              <Wrench className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="font-medium text-gray-600">
+                {lang === 'ar' ? 'لا توجد أصول' : 'No assets found'}
               </p>
-              <button
-                onClick={() => {
-                  setEditingAsset(null);
-                  resetForm();
-                  setShowModal(true);
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-              >
-                <Plus className="w-5 h-5" />
-                {lang === "ar" ? "إضافة أول أصل" : "Add First Asset"}
-              </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === "ar" ? "الكود" : "Code"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === "ar" ? "اسم الأصل" : "Asset Name"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === "ar" ? "النوع" : "Type"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === "ar" ? "تاريخ الشراء" : "Purchase Date"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === "ar" ? "سعر الشراء" : "Purchase Price"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === "ar" ? "الحالة" : "Status"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === "ar" ? "نشط/غير نشط" : "Active"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === "ar" ? "الإجراءات" : "Actions"}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredAssets.map((asset) => (
-                    <tr key={asset._id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
-                          {asset.code}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Wrench className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">
-                              {lang === "ar" ? asset.nameAr : asset.nameEn}
-                            </p>
-                            {asset.notes && (
-                              <p className="text-sm text-gray-500 truncate max-w-xs">
-                                {asset.notes}
-                              </p>
-                            )}
-                          </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <SortHeader label={lang === 'ar' ? 'الأصل'        : 'Asset'}         field={lang === 'ar' ? 'nameAr' : 'nameEn'} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الكود'         : 'Code'}          field="code"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'النوع'         : 'Type'}          field={lang === 'ar' ? 'assetTypeAr' : 'assetTypeEn'} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'حالة الأصل'   : 'Asset Status'}  field="status"    sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'النشاط'        : 'Active'}        field="isActive"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {displayed.map(asset => (
+                  <tr key={asset._id} className="hover:bg-gray-50/60 transition">
+                    {/* Avatar + Name */}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                          <Wrench className="w-4 h-4 text-indigo-600" />
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
-                          {lang === "ar" ? asset.assetTypeAr : asset.assetTypeEn}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        {asset.purchaseDate 
-                          ? new Date(asset.purchaseDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')
-                          : '-'
-                        }
-                      </td>
-                      <td className="px-6 py-4 text-right font-semibold">
-                        {asset.purchasePrice ? `${asset.purchasePrice.toLocaleString()} ${lang === 'ar' ? 'ج.م' : 'EGP'}` : '-'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(asset.status)}`}>
-                          {getStatusLabel(asset.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          asset.isActive !== false
-                            ? 'bg-green-100 text-green-800 border border-green-200'
-                            : 'bg-gray-100 text-gray-800 border border-gray-200'
-                        }`}>
-                          {asset.isActive !== false 
-                            ? (lang === 'ar' ? 'نشط' : 'Active')
-                            : (lang === 'ar' ? 'غير نشط' : 'Inactive')
-                          }
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEdit(asset)}
-                            className="flex items-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition font-medium"
-                          >
-                            <Edit className="w-4 h-4" />
-                            {lang === "ar" ? "تعديل" : "Edit"}
-                          </button>
-                          
-                          {asset.isActive !== false ? (
-                            <button
-                              onClick={() => handleDeleteClick(asset)}
-                              className="flex items-center gap-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              {lang === "ar" ? "حذف" : "Delete"}
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleActivateClick(asset)}
-                              className="flex items-center gap-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition font-medium"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                              {lang === "ar" ? "تفعيل" : "Activate"}
-                            </button>
+                        <div>
+                          <span className="font-medium text-gray-900 text-sm block">
+                            {lang === 'ar' ? asset.nameAr : asset.nameEn}
+                          </span>
+                          {asset.notes && (
+                            <span className="text-xs text-gray-400 truncate max-w-[180px] block">{asset.notes}</span>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </td>
+
+                    {/* Code */}
+                    <td className="px-4 py-3.5">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{asset.code}</span>
+                    </td>
+
+                    {/* Type */}
+                    <td className="px-4 py-3.5 text-sm text-gray-500">
+                      {lang === 'ar' ? asset.assetTypeAr : asset.assetTypeEn}
+                    </td>
+
+                    {/* Asset Status */}
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={asset.status} lang={lang} />
+                    </td>
+
+                    {/* Active/Inactive */}
+                    <td className="px-4 py-3.5">
+                      <ActiveBadge isActive={asset.isActive} lang={lang} />
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5 text-right">
+                      <ActionsMenu
+                        asset={asset}
+                        lang={lang}
+                        onEdit={a => setEditTarget(a)}
+                        onDelete={a => setDeleteModal({ show: true, asset: a })}
+                        onActivate={a => setActivateModal({ show: true, asset: a })}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 border-b border-blue-500">
-              <h2 className="text-2xl font-bold text-white">
-                {editingAsset 
-                  ? (lang === "ar" ? "تعديل الأصل" : "Edit Asset")
-                  : (lang === "ar" ? "إضافة أصل جديد" : "Add New Asset")
-                }
-              </h2>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Name Arabic */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === "ar" ? "الاسم بالعربية" : "Name (Arabic)"} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nameAr}
-                    onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    required
-                    dir="rtl"
-                  />
-                </div>
-
-                {/* Name English */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === "ar" ? "الاسم بالإنجليزية" : "Name (English)"} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nameEn}
-                    onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    required
-                    dir="ltr"
-                  />
-                </div>
-
-                {/* Code */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === "ar" ? "الكود" : "Code"} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                    placeholder="EXCAVATOR-001"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    required
-                  />
-                </div>
-
-                {/* Asset Type Arabic */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === "ar" ? "النوع بالعربية" : "Type (Arabic)"} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.assetTypeAr}
-                    onChange={(e) => setFormData({ ...formData, assetTypeAr: e.target.value })}
-                    placeholder="حفار"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    required
-                    dir="rtl"
-                  />
-                </div>
-
-                {/* Asset Type English */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === "ar" ? "النوع بالإنجليزية" : "Type (English)"} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.assetTypeEn}
-                    onChange={(e) => setFormData({ ...formData, assetTypeEn: e.target.value })}
-                    placeholder="Excavator"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    required
-                    dir="ltr"
-                  />
-                </div>
-
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === "ar" ? "الحالة" : "Status"}
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  >
-                    {ASSET_STATUS.map(status => (
-                      <option key={status.value} value={status.value}>
-                        {lang === "ar" ? status.labelAr : status.labelEn}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Purchase Date */}
-                
-
-                {/* Notes */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === "ar" ? "ملاحظات" : "Notes"}
-                  </label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows="3"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder={lang === "ar" ? "أضف ملاحظات..." : "Add notes..."}
-                    dir={lang === "ar" ? "rtl" : "ltr"}
-                  />
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-4 mt-8">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {saving && (
-                    <div className="animate-spin inline-block w-5 h-5 border-2 border-current border-t-transparent text-white rounded-full"></div>
-                  )}
-                  {saving 
-                    ? (lang === "ar" ? "جاري الحفظ..." : "Saving...") 
-                    : (lang === "ar" ? "حفظ" : "Save")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingAsset(null);
-                    resetForm();
-                  }}
-                  disabled={saving}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold disabled:opacity-50"
-                >
-                  {lang === "ar" ? "إلغاء" : "Cancel"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* ── Modals ── */}
+      {addModal && (
+        <AssetModal lang={lang} mode="add"
+          onClose={() => setAddModal(false)}
+          onSaved={fetchAssets} />
       )}
-
-      {/* Delete/Activate Confirmation Modal */}
-      {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                confirmDelete?.action === 'delete'
-                  ? 'bg-red-100' 
-                  : 'bg-green-100'
-              }`}>
-                {confirmDelete?.action === 'delete' ? (
-                  <Trash2 className="w-6 h-6 text-red-600" />
-                ) : (
-                  <RefreshCw className="w-6 h-6 text-green-600" />
-                )}
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  {confirmDelete?.action === 'delete'
-                    ? (lang === "ar" ? "تأكيد الحذف" : "Confirm Delete")
-                    : (lang === "ar" ? "تأكيد التفعيل" : "Confirm Activation")
-                  }
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {confirmDelete?.action === 'delete'
-                    ? (lang === "ar" ? "هل أنت متأكد من حذف هذا الأصل؟" : "Are you sure you want to delete this asset?")
-                    : (lang === "ar" ? "هل أنت متأكد من تفعيل هذا الأصل؟" : "Are you sure you want to activate this asset?")
-                  }
-                </p>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <p className="text-sm text-gray-600 mb-1">{lang === "ar" ? "الأصل:" : "Asset:"}</p>
-              <p className="font-semibold text-gray-900">
-                {lang === "ar" ? confirmDelete?.asset?.nameAr : confirmDelete?.asset?.nameEn}
-              </p>
-              <p className="text-sm text-gray-500">
-                {lang === "ar" ? "الكود: " : "Code: "}{confirmDelete?.asset?.code}
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmDelete(null)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-              >
-                {lang === "ar" ? "إلغاء" : "Cancel"}
-              </button>
-              <button
-                onClick={confirmDeleteAction}
-                className={`flex-1 px-4 py-2 text-white rounded-lg transition font-semibold ${
-                  confirmDelete?.action === 'delete'
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-green-600 hover:bg-green-700'
-                }`}
-              >
-                {confirmDelete?.action === 'delete'
-                  ? (lang === "ar" ? "حذف" : "Delete")
-                  : (lang === "ar" ? "تفعيل" : "Activate")
-                }
-              </button>
-            </div>
-          </div>
-        </div>
+      {editTarget && (
+        <AssetModal lang={lang} mode="edit" asset={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={fetchAssets} />
+      )}
+      {deleteModal.show && (
+        <ConfirmModal type="delete" asset={deleteModal.asset} lang={lang}
+          onConfirm={handleDelete}
+          onClose={() => setDeleteModal({ show: false, asset: null })} />
+      )}
+      {activateModal.show && (
+        <ConfirmModal type="activate" asset={activateModal.asset} lang={lang}
+          onConfirm={handleActivate}
+          onClose={() => setActivateModal({ show: false, asset: null })} />
       )}
     </div>
   );

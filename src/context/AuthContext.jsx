@@ -29,8 +29,6 @@ export default function AuthContextProvider({ children }) {
     } catch (err) {
       if (err.response?.status === 401) {
         logout();
-      } else {
-        console.error("Unexpected error while fetching user", err);
       }
     } finally {
       setLoading(false);

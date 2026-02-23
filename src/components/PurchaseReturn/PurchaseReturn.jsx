@@ -1,7 +1,8 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import {
-  Package, Search, Calendar, User, FileText, Plus, Eye,
-  X, Filter, Download, Printer, TrendingUp
+  Package, Search, Plus, Eye, X, Download, Printer,
+  FileText, ChevronUp, ChevronDown,
+  TrendingUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
@@ -15,13 +16,10 @@ import { formatCurrency, formatDateShort } from '../../utils/dateFormat';
 const RED  = "#C41E3A";
 const BLUE = "#003764";
 
-// Logo as inline base64-ready URL — we fetch it once and cache it
-// so it works in both print CSS and html2canvas (cross-origin SVG blocks canvas)
 let LOGO_DATA_URL = null;
 async function getLogoDataUrl() {
   if (LOGO_DATA_URL) return LOGO_DATA_URL;
   try {
-    // dynamic import of the svg asset (vite resolves to /assets/…)
     const mod = await import('../../assets/megabuild1.svg');
     const url = mod.default;
     const res = await fetch(url);
@@ -36,23 +34,39 @@ async function getLogoDataUrl() {
   }
 }
 
-/* ════════════════════════════════════════════
-   MAIN PAGE
-════════════════════════════════════════════ */
+// ── Sortable column header ─────────────────────────────────
+const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
+  <th
+    className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer select-none"
+    onClick={() => onSort(field)}
+  >
+    <span className="inline-flex items-center gap-1">
+      {label}
+      <span className="flex flex-col leading-none">
+        <ChevronUp   className={`w-3 h-3 ${sortField === field && sortDir === 'asc'  ? 'text-gray-900' : 'text-gray-300'}`} />
+        <ChevronDown className={`w-3 h-3 ${sortField === field && sortDir === 'desc' ? 'text-gray-900' : 'text-gray-300'}`} />
+      </span>
+    </span>
+  </th>
+);
+
+
+
+// ── Main Component ─────────────────────────────────────────
 const PurchaseReturns = () => {
   const { lang } = useContext(LanguageContext);
   const navigate  = useNavigate();
 
-  const [returns, setReturns]                   = useState([]);
-  const [filteredReturns, setFilteredReturns]   = useState([]);
-  const [loading, setLoading]                   = useState(true);
-  const [searchTerm, setSearchTerm]             = useState('');
-  const [startDate, setStartDate]               = useState('');
-  const [endDate, setEndDate]                   = useState('');
-  const [showDetailsModal, setShowDetailsModal] = useState(null);
+  const [returns,       setReturns]       = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [searchTerm,    setSearchTerm]    = useState('');
+  const [startDate,     setStartDate]     = useState('');
+  const [endDate,       setEndDate]       = useState('');
+  const [sortField,     setSortField]     = useState('returnDate');
+  const [sortDir,       setSortDir]       = useState('desc');
+  const [detailsModal,  setDetailsModal]  = useState(null);
 
   useEffect(() => { fetchReturns(); }, []);
-  useEffect(() => { filterReturns(); }, [searchTerm, startDate, endDate, returns]);
 
   const fetchReturns = async () => {
     try {
@@ -64,45 +78,27 @@ const PurchaseReturns = () => {
         items: ret.items.map((item) => ({ ...item, material: item.materialId, unit: item.unitId })),
       }));
       setReturns(enriched);
-      setFilteredReturns(enriched);
       if (enriched.length === 0)
         toast.info(lang === 'ar' ? 'لا توجد مرتجعات في النظام' : 'No returns found in the system');
     } catch {
       toast.error(lang === 'ar' ? 'فشل تحميل مرتجعات الشراء' : 'Failed to load purchase returns');
-      setReturns([]); setFilteredReturns([]);
+      setReturns([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterReturns = () => {
-    let filtered = [...returns];
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(ret =>
-        ret.returnNo?.toString().includes(searchTerm) ||
-        ret.supplierId?.nameEn?.toLowerCase().includes(term) ||
-        ret.supplierId?.nameAr?.includes(searchTerm) ||
-        ret.supplierId?.code?.toLowerCase().includes(term) ||
-        ret.notes?.toLowerCase().includes(term) ||
-        ret.items?.some(item =>
-          item.material?.nameEn?.toLowerCase().includes(term) ||
-          item.material?.nameAr?.includes(searchTerm) ||
-          item.material?.code?.toLowerCase().includes(term)
-        )
-      );
-    }
-    if (startDate) filtered = filtered.filter(ret => new Date(ret.returnDate) >= new Date(startDate));
-    if (endDate)   filtered = filtered.filter(ret => new Date(ret.returnDate) <= new Date(endDate));
-    setFilteredReturns(filtered);
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
   };
 
   const formatDate = (ds) =>
     new Date(ds).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
   const handleExportExcel = () => {
-    if (filteredReturns.length === 0) { toast.error(lang === 'ar' ? 'لا توجد بيانات للتصدير' : 'No data to export'); return; }
-    const data = filteredReturns.map((ret) => ({
+    if (displayed.length === 0) { toast.error(lang === 'ar' ? 'لا توجد بيانات للتصدير' : 'No data to export'); return; }
+    const data = displayed.map((ret) => ({
       [lang === 'ar' ? 'رقم المرتجع'    : 'Return #']:       ret.returnNo,
       [lang === 'ar' ? 'المورد'          : 'Supplier']:       lang === 'ar' ? ret.supplierId?.nameAr : ret.supplierId?.nameEn,
       [lang === 'ar' ? 'كود المورد'      : 'Supplier Code']:  ret.supplierId?.code || '',
@@ -116,144 +112,221 @@ const PurchaseReturns = () => {
     toast.success(lang === 'ar' ? 'تم التصدير بنجاح' : 'Exported successfully');
   };
 
-  const totalAmount = filteredReturns.reduce((s, r) => s + (r.totalAmount || 0), 0);
-  const totalItems  = filteredReturns.reduce((s, r) => s + (r.items?.length || 0), 0);
+  // Filter + Sort
+  const displayed = returns
+    .filter(ret => {
+      const q = searchTerm.toLowerCase();
+      const matchSearch = !q ||
+        ret.returnNo?.toString().includes(searchTerm) ||
+        ret.supplierId?.nameEn?.toLowerCase().includes(q) ||
+        ret.supplierId?.nameAr?.includes(searchTerm) ||
+        ret.supplierId?.code?.toLowerCase().includes(q) ||
+        ret.notes?.toLowerCase().includes(q) ||
+        ret.items?.some(item =>
+          item.material?.nameEn?.toLowerCase().includes(q) ||
+          item.material?.nameAr?.includes(searchTerm) ||
+          item.material?.code?.toLowerCase().includes(q)
+        );
+      const matchStart = !startDate || new Date(ret.returnDate) >= new Date(startDate);
+      const matchEnd   = !endDate   || new Date(ret.returnDate) <= new Date(endDate);
+      return matchSearch && matchStart && matchEnd;
+    })
+    .sort((a, b) => {
+      let va = a[sortField] ?? '';
+      let vb = b[sortField] ?? '';
+      if (sortField === 'returnDate' || sortField === 'createdAt') { va = new Date(va); vb = new Date(vb); }
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+
+  const totalAmount = displayed.reduce((s, r) => s + (r.totalAmount || 0), 0);
 
   if (loading) return <FullPageLoader text={lang === 'ar' ? 'جاري تحميل مرتجعات الشراء...' : 'Loading purchase returns...'} />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
 
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-orange-600 to-orange-700 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Package className="w-8 h-8 text-white" />
-                <div>
-                  <h1 className="text-2xl font-bold text-white">{lang === 'ar' ? 'مرتجعات المشتريات' : 'Purchase Returns'}</h1>
-                  <p className="text-orange-100 mt-1">{lang === 'ar' ? 'عرض وإدارة جميع مرتجعات المشتريات' : 'View and manage all purchase returns'}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={handleExportExcel} className="flex items-center gap-2 px-6 py-3 bg-white text-red-700 rounded-lg hover:border-2 border-black transition font-semibold shadow-md">
-                  <Download className="w-5 h-5" />{lang === 'ar' ? 'تصدير' : 'Export'}
-                </button>
-                <button onClick={() => navigate('/purchases/returns/create')} className="flex items-center gap-2 px-6 py-3 bg-white text-orange-600 hover:bg-orange-50 rounded-lg transition font-semibold shadow-md">
-                  <Plus className="w-5 h-5" />{lang === 'ar' ? 'مرتجع جديد' : 'New Return'}
-                </button>
-              </div>
-            </div>
+        {/* ── Page Header ── */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {lang === 'ar' ? 'مرتجعات المشتريات' : 'Purchase Returns'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {lang === 'ar' ? 'عرض وإدارة جميع مرتجعات المشتريات' : 'View and manage all purchase returns.'}
+            </p>
           </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-gray-50">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-orange-500">
-              <div className="flex items-center justify-between">
-                <div><p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'إجمالي المرتجعات' : 'Total Returns'}</p><p className="text-2xl font-bold text-gray-900">{filteredReturns.length}</p></div>
-                <Package className="w-10 h-10 text-orange-500 opacity-20" />
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
-              <div className="flex items-center justify-between">
-                <div><p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'إجمالي المبلغ' : 'Total Amount'}</p><p className="text-2xl font-bold text-gray-900">{formatCurrency(totalAmount, lang)}</p></div>
-                <TrendingUp className="w-10 h-10 text-green-500 opacity-20" />
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
-              <div className="flex items-center justify-between">
-                <div><p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'إجمالي الأصناف' : 'Total Items'}</p><p className="text-2xl font-bold text-gray-900">{totalItems}</p></div>
-                <FileText className="w-10 h-10 text-blue-500 opacity-20" />
-              </div>
-            </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              {lang === 'ar' ? 'تصدير' : 'Export'}
+            </button>
+            <button
+              onClick={() => navigate('/purchases/returns/create')}
+              className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition font-semibold text-sm shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              {lang === 'ar' ? 'مرتجع جديد' : 'New Return'}
+            </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">{lang === 'ar' ? 'الفلاتر' : 'Filters'}</h2>
+        {/* ── Stats Row ── */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white border border-gray-200 rounded-2xl px-5 py-4">
+            <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'إجمالي المرتجعات' : 'Total Returns'}</p>
+            <p className="text-2xl font-bold text-gray-900">{displayed.length}</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-              <input type="text"
-                placeholder={lang === 'ar' ? 'بحث برقم المرتجع، المورد، أو المادة...' : 'Search by return #, supplier, or material...'}
-                value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition" />
-            </div>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition" />
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition" />
+          <div className="bg-white border border-gray-200 rounded-2xl px-5 py-4">
+            <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'إجمالي المبلغ' : 'Total Amount'}</p>
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalAmount, lang)}</p>
           </div>
+          <div className="bg-white border border-gray-200 rounded-2xl px-5 py-4">
+            <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'إجمالي الأصناف' : 'Total Items'}</p>
+            <p className="text-2xl font-bold text-gray-900">{displayed.reduce((s, r) => s + (r.items?.length || 0), 0)}</p>
+          </div>
+        </div>
+
+        {/* ── Filters ── */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={lang === 'ar' ? 'بحث برقم المرتجع، المورد، أو المادة...' : 'Search by return #, supplier, or material...'}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+            />
+          </div>
+
+          {/* Start Date */}
+          <input
+            type="date"
+            value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+          />
+
+          {/* End Date */}
+          <input
+            type="date"
+            value={endDate}
+            onChange={e => setEndDate(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+          />
+
           {(searchTerm || startDate || endDate) && (
-            <button onClick={() => { setSearchTerm(''); setStartDate(''); setEndDate(''); }} className="mt-4 text-sm text-orange-600 hover:text-orange-700 font-medium">
-              {lang === 'ar' ? 'مسح الفلاتر' : 'Clear Filters'}
+            <button
+              onClick={() => { setSearchTerm(''); setStartDate(''); setEndDate(''); }}
+              className="text-sm text-orange-600 hover:underline"
+            >
+              {lang === 'ar' ? 'مسح الفلاتر' : 'Clear'}
             </button>
           )}
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {filteredReturns.length === 0 ? (
-            <div className="p-12 text-center">
-              <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{lang === 'ar' ? 'لا توجد مرتجعات' : 'No Returns Found'}</h3>
-              <p className="text-gray-600 mb-6">
-                {lang === 'ar' ? (searchTerm ? 'حاول تعديل معايير البحث' : 'ابدأ بإنشاء مرتجع جديد') : (searchTerm ? 'Try adjusting your search criteria' : 'Start by creating a new purchase return')}
+        {/* ── Table ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          {displayed.length === 0 ? (
+            <div className="p-16 text-center">
+              <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="font-medium text-gray-600">
+                {lang === 'ar' ? 'لا توجد مرتجعات' : 'No returns found'}
               </p>
-              <button onClick={() => navigate('/purchases/returns/create')} className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold">
-                <Plus className="w-5 h-5" />{lang === 'ar' ? 'إنشاء مرتجع جديد' : 'Create First Return'}
-              </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    {[lang === 'ar' ? 'رقم المرتجع' : 'Return #', lang === 'ar' ? 'المورد' : 'Supplier', lang === 'ar' ? 'التاريخ' : 'Date', lang === 'ar' ? 'عدد الأصناف' : 'Items', lang === 'ar' ? 'المبلغ الإجمالي' : 'Total Amount', lang === 'ar' ? 'أنشئ بواسطة' : 'Created By', lang === 'ar' ? 'إجراءات' : 'Actions'].map((h, i) => (
-                      <th key={i} className="px-6 py-4 text-left text-sm font-semibold text-gray-900">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredReturns.map((ret) => (
-                    <tr key={ret._id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4"><div className="flex items-center gap-2"><FileText className="w-4 h-4 text-orange-500" /><span className="font-semibold text-gray-900">#{ret.returnNo}</span></div></td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                            <span className="text-orange-600 font-semibold text-lg">{(lang === 'ar' ? ret.supplierId?.nameAr : ret.supplierId?.nameEn)?.charAt(0).toUpperCase()}</span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{lang === 'ar' ? ret.supplierId?.nameAr : ret.supplierId?.nameEn}</p>
-                            <p className="text-sm text-gray-500">{ret.supplierId?.code}</p>
-                          </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <SortHeader label={lang === 'ar' ? 'رقم المرتجع'   : 'Return #'}     field="returnNo"    sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'المورد'         : 'Supplier'}     field="supplierId"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'تاريخ المرتجع' : 'Return Date'}  field="returnDate"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'عدد الأصناف'   : 'Items'}        field="items"       sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'المبلغ الإجمالي': 'Total Amount'} field="totalAmount" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'أنشئ بواسطة'   : 'Created By'}   field="createdBy"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {displayed.map(ret => (
+                  <tr key={ret._id} className="hover:bg-gray-50/60 transition">
+
+                    {/* Return No */}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-4 h-4 text-orange-600" />
                         </div>
-                      </td>
-                      <td className="px-6 py-4"><div className="flex items-center gap-2 text-gray-700"><Calendar className="w-4 h-4 text-gray-400" />{formatDate(ret.returnDate)}</div></td>
-                      <td className="px-6 py-4"><span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">{ret.items?.length || 0} {lang === 'ar' ? 'صنف' : 'items'}</span></td>
-                      <td className="px-6 py-4"><span className="font-semibold text-gray-900">{formatCurrency(ret.totalAmount || 0, lang)}</span></td>
-                      <td className="px-6 py-4"><div className="flex items-center gap-2"><User className="w-4 h-4 text-gray-400" /><span className="text-gray-700">{ret.createdBy?.name || 'N/A'}</span></div></td>
-                      <td className="px-6 py-4">
-                        <button onClick={() => setShowDetailsModal(ret)} className="flex items-center gap-1 px-3 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition font-medium">
-                          <Eye className="w-4 h-4" />{lang === 'ar' ? 'عرض' : 'View'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <span className="font-medium text-gray-900 text-sm">#{ret.returnNo}</span>
+                      </div>
+                    </td>
+
+                    {/* Supplier */}
+                    <td className="px-4 py-3.5">
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">
+                          {lang === 'ar' ? ret.supplierId?.nameAr : ret.supplierId?.nameEn}
+                        </p>
+                        {ret.supplierId?.code && (
+                          <p className="text-xs text-gray-400">{ret.supplierId.code}</p>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Date */}
+                    <td className="px-4 py-3.5 text-sm text-gray-500">{formatDate(ret.returnDate)}</td>
+
+                    {/* Items Count */}
+                    <td className="px-4 py-3.5">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        {ret.items?.length || 0} {lang === 'ar' ? 'صنف' : 'items'}
+                      </span>
+                    </td>
+
+                    {/* Total */}
+                    <td className="px-4 py-3.5 text-sm font-semibold text-gray-900">
+                      {formatCurrency(ret.totalAmount || 0, lang)}
+                    </td>
+
+                    {/* Created By */}
+                    <td className="px-4 py-3.5 text-sm text-gray-500">
+                      {ret.createdBy?.name || 'N/A'}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5 text-right">
+                      <button
+                        onClick={() => setDetailsModal(ret)}
+                        className="p-1.5 rounded-md hover:bg-orange-50 transition text-gray-400 hover:text-orange-600"
+                        title={lang === 'ar' ? 'عرض التفاصيل' : 'View Details'}
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
+
       </div>
 
-      {showDetailsModal && (
-        <ReturnDetailsModal returnDoc={showDetailsModal} onClose={() => setShowDetailsModal(null)} lang={lang} />
+      {/* ── Details Modal ── */}
+      {detailsModal && (
+        <ReturnDetailsModal
+          returnDoc={detailsModal}
+          onClose={() => setDetailsModal(null)}
+          lang={lang}
+        />
       )}
     </div>
   );
@@ -263,20 +336,17 @@ export default PurchaseReturns;
 
 
 /* ════════════════════════════════════════════════════════════
-   RETURN DETAILS MODAL — Mega Build branded
-   ✅ Print: صفحة واحدة، لوجو ظاهر
-   ✅ PDF:   html2canvas → jsPDF بنفس الاستايل
+   RETURN DETAILS MODAL — unchanged, Mega Build branded
 ════════════════════════════════════════════════════════════ */
 function ReturnDetailsModal({ returnDoc, onClose, lang }) {
   const isAr = lang === 'ar';
   const tr   = (ar, en) => isAr ? ar : en;
 
   const invoiceRef  = useRef(null);
-  const [logoSrc, setLogoSrc]       = useState(null);
-  const [isPrinting, setIsPrinting] = useState(false);
+  const [logoSrc, setLogoSrc]         = useState(null);
+  const [isPrinting, setIsPrinting]   = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Load logo as data URL once (fixes print + canvas)
   useEffect(() => {
     getLogoDataUrl().then(url => { if (url) setLogoSrc(url); });
   }, []);
@@ -296,13 +366,11 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
   const total = returnDoc.totalAmount ||
     (returnDoc.items || []).reduce((s, i) => s + getItemTotal(i), 0);
 
-  /* ── PRINT (صفحة واحدة فقط) ── */
   const handlePrint = () => {
     const el = invoiceRef.current;
     if (!el) return;
     setIsPrinting(true);
-
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    const printWindow = window.open('', '_blank', 'width=900,height=800');
     printWindow.document.write(`
       <!DOCTYPE html>
       <html dir="${isAr ? 'rtl' : 'ltr'}">
@@ -328,7 +396,6 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
     };
   };
 
-  /* ── PDF DOWNLOAD (html2canvas → jsPDF) ── */
   const handleDownloadPDF = async () => {
     const el = invoiceRef.current;
     if (!el) return;
@@ -338,22 +405,12 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
         import('html2canvas'),
         import('jspdf'),
       ]);
-
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pdfW    = pdf.internal.pageSize.getWidth();
       const pdfH    = (canvas.height * pdfW) / canvas.width;
-
-      // If content taller than A4, split across pages
-      const pageH = pdf.internal.pageSize.getHeight();
+      const pageH   = pdf.internal.pageSize.getHeight();
       if (pdfH <= pageH) {
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
       } else {
@@ -364,7 +421,6 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
           if (yOffset < pdfH) pdf.addPage();
         }
       }
-
       pdf.save(`${tr('مرتجع', 'Return')}_${returnDoc.returnNo}.pdf`);
       toast.success(tr('تم تحميل PDF بنجاح', 'PDF downloaded successfully'));
     } catch (err) {
@@ -375,13 +431,9 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
     }
   };
 
-  /* ── INVOICE HTML (shared between modal view + print/PDF) ── */
   const InvoiceContent = () => (
     <div ref={invoiceRef} style={{ background: '#fff', fontFamily: isAr ? 'Tahoma,Arial,sans-serif' : 'Segoe UI,Arial,sans-serif', direction: isAr ? 'rtl' : 'ltr', width: '100%' }}>
-
-      {/* Header */}
       <div style={{ padding: '24px 36px 18px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           {logoSrc
             ? <img src={logoSrc} alt="Mega Build" style={{ width: 70, height: 70, objectFit: 'contain' }} />
@@ -389,8 +441,6 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
           }
           <p style={{ fontSize: 8, color: '#aaa', marginTop: 3, letterSpacing: 0.8 }}>{tr('نبني القيمة', 'We Build Value')}</p>
         </div>
-
-        {/* Brand info */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap: 4 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
             <span style={{ fontSize: 26, fontWeight: 900, color: RED,  letterSpacing: 2, lineHeight: 1 }}>MEGA</span>
@@ -410,12 +460,8 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
           </p>
         </div>
       </div>
-
-      {/* Red divider */}
       <div style={{ height: 3, background: RED }} />
       <div style={{ height: 1, background: '#eee' }} />
-
-      {/* Supplier / Dates */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
         <div style={{ padding: '20px 36px', borderBottom: '1px solid #eee', borderInlineEnd: '1px solid #eee' }}>
           <p style={{ fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{tr('المورد', 'Supplier')}</p>
@@ -438,8 +484,6 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
           ))}
         </div>
       </div>
-
-      {/* Items Table */}
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ background: BLUE }}>
@@ -461,31 +505,23 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
           ))}
         </tbody>
       </table>
-
-      {/* Grand Total */}
       <div style={{ padding: '16px 36px', display: 'flex', justifyContent: isAr ? 'flex-start' : 'flex-end' }}>
         <div style={{ display: 'flex' }}>
           <div style={{ background: RED, color: '#fff', padding: '9px 22px', fontWeight: 800, fontSize: 13, borderRadius: '4px 0 0 4px', letterSpacing: 1 }}>{tr('الإجمالي الكلي', 'GRAND TOTAL')}</div>
           <div style={{ border: `2px solid ${RED}`, padding: '7px 22px', fontWeight: 900, fontSize: 16, minWidth: 160, textAlign: 'center', color: RED, borderRadius: '0 4px 4px 0' }}>{formatCurrency(total, lang)}</div>
         </div>
       </div>
-
-      {/* Notes */}
       {returnDoc.notes && (
         <div style={{ padding: '16px 36px', borderTop: '1px solid #eee', background: '#fafafa' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: RED, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{tr('ملاحظات', 'Notes')}</p>
           <p style={{ fontSize: 13, color: '#444', lineHeight: 1.6, margin: 0 }}>{returnDoc.notes}</p>
         </div>
       )}
-
-      {/* Footer text */}
       <div style={{ padding: '12px 36px', borderTop: '1px solid #eee', textAlign: 'center', background: '#fafafa' }}>
         <p style={{ fontSize: 11, color: '#888', margin: 0 }}>
           {tr('هذا مستند من إنتاج الكمبيوتر', 'This is a computer-generated document')} — {new Date().toLocaleDateString(isAr ? 'ar-EG' : 'en-US')}
         </p>
       </div>
-
-      {/* Footer bar */}
       <div style={{ display: 'flex', height: 24 }}>
         <div style={{ width: '38%', background: RED }} />
         <div style={{ width: '2%',  background: '#fff' }} />
@@ -495,16 +531,25 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
 
         {/* Title bar */}
-        <div className="bg-gradient-to-r from-red-700 to-blue-900 text-white p-4 flex items-center justify-between">
+        <div className="flex items-center justify-between p-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <FileText size={24} />
-            <h3 className="text-xl font-bold">{tr('تفاصيل مرتجع الشراء', 'Purchase Return Details')}</h3>
+            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-orange-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">
+                {tr('تفاصيل مرتجع الشراء', 'Purchase Return Details')}
+              </h3>
+              <p className="text-xs text-gray-500">#{returnDoc.returnNo}</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors"><X size={22} /></button>
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Invoice (scrollable) */}
@@ -513,23 +558,22 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
         </div>
 
         {/* Action buttons */}
-        <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200">
-          {/* PDF download */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+          <button onClick={onClose}
+            className="px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+            {tr('إغلاق', 'Close')}
+          </button>
+          <button onClick={handlePrint} disabled={isPrinting}
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-medium text-sm disabled:opacity-50">
+            <Printer className="w-4 h-4" />
+            {tr('طباعة', 'Print')}
+          </button>
           <button onClick={handleDownloadPDF} disabled={isExporting}
-            className="flex items-center gap-2 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold disabled:opacity-60">
+            className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition font-medium text-sm disabled:opacity-50">
             {isExporting
               ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />{tr('جاري التحميل...', 'Exporting...')}</>
-              : <><Download size={18} />{tr('تحميل PDF', 'Download PDF')}</>
+              : <><Download className="w-4 h-4" />{tr('تحميل PDF', 'Download PDF')}</>
             }
-          </button>
-          {/* Print */}
-          <button onClick={handlePrint} disabled={isPrinting}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-60">
-            <Printer size={18} />{tr('طباعة', 'Print')}
-          </button>
-          {/* Close */}
-          <button onClick={onClose} className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-semibold">
-            {tr('إغلاق', 'Close')}
           </button>
         </div>
       </div>

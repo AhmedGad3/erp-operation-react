@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Plus, Trash2, AlertCircle, CheckCircle, RefreshCw, TrendingDown, TrendingUp, Package, Download, FileText, File } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Package, Download, FileText, File, CheckCircle } from 'lucide-react';
+import { getErrorMessage } from '../../utils/errorHandler';
 import axiosInstance from '../../utils/axiosInstance';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
@@ -27,9 +28,7 @@ const StockAdjustment = () => {
     try {
       const response = await axiosInstance.get('/me');
       setCurrentUser(response.data);
-    } catch (error) {
-      console.error('Error getting current user:', error);
-    }
+    } catch { }
   };
 
   const fetchData = async () => {
@@ -41,8 +40,7 @@ const StockAdjustment = () => {
       ]);
       setMaterials(materialsRes.data.result || []);
       setUnits(unitsRes.data.result || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch {
       toast.error(lang === 'ar' ? 'خطأ في تحميل البيانات' : 'Error loading data');
     } finally {
       setLoading(false);

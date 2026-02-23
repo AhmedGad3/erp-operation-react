@@ -19,70 +19,55 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('purchases');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
+  const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
   const renderActiveTab = () => {
     const commonProps = { isAr, refreshKey };
-    
     switch (activeTab) {
-      case 'purchases':
-        return <PurchasesReport {...commonProps} />;
-      case 'supplierPayments':
-        return <SupplierPaymentsReport {...commonProps} />;
-      case 'clientPayments':
-        return <ClientPaymentsReport {...commonProps} />;
-      case 'stockMovements':
-        return <StockMovementsReport {...commonProps} />;
-      case 'supplierLedger':
-        return <SupplierLedgerReport {...commonProps} />;
-      case 'clientLedger':
-        return <ClientLedgerReport {...commonProps} />;
-      case 'expenses':
-        return <ExpensesReport {...commonProps} />;
-      case 'profits':
-        return <ProfitsReport {...commonProps} />;
-      default:
-        return null;
+      case 'purchases':        return <PurchasesReport {...commonProps} />;
+      case 'supplierPayments': return <SupplierPaymentsReport {...commonProps} />;
+      case 'clientPayments':   return <ClientPaymentsReport {...commonProps} />;
+      case 'stockMovements':   return <StockMovementsReport {...commonProps} />;
+      case 'supplierLedger':   return <SupplierLedgerReport {...commonProps} />;
+      case 'clientLedger':     return <ClientLedgerReport {...commonProps} />;
+      case 'expenses':         return <ExpensesReport {...commonProps} />;
+      case 'profits':          return <ProfitsReport {...commonProps} />;
+      default:                 return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="flex-1 min-w-0 py-8 px-4">
-        <div className="max-w-[1600px] mx-auto">
-          {/* Header */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-            <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-8 py-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-8 h-8 text-white" />
-                  <div>
-                    <h1 className="text-2xl font-bold text-white">
-                      {isAr ? 'التقارير الشاملة' : 'Comprehensive Reports'}
-                    </h1>
-                    <p className="text-indigo-100 mt-1">
-                      {isAr ? 'تقارير تفصيلية لجميع العمليات' : 'Detailed reports for all operations'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleRefresh}
-                  className="p-3 bg-white/20 hover:bg-white/30 text-white rounded-lg transition"
-                  title={isAr ? 'تحديث' : 'Refresh'}
-                >
-                  <RefreshCw className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-[1600px] mx-auto">
 
-            <ReportTabs activeTab={activeTab} setActiveTab={setActiveTab} isAr={isAr} />
+        {/* ── Page Header ── */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isAr ? 'التقارير الشاملة' : 'Comprehensive Reports'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {isAr ? 'تقارير تفصيلية لجميع العمليات' : 'Detailed reports for all operations'}
+            </p>
           </div>
-
-          {/* Active Tab Content */}
-          {renderActiveTab()}
+          <button
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-100 transition font-medium text-sm"
+            title={isAr ? 'تحديث' : 'Refresh'}
+          >
+            <RefreshCw className="w-4 h-4" />
+            {isAr ? 'تحديث' : 'Refresh'}
+          </button>
         </div>
+
+        {/* ── Tabs + Content ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden mb-6">
+          <ReportTabs activeTab={activeTab} setActiveTab={setActiveTab} isAr={isAr} />
+        </div>
+
+        {/* ── Active Tab Content ── */}
+        {renderActiveTab()}
+
       </div>
     </div>
   );

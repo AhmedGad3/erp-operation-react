@@ -122,10 +122,43 @@ export default function ClientLedger() {
     : clientsWithBalance;
 
   // ================= STATS =================
+  // balance موجب = العميل لسه مدين = "لنا"
+  // balance سالب = العميل دفع زيادة = "علينا"
   const totalClients = filteredClients.length;
   const totalDebit = filteredClients.reduce((sum, c) => sum + (c.balance > 0 ? c.balance : 0), 0);
   const totalCredit = filteredClients.reduce((sum, c) => sum + (c.balance < 0 ? Math.abs(c.balance) : 0), 0);
   const clientsWithDebit = filteredClients.filter(c => c.balance > 0).length;
+
+  // ================= BALANCE HELPERS =================
+  // balance موجب = لنا (العميل مدين)
+  // balance سالب = دفع (العميل دفع أكتر أو متوازن)
+  // balance صفر = متوازن
+  const getBalanceColor = (balance) => {
+    if (balance > 0) return "text-red-600";      // لنا = العميل مدين = تحذير
+    if (balance < 0) return "text-green-600";    // دفع = تمام
+    return "text-gray-600";                       // متوازن
+  };
+
+  const getBalanceStatus = (balance) => {
+    if (balance > 0) return (
+      <span className="flex items-center gap-2 text-red-600 font-semibold">
+        <TrendingUp className="w-4 h-4" />
+        {lang === "ar" ? "لنا" : "Owed to Us"}
+      </span>
+    );
+    if (balance < 0) return (
+      <span className="flex items-center gap-2 text-green-600 font-semibold">
+        <TrendingDown className="w-4 h-4" />
+        {lang === "ar" ? "مدفوع" : "Paid"}
+      </span>
+    );
+    return (
+      <span className="flex items-center gap-2 text-gray-600 font-semibold">
+        <Wallet className="w-4 h-4" />
+        {lang === "ar" ? "متوازن" : "Balanced"}
+      </span>
+    );
+  };
 
   // ================= UI =================
   if (loading) {
@@ -186,33 +219,33 @@ export default function ClientLedger() {
                 <Users className="w-10 h-10 text-blue-500 opacity-20" />
               </div>
             </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">
-                    {lang === "ar" ? "لنا (مدين)" : "Debit (Owed to Us)"}
-                  </p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totalDebit, lang)}</p>
-                </div>
-                <TrendingUp className="w-10 h-10 text-green-500 opacity-20" />
-              </div>
-            </div>
             <div className="bg-white p-4 rounded-lg border-l-4 border-red-500">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">
-                    {lang === "ar" ? "علينا (دائن)" : "Credit (We Owe)"}
+                    {lang === "ar" ? "لنا (مدين)" : "Owed to Us"}
                   </p>
-                  <p className="text-2xl font-bold text-red-600">{formatCurrency(totalCredit, lang)}</p>
+                  <p className="text-2xl font-bold text-red-600">{formatCurrency(totalDebit, lang)}</p>
                 </div>
-                <TrendingDown className="w-10 h-10 text-red-500 opacity-20" />
+                <TrendingUp className="w-10 h-10 text-red-500 opacity-20" />
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">
+                    {lang === "ar" ? "مدفوع " : "Paid"}
+                  </p>
+                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totalCredit, lang)}</p>
+                </div>
+                <TrendingDown className="w-10 h-10 text-green-500 opacity-20" />
               </div>
             </div>
             <div className="bg-white p-4 rounded-lg border-l-4 border-orange-500">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">
-                    {lang === "ar" ? "عملاء بمديونية" : "Clients With Debit"}
+                    {lang === "ar" ? "عملاء بمديونية" : "Clients With Debt"}
                   </p>
                   <p className="text-2xl font-bold text-gray-900">{clientsWithDebit}</p>
                 </div>
@@ -236,7 +269,6 @@ export default function ClientLedger() {
             />
           </div>
 
-          {/* Clear Filter */}
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
@@ -319,33 +351,12 @@ export default function ClientLedger() {
                         {client.phone || "-"}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`text-lg font-bold ${
-                          client.balance > 0 
-                            ? "text-green-600" 
-                            : client.balance < 0 
-                            ? "text-red-600" 
-                            : "text-gray-600"
-                        }`}>
-                          {formatCurrency(client.balance, lang)}
+                        <span className={`text-lg font-bold ${getBalanceColor(client.balance)}`}>
+                          {formatCurrency(Math.abs(client.balance), lang)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        {client.balance > 0 ? (
-                          <span className="flex items-center gap-2 text-green-600 font-semibold">
-                            <TrendingUp className="w-4 h-4" />
-                            {lang === "ar" ? "لنا" : "Debit"}
-                          </span>
-                        ) : client.balance < 0 ? (
-                          <span className="flex items-center gap-2 text-red-600 font-semibold">
-                            <TrendingDown className="w-4 h-4" />
-                            {lang === "ar" ? "علينا" : "Credit"}
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-2 text-gray-600 font-semibold">
-                            <Wallet className="w-4 h-4" />
-                            {lang === "ar" ? "متوازن" : "Balanced"}
-                          </span>
-                        )}
+                        {getBalanceStatus(client.balance)}
                       </td>
                       <td className="px-6 py-4">
                         <button

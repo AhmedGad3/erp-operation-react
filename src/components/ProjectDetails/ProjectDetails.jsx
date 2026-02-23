@@ -89,19 +89,14 @@ const ProjectDetails = () => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      PLANNED: { bg: 'bg-blue-100', text: 'text-blue-800', label: lang === 'ar' ? 'مخطط' : 'Planned' },
+      PLANNED:     { bg: 'bg-blue-100',   text: 'text-blue-800',   label: lang === 'ar' ? 'مخطط'         : 'Planned'     },
       IN_PROGRESS: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: lang === 'ar' ? 'جاري التنفيذ' : 'In Progress' },
-      ON_HOLD: { bg: 'bg-orange-100', text: 'text-orange-800', label: lang === 'ar' ? 'معلق' : 'On Hold' },
-      COMPLETED: { bg: 'bg-green-100', text: 'text-green-800', label: lang === 'ar' ? 'مكتمل' : 'Completed' },
-      CANCELLED: { bg: 'bg-red-100', text: 'text-red-800', label: lang === 'ar' ? 'ملغي' : 'Cancelled' },
-      CLOSED: { bg: 'bg-gray-100', text: 'text-gray-800', label: lang === 'ar' ? 'مغلق' : 'Closed' },
+      ON_HOLD:     { bg: 'bg-orange-100', text: 'text-orange-800', label: lang === 'ar' ? 'معلق'         : 'On Hold'     },
+      COMPLETED:   { bg: 'bg-green-100',  text: 'text-green-800',  label: lang === 'ar' ? 'مكتمل'        : 'Completed'   },
+      CANCELLED:   { bg: 'bg-red-100',    text: 'text-red-800',    label: lang === 'ar' ? 'ملغي'         : 'Cancelled'   },
+      CLOSED:      { bg: 'bg-gray-100',   text: 'text-gray-800',   label: lang === 'ar' ? 'مغلق'         : 'Closed'      },
     };
-
-    return statusMap[status] || {
-      bg: 'bg-gray-100',
-      text: 'text-gray-800',
-      label: status,
-    };
+    return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
   };
 
   if (loading) {
@@ -110,18 +105,18 @@ const ProjectDetails = () => {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto">
           <button
             onClick={() => navigate('/projects')}
-            className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold mb-4"
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-100 transition font-medium text-sm mb-6"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
             {lang === 'ar' ? 'رجوع' : 'Back'}
           </button>
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-            <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="bg-white border border-gray-200 rounded-2xl p-16 text-center">
+            <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-gray-600">
               {lang === 'ar' ? 'المشروع غير موجود' : 'Project Not Found'}
             </h3>
           </div>
@@ -132,149 +127,136 @@ const ProjectDetails = () => {
 
   const status = getStatusBadge(project.status);
 
-  // Chart data — now includes subcontractor costs
   const costBreakdownData = [
-    { name: lang === 'ar' ? 'المواد' : 'Materials', value: project.materialCosts, color: '#1e3a8a' },
-    { name: lang === 'ar' ? 'العمالة' : 'Labor', value: project.laborCosts, color: '#f59e0b' },
-    { name: lang === 'ar' ? 'المعدات' : 'Equipment', value: project.equipmentCosts, color: '#10b981' },
-    { name: lang === 'ar' ? 'المقاولين' : 'Subcontractors', value: project.subcontractorCosts, color: '#f97316' },
-    { name: lang === 'ar' ? 'أخرى' : 'Other', value: project.otherCosts, color: '#3b82f6' },
-  ].filter((item) => item.value > 0); // hide zero-value slices
+    { name: lang === 'ar' ? 'المواد'     : 'Materials',      value: project.materialCosts,       color: '#1e3a8a' },
+    { name: lang === 'ar' ? 'العمالة'    : 'Labor',          value: project.laborCosts,          color: '#f59e0b' },
+    { name: lang === 'ar' ? 'المعدات'    : 'Equipment',      value: project.equipmentCosts,      color: '#10b981' },
+    { name: lang === 'ar' ? 'المقاولين'  : 'Subcontractors', value: project.subcontractorCosts,  color: '#f97316' },
+    { name: lang === 'ar' ? 'أخرى'       : 'Other',          value: project.otherCosts,          color: '#3b82f6' },
+  ].filter((item) => item.value > 0);
 
   const COLORS = costBreakdownData.map((d) => d.color);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate('/projects')}
-          className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold mb-6"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          {lang === 'ar' ? 'رجوع للمشاريع' : 'Back to Projects'}
-        </button>
 
-        {/* Header Card */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Building2 className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-white">{lang === 'ar' ? project.nameAr : project.nameEn}</h1>
-                  <p className="text-green-100 mt-1">{project.code}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowEditModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition"
-                >
-                  <Edit className="w-4 h-4" />
-                  {lang === 'ar' ? 'تعديل' : 'Edit'}
-                </button>
-                <button
-                  onClick={() => setDeleteModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {lang === 'ar' ? 'حذف' : 'Delete'}
-                </button>
-              </div>
-            </div>
+        {/* ── Page Header ── */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {lang === 'ar' ? project.nameAr : project.nameEn}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">{project.code}</p>
           </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/projects')}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-100 transition font-medium text-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {lang === 'ar' ? 'رجوع' : 'Back'}
+            </button>
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-100 transition font-medium text-sm"
+            >
+              <Edit className="w-4 h-4" />
+              {lang === 'ar' ? 'تعديل' : 'Edit'}
+            </button>
+            <button
+              onClick={() => setDeleteModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium text-sm"
+            >
+              <Trash2 className="w-4 h-4" />
+              {lang === 'ar' ? 'حذف' : 'Delete'}
+            </button>
+          </div>
+        </div>
 
-          {/* Basic Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-gray-50">
+        {/* ── Basic Info Strip ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
-              <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'الحالة' : 'Status'}</p>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${status.bg} ${status.text}`}>
+              <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'الحالة' : 'Status'}</p>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
                 {status.label}
               </span>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'العميل' : 'Client'}</p>
-              <p className="font-semibold text-gray-900">
+              <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'العميل' : 'Client'}</p>
+              <p className="font-medium text-gray-900 text-sm">
                 {lang === 'ar' ? project.clientId.nameAr : project.clientId.nameEn}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'الموقع' : 'Location'}</p>
-              <p className="font-semibold text-gray-900 flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
+              <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'الموقع' : 'Location'}</p>
+              <p className="font-medium text-gray-900 text-sm flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" />
                 {project.location}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'النسبة المئوية للإنجاز' : 'Completion %'}</p>
-              <p className="font-semibold text-gray-900">{project.completionPercentage}%</p>
+              <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'نسبة الإنجاز' : 'Completion'}</p>
+              <p className="font-medium text-gray-900 text-sm">{project.completionPercentage}%</p>
             </div>
           </div>
         </div>
 
-        {/* Main Content Grid */}
+        {/* ── Main Grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
           {/* Left Side */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Project Info */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+
+            {/* Project Details */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 {lang === 'ar' ? 'تفاصيل المشروع' : 'Project Details'}
               </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'مدير المشروع' : 'Project Manager'}</p>
-                  <p className="font-semibold text-gray-900 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-green-600" />
+                  <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'مدير المشروع' : 'Project Manager'}</p>
+                  <p className="font-medium text-gray-900 text-sm flex items-center gap-2">
+                    <Users className="w-4 h-4 text-indigo-500" />
                     {project.projectManager || '-'}
                   </p>
                 </div>
-
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'مهندس الموقع' : 'Site Engineer'}</p>
-                  <p className="font-semibold text-gray-900 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-green-600" />
+                  <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'مهندس الموقع' : 'Site Engineer'}</p>
+                  <p className="font-medium text-gray-900 text-sm flex items-center gap-2">
+                    <Users className="w-4 h-4 text-indigo-500" />
                     {project.siteEngineer || '-'}
                   </p>
                 </div>
-
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'تاريخ البداية' : 'Start Date'}</p>
-                  <p className="font-semibold text-gray-900 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-green-600" />
+                  <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'تاريخ البداية' : 'Start Date'}</p>
+                  <p className="font-medium text-gray-900 text-sm flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-indigo-500" />
                     {formatDate(project.startDate)}
                   </p>
                 </div>
-
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">
-                    {lang === 'ar' ? 'تاريخ النهاية المتوقع' : 'Expected End Date'}
-                  </p>
-                  <p className="font-semibold text-gray-900 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-green-600" />
+                  <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'تاريخ النهاية المتوقع' : 'Expected End Date'}</p>
+                  <p className="font-medium text-gray-900 text-sm flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-indigo-500" />
                     {formatDate(project.expectedEndDate)}
                   </p>
                 </div>
               </div>
-
               {project.notes && (
-                <div className="mt-6 pt-6 border-t">
-                  <p className="text-sm text-gray-600 mb-2">{lang === 'ar' ? 'ملاحظات' : 'Notes'}</p>
-                  <p className="text-gray-700 bg-gray-50 p-3 rounded">{project.notes}</p>
+                <div className="mt-5 pt-5 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 mb-2">{lang === 'ar' ? 'ملاحظات' : 'Notes'}</p>
+                  <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-3">{project.notes}</p>
                 </div>
               )}
             </div>
 
-            {/* Charts Section */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            {/* Charts */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Cost Breakdown Bar Chart */}
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-4">
                     {lang === 'ar' ? 'تفصيل التكاليف' : 'Cost Breakdown'}
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>
@@ -290,10 +272,8 @@ const ProjectDetails = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-
-                {/* Expense Distribution Pie Chart */}
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-4">
                     {lang === 'ar' ? 'توزيع المصروفات' : 'Expense Distribution'}
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>
@@ -319,9 +299,8 @@ const ProjectDetails = () => {
               </div>
             </div>
 
-            {/* Cost Cards — 3-column grid to fit 5 cards nicely */}
+            {/* Cost Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {/* Materials */}
               <CostCard
                 onClick={() => navigate(`/projects/material-issue/project/${id}`)}
                 icon={<Package className="w-6 h-6 text-white" />}
@@ -332,8 +311,6 @@ const ProjectDetails = () => {
                 amountColor="text-blue-600"
                 lang={lang}
               />
-
-              {/* Labor */}
               <CostCard
                 onClick={() => navigate(`/projects/${id}/labor`)}
                 icon={<Users className="w-6 h-6 text-white" />}
@@ -344,8 +321,6 @@ const ProjectDetails = () => {
                 amountColor="text-orange-600"
                 lang={lang}
               />
-
-              {/* Equipment */}
               <CostCard
                 onClick={() => navigate(`/projects/${id}/equipment`)}
                 icon={<Truck className="w-6 h-6 text-white" />}
@@ -356,8 +331,6 @@ const ProjectDetails = () => {
                 amountColor="text-green-600"
                 lang={lang}
               />
-
-              {/* Subcontractors ✅ NEW */}
               <CostCard
                 onClick={() => navigate(`/projects/${id}/subcontractor-work`)}
                 icon={<HardHat className="w-6 h-6 text-white" />}
@@ -368,8 +341,6 @@ const ProjectDetails = () => {
                 amountColor="text-amber-600"
                 lang={lang}
               />
-
-              {/* Other */}
               <CostCard
                 onClick={() => navigate(`/projects/${id}/miscellaneous`)}
                 icon={<DollarSign className="w-6 h-6 text-white" />}
@@ -383,60 +354,57 @@ const ProjectDetails = () => {
             </div>
           </div>
 
-          {/* Right Side - Financial Summary */}
+          {/* Right Side */}
           <div className="space-y-6">
+
             {/* Contract Amount */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-green-600" />
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-indigo-500" />
                 {lang === 'ar' ? 'قيمة العقد' : 'Contract Amount'}
               </h3>
-              <p className="text-3xl font-bold text-green-600">{formatCurrency(project.contractAmount)}</p>
-              <p className="text-sm text-gray-600 mt-2">{lang === 'ar' ? 'المبلغ المتبقي' : 'Remaining'}</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(project.contractRemaining)}</p>
+              <p className="text-2xl font-bold text-indigo-600">{formatCurrency(project.contractAmount)}</p>
+              <p className="text-xs text-gray-500 mt-2">{lang === 'ar' ? 'المبلغ المتبقي' : 'Remaining'}</p>
+              <p className="text-lg font-bold text-gray-900">{formatCurrency(project.contractRemaining)}</p>
             </div>
 
             {/* Profit Analysis */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-600" />
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-indigo-500" />
                 {lang === 'ar' ? 'تحليل الأرباح' : 'Profit Analysis'}
               </h3>
-
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'الربح المتوقع' : 'Expected Profit'}</p>
-                  <p className="text-xl font-bold text-green-600">{formatCurrency(project.expectedProfit)}</p>
+                  <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'الربح المتوقع' : 'Expected Profit'}</p>
+                  <p className="text-lg font-bold text-green-600">{formatCurrency(project.expectedProfit)}</p>
                 </div>
-
-                <div className="pt-3 border-t">
-                  <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'الربح المحقق' : 'Realized Profit'}</p>
-                  <p className={`text-xl font-bold ${project.realizedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className="pt-3 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'الربح المحقق' : 'Realized Profit'}</p>
+                  <p className={`text-lg font-bold ${project.realizedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {formatCurrency(project.realizedProfit)}
                   </p>
                 </div>
-
-                <div className="pt-3 border-t">
-                  <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'هامش الربح' : 'Profit Margin'}</p>
-                  <p className="text-xl font-bold text-gray-900">{project.profitMargin}%</p>
+                <div className="pt-3 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'هامش الربح' : 'Profit Margin'}</p>
+                  <p className="text-lg font-bold text-gray-900">{project.profitMargin}%</p>
                 </div>
               </div>
             </div>
 
             {/* Financial Status */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">
                 {lang === 'ar' ? 'الحالة المالية' : 'Financial Status'}
               </h3>
-
               <div className="space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b">
-                  <span className="text-gray-700">{lang === 'ar' ? 'المفوتر' : 'Invoiced'}</span>
-                  <span className="font-semibold">{formatCurrency(project.totalInvoiced)}</span>
+                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">{lang === 'ar' ? 'المفوتر' : 'Invoiced'}</span>
+                  <span className="font-semibold text-sm text-gray-900">{formatCurrency(project.totalInvoiced)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">{lang === 'ar' ? 'المدفوع' : 'Paid'}</span>
-                  <span className="font-semibold">{formatCurrency(project.totalPaid)}</span>
+                  <span className="text-sm text-gray-600">{lang === 'ar' ? 'المدفوع' : 'Paid'}</span>
+                  <span className="font-semibold text-sm text-gray-900">{formatCurrency(project.totalPaid)}</span>
                 </div>
               </div>
             </div>
@@ -448,48 +416,42 @@ const ProjectDetails = () => {
       {showEditModal && (
         <EditProjectModal
           project={project}
-          onClose={() => {
-            setShowEditModal(false);
-            fetchProject();
-          }}
+          onClose={() => { setShowEditModal(false); fetchProject(); }}
           fetchProjects={fetchProject}
         />
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       {deleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <Trash2 className="w-6 h-6 text-red-600" />
+              <div className="w-11 h-11 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">{lang === 'ar' ? 'تأكيد الحذف' : 'Confirm Delete'}</h3>
+                <h3 className="text-base font-semibold text-gray-900">
+                  {lang === 'ar' ? 'تأكيد الحذف' : 'Confirm Delete'}
+                </h3>
                 <p className="text-sm text-gray-500">
                   {lang === 'ar' ? 'هل أنت متأكد من حذف هذا المشروع؟' : 'Are you sure you want to delete this project?'}
                 </p>
               </div>
             </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'المشروع:' : 'Project:'}</p>
-              <p className="font-semibold text-gray-900">{lang === 'ar' ? project.nameAr : project.nameEn}</p>
+            <div className="bg-gray-50 rounded-xl p-4 mb-4">
+              <p className="text-xs text-gray-500 mb-1">{lang === 'ar' ? 'المشروع:' : 'Project:'}</p>
+              <p className="font-medium text-gray-900 text-sm">{lang === 'ar' ? project.nameAr : project.nameEn}</p>
             </div>
-
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
+                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
               >
                 {lang === 'ar' ? 'إلغاء' : 'Cancel'}
               </button>
               <button
-                onClick={() => {
-                  handleDelete();
-                  setDeleteModal(false);
-                }}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
+                onClick={() => { handleDelete(); setDeleteModal(false); }}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium text-sm"
               >
                 {lang === 'ar' ? 'حذف' : 'Delete'}
               </button>
@@ -501,31 +463,28 @@ const ProjectDetails = () => {
   );
 };
 
-
 function CostCard({ onClick, icon, iconBg, title, subtitle, amount, amountColor, lang }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-green-500 group"
+      className="bg-white border border-gray-200 rounded-2xl p-5 cursor-pointer hover:shadow-md transition-all hover:border-indigo-300 group"
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div
-            className={`w-12 h-12 bg-gradient-to-br ${iconBg} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform`}
-          >
+          <div className={`w-10 h-10 bg-gradient-to-br ${iconBg} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
             {icon}
           </div>
           <div>
-            <h4 className="text-lg font-bold text-gray-900">{title}</h4>
-            <p className="text-sm text-gray-500">{subtitle}</p>
+            <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
+            <p className="text-xs text-gray-500">{subtitle}</p>
           </div>
         </div>
         <ArrowLeft
-          className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors"
+          className="w-4 h-4 text-gray-300 group-hover:text-indigo-500 transition-colors"
           style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }}
         />
       </div>
-      <div className={`text-3xl font-bold ${amountColor}`}>{amount}</div>
+      <div className={`text-xl font-bold ${amountColor}`}>{amount}</div>
     </div>
   );
 }

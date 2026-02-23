@@ -1,257 +1,220 @@
 import { useContext, useState } from "react";
-import { X, AlertCircle, CheckCircle } from "lucide-react";
+import { X } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { LanguageContext } from "../../context/LanguageContext";
 import FullPageLoader from "../Loader/Loader";
 
-export default function EditProjectModal({ 
+export default function EditProjectModal({
   project = {},
-  onClose, 
+  onClose,
   fetchProjects,
 }) {
-  const { lang, t } = useContext(LanguageContext);
+  const { lang } = useContext(LanguageContext);
   const [saving, setSaving] = useState(false);
-  const [toast_, setToast_] = useState(null);
 
   const [formData, setFormData] = useState({
-    nameAr: project.nameAr || "",
-    nameEn: project.nameEn || "",
+    nameAr:         project.nameAr         || "",
+    nameEn:         project.nameEn         || "",
     projectManager: project.projectManager || "",
-    siteEngineer: project.siteEngineer || "",
-    status: project.status || "PLANNED",
-    notes: project.notes || "",
+    siteEngineer:   project.siteEngineer   || "",
+    status:         project.status         || "PLANNED",
+    notes:          project.notes          || "",
   });
 
   const [errors, setErrors] = useState({});
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.nameAr?.trim() || formData.nameAr.length < 2) {
+    if (!formData.nameAr?.trim() || formData.nameAr.length < 2)
       newErrors.nameAr = lang === 'ar' ? 'الاسم بالعربية مطلوب' : 'Arabic name is required';
-    }
-
-    if (!formData.nameEn?.trim() || formData.nameEn.length < 2) {
+    if (!formData.nameEn?.trim() || formData.nameEn.length < 2)
       newErrors.nameEn = lang === 'ar' ? 'الاسم بالإنجليزية مطلوب' : 'English name is required';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const showToast = (message, type) => {
-    setToast_({ message, type });
-    setTimeout(() => setToast_(null), 5000);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      showToast(lang === 'ar' ? 'يرجى إصلاح الأخطاء' : 'Please fix errors', 'error');
-      return;
-    }
-
+    if (!validateForm()) return;
     setSaving(true);
-
     try {
-      const payload = {
-        nameAr: formData.nameAr?.trim() || "",
-        nameEn: formData.nameEn?.trim() || "",
+      await axiosInstance.put(`/admin/projects/${project._id}`, {
+        nameAr:         formData.nameAr?.trim()         || "",
+        nameEn:         formData.nameEn?.trim()         || "",
         projectManager: formData.projectManager?.trim() || "",
-        siteEngineer: formData.siteEngineer?.trim() || "",
-        status: formData.status,
-        notes: formData.notes?.trim() || "",
-      };
-
-      await axiosInstance.put(`/admin/projects/${project._id}`, payload);
-      
-      showToast(lang === 'ar' ? 'تم التحديث بنجاح!' : 'Updated successfully!', 'success');
-      
-      setTimeout(() => {
-        onClose();
-        fetchProjects();
-      }, 1500);
-      
+        siteEngineer:   formData.siteEngineer?.trim()   || "",
+        status:         formData.status,
+        notes:          formData.notes?.trim()          || "",
+      });
+      onClose();
+      fetchProjects();
     } catch (err) {
       console.error("Error updating project:", err);
-      let errorMsg = lang === 'ar' ? 'فشل التحديث' : 'Failed to update';
-      if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      }
-      showToast(errorMsg, 'error');
     } finally {
       setSaving(false);
     }
   };
 
+  const inputCls = (hasError) =>
+    `w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-gray-50 ${
+      hasError ? 'border-red-400' : 'border-gray-200'
+    }`;
+
+  if (saving) return <FullPageLoader text={lang === 'ar' ? 'جاري المعالجة...' : 'Processing...'} />;
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4 overflow-y-auto">
-      {/* Toast */}
-      {toast_ && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${
-          toast_.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
-          {toast_.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span className="font-medium">{toast_.message}</span>
-        </div>
-      )}
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
 
-      {saving && <FullPageLoader text={lang === "ar" ? "جاري المعالجة..." : "Processing..."} />}
-
-      <div className="bg-white rounded-lg w-full max-w-2xl shadow-2xl my-8 max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex justify-between items-center flex-shrink-0">
-          <h3 className="text-xl font-bold text-white">
-            {lang === 'ar' ? 'تعديل المشروع' : 'Edit Project'}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-white/70 hover:text-white transition"
-            disabled={saving}
-          >
-            <X size={24} />
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
+              <span className="text-green-600 font-semibold text-sm">
+                {(lang === 'ar' ? project.nameAr : project.nameEn)?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">
+                {lang === 'ar' ? 'تعديل المشروع' : 'Edit Project'}
+              </h3>
+              <p className="text-xs text-gray-400">{project.code}</p>
+            </div>
+          </div>
+          <button onClick={onClose} disabled={saving} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-4 space-y-6 overflow-y-auto flex-1">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'}
-                  <span className="text-red-500 ml-1">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.nameAr}
-                  onChange={e => setFormData({ ...formData, nameAr: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm ${
-                    errors.nameAr ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  dir="rtl"
-                  disabled={saving}
-                />
-                {errors.nameAr && <p className="mt-0.5 text-xs text-red-500">{errors.nameAr}</p>}
-              </div>
+        {/* ── Form ── */}
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-5 space-y-4">
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'}
-                  <span className="text-red-500 ml-1">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.nameEn}
-                  onChange={e => setFormData({ ...formData, nameEn: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm ${
-                    errors.nameEn ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  disabled={saving}
-                />
-                {errors.nameEn && <p className="mt-0.5 text-xs text-red-500">{errors.nameEn}</p>}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  {lang === 'ar' ? 'مدير المشروع' : 'Project Manager'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.projectManager}
-                  onChange={e => setFormData({ ...formData, projectManager: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                  disabled={saving}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  {lang === 'ar' ? 'مهندس الموقع' : 'Site Engineer'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.siteEngineer}
-                  onChange={e => setFormData({ ...formData, siteEngineer: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                  disabled={saving}
-                />
-              </div>
+          {/* Names */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.nameAr}
+                onChange={e => setFormData({ ...formData, nameAr: e.target.value })}
+                className={inputCls(errors.nameAr)}
+                dir="rtl"
+                disabled={saving}
+              />
+              {errors.nameAr && <p className="mt-1 text-xs text-red-500">{errors.nameAr}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                {lang === 'ar' ? 'الحالة' : 'Status'}
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'} <span className="text-red-500">*</span>
               </label>
-              <select
-                value={formData.status}
-                onChange={e => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+              <input
+                type="text"
+                value={formData.nameEn}
+                onChange={e => setFormData({ ...formData, nameEn: e.target.value })}
+                className={inputCls(errors.nameEn)}
                 disabled={saving}
-              >
-                <option value="PLANNED">{lang === 'ar' ? 'مخطط' : 'Planned'}</option>
-                <option value="IN_PROGRESS">{lang === 'ar' ? 'جاري' : 'In Progress'}</option>
-                <option value="ON_HOLD">{lang === 'ar' ? 'معلق' : 'On Hold'}</option>
-                <option value="COMPLETED">{lang === 'ar' ? 'مكتمل' : 'Completed'}</option>
-                <option value="CANCELLED">{lang === 'ar' ? 'ملغي' : 'Cancelled'}</option>
-                <option value="CLOSED">{lang === 'ar' ? 'مغلق' : 'Closed'}</option>
-              </select>
+              />
+              {errors.nameEn && <p className="mt-1 text-xs text-red-500">{errors.nameEn}</p>}
             </div>
+          </div>
 
+          {/* Manager + Engineer */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                {lang === 'ar' ? 'ملاحظات' : 'Notes'}
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === 'ar' ? 'مدير المشروع' : 'Project Manager'}
               </label>
-              <textarea
-                value={formData.notes}
-                onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                rows={3}
+              <input
+                type="text"
+                value={formData.projectManager}
+                onChange={e => setFormData({ ...formData, projectManager: e.target.value })}
+                className={inputCls(false)}
                 disabled={saving}
-                dir={lang === 'ar' ? 'rtl' : 'ltr'}
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-semibold disabled:opacity-50 transition shadow-md"
-            >
-              {saving 
-                ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') 
-                : (lang === 'ar' ? 'حفظ التعديلات' : 'Save Changes')
-              }
-            </button>
-          </form>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === 'ar' ? 'مهندس الموقع' : 'Site Engineer'}
+              </label>
+              <input
+                type="text"
+                value={formData.siteEngineer}
+                onChange={e => setFormData({ ...formData, siteEngineer: e.target.value })}
+                className={inputCls(false)}
+                disabled={saving}
+              />
+            </div>
+          </div>
 
-          {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>{lang === 'ar' ? 'ملاحظة:' : 'Note:'}</strong>
-              {' '}
-              {lang === 'ar' 
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {lang === 'ar' ? 'الحالة' : 'Status'}
+            </label>
+            <select
+              value={formData.status}
+              onChange={e => setFormData({ ...formData, status: e.target.value })}
+              className={inputCls(false)}
+              disabled={saving}
+            >
+              <option value="PLANNED">{lang === 'ar' ? 'مخطط' : 'Planned'}</option>
+              <option value="IN_PROGRESS">{lang === 'ar' ? 'جاري' : 'In Progress'}</option>
+              <option value="ON_HOLD">{lang === 'ar' ? 'معلق' : 'On Hold'}</option>
+              <option value="COMPLETED">{lang === 'ar' ? 'مكتمل' : 'Completed'}</option>
+              <option value="CANCELLED">{lang === 'ar' ? 'ملغي' : 'Cancelled'}</option>
+              <option value="CLOSED">{lang === 'ar' ? 'مغلق' : 'Closed'}</option>
+            </select>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {lang === 'ar' ? 'ملاحظات' : 'Notes'}
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={e => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              dir={lang === 'ar' ? 'rtl' : 'ltr'}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-gray-50 resize-none"
+              disabled={saving}
+            />
+          </div>
+
+          {/* Info note */}
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+            <p className="text-xs text-blue-700">
+              <strong>{lang === 'ar' ? 'ملاحظة: ' : 'Note: '}</strong>
+              {lang === 'ar'
                 ? 'لإضافة تكاليف المعدات والعمالة والنثريات، يرجى الذهاب إلى صفحة تفاصيل المشروع.'
-                : 'To add equipment, labor, and miscellaneous costs, please go to the project details page.'
-              }
+                : 'To add equipment, labor, and miscellaneous costs, please go to the project details page.'}
             </p>
           </div>
-        </div>
+        </form>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-2 p-4 border-t bg-gray-50 flex-shrink-0">
+        {/* ── Footer ── */}
+        <div className="flex gap-3 p-5 border-t border-gray-100">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
             disabled={saving}
+            className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
           >
-            {lang === 'ar' ? 'إغلاق' : 'Close'}
+            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-medium text-sm disabled:opacity-50"
+          >
+            {lang === 'ar' ? 'حفظ التعديلات' : 'Save Changes'}
           </button>
         </div>
+
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { DollarSign, ArrowLeft, AlertCircle, CheckCircle, CreditCard, Building2, Calendar, Tag } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axiosInstance from '../../utils/axiosInstance';
+import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
@@ -67,8 +67,7 @@ const CreateSupplierPayment = () => {
       const suppliersData = Array.isArray(response.data) ? response.data : (response.data.result || []);
       setSuppliers(suppliersData.filter(s => s.isActive !== false));
     } catch (error) {
-      console.error('Error fetching suppliers:', error);
-      toast.error(lang === 'ar' ? 'فشل تحميل الموردين' : 'Failed to load suppliers');
+      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل تحميل الموردين' : 'Failed to load suppliers'));
     } finally {
       setLoading(false);
     }
@@ -78,8 +77,7 @@ const CreateSupplierPayment = () => {
     try {
       const { data } = await axiosInstance.get(`/ledger/supplier/${supplierId}/balance`);
       setSelectedSupplierBalance(Number(data.result?.amountDue || 0));
-    } catch (error) {
-      console.error('Error fetching balance:', error);
+    } catch {
       setSelectedSupplierBalance(0);
     }
   };
@@ -157,9 +155,7 @@ const CreateSupplierPayment = () => {
         navigate('/finance/supplier-payments');
       }, 1500);
     } catch (error) {
-      console.error('Error creating payment:', error);
-      const message = error.response?.data?.message || (lang === 'ar' ? 'فشل إضافة الدفعة' : 'Failed to add payment');
-      toast.error(message);
+      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل إضافة الدفعة' : 'Failed to add payment'));
     } finally {
       setSubmitting(false);
     }

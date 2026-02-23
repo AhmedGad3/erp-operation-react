@@ -1,253 +1,325 @@
-import { useState, useEffect, useMemo, useContext } from 'react';
-import { Plus, Edit, Trash2, Package, Search, X, Download, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useMemo, useContext, useRef } from 'react';
+import {
+  Package, Search, Plus, Edit, Trash2, CheckCircle,
+  ChevronUp, ChevronDown, MoreHorizontal, X, Download, AlertTriangle
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatCurrency } from '../../utils/dateFormat';
 import axiosInstance from '../../utils/axiosInstance';
+import { getErrorMessage } from '../../utils/errorHandler';
 import { LanguageContext } from '../../context/LanguageContext';
 import * as XLSX from 'xlsx';
 
 const MAIN_CATEGORIES = [
-  { value: 'Construction-Materials', labelEn: 'Construction Materials', labelAr: 'مواد البناء' },
-  { value: 'Tools-Equipment', labelEn: 'Tools & Equipment', labelAr: 'أدوات ومعدات' },
-  { value: 'Electrical', labelEn: 'Electrical', labelAr: 'كهرباء' },
-  { value: 'Plumbing', labelEn: 'Plumbing', labelAr: 'سباكة' },
-  { value: 'Finishing', labelEn: 'Finishing', labelAr: 'تشطيبات' },
-  { value: 'Other', labelEn: 'Other', labelAr: 'أخرى' },
+  { value: 'Construction-Materials', labelEn: 'Construction Materials', labelAr: 'مواد البناء'  },
+  { value: 'Tools-Equipment',        labelEn: 'Tools & Equipment',       labelAr: 'أدوات ومعدات' },
+  { value: 'Electrical',             labelEn: 'Electrical',              labelAr: 'كهرباء'       },
+  { value: 'Plumbing',               labelEn: 'Plumbing',                labelAr: 'سباكة'        },
+  { value: 'Finishing',              labelEn: 'Finishing',               labelAr: 'تشطيبات'      },
+  { value: 'Other',                  labelEn: 'Other',                   labelAr: 'أخرى'         },
 ];
 
+// ── Sortable column header ─────────────────────────────────
+const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
+  <th
+    className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer select-none"
+    onClick={() => onSort(field)}
+  >
+    <span className="inline-flex items-center gap-1">
+      {label}
+      <span className="flex flex-col leading-none">
+        <ChevronUp   className={`w-3 h-3 ${sortField === field && sortDir === 'asc'  ? 'text-gray-900' : 'text-gray-300'}`} />
+        <ChevronDown className={`w-3 h-3 ${sortField === field && sortDir === 'desc' ? 'text-gray-900' : 'text-gray-300'}`} />
+      </span>
+    </span>
+  </th>
+);
+
+// ── Status badge ───────────────────────────────────────────
+const StatusBadge = ({ isActive, lang }) => {
+  if (isActive === false)
+    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</span>;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? 'نشط' : 'Active'}</span>;
+};
+
+// ── Three-dots menu ────────────────────────────────────────
+const ActionsMenu = ({ material, lang, onEdit, onDelete }) => {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const ref = useRef();
+  const btnRef = useRef();
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleOpen = () => {
+  if (!open && btnRef.current) {
+    const rect = btnRef.current.getBoundingClientRect();
+    const menuHeight = 80; 
+    const spaceBelow = window.innerHeight - rect.bottom;
+    
+    const top = spaceBelow < menuHeight
+      ? rect.top - menuHeight - 4 
+      : rect.bottom + 4;        
+
+    setMenuPos({
+      top,
+      left: rect.right - 160,
+    });
+  }
+  setOpen(o => !o);
+};
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        ref={btnRef}
+        onClick={handleOpen}
+        className="p-1.5 rounded-md hover:bg-gray-100 transition text-gray-500"
+      >
+        <MoreHorizontal className="w-5 h-5" />
+      </button>
+
+      {open && (
+        <div
+          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
+          className="w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1"
+        >
+          <button
+            onClick={() => { setOpen(false); onEdit(material); }}
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+          >
+            <Edit className="w-4 h-4" />
+            {lang === 'ar' ? 'تعديل' : 'Edit'}
+          </button>
+          <button
+            onClick={() => { setOpen(false); onDelete(material); }}
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
+          >
+            <Trash2 className="w-4 h-4" />
+            {lang === 'ar' ? 'حذف' : 'Delete'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Add/Edit Modal ─────────────────────────────────────────
+const MaterialModal = ({ lang, mode, material: editMaterial, units, onClose, onSaved }) => {
+  const [form, setForm] = useState({
+    nameAr:             editMaterial?.nameAr             || '',
+    nameEn:             editMaterial?.nameEn             || '',
+    code:               editMaterial?.code               || '',
+    mainCategory:       editMaterial?.mainCategory       || 'Construction-Materials',
+    subCategory:        editMaterial?.subCategory        || '',
+    baseUnit:           editMaterial?.baseUnit?._id || editMaterial?.baseUnit || '',
+    minLevelStock:      editMaterial?.minStockLevel      || 0,
+    lastPurchasedPrice: editMaterial?.lastPurchasePrice  || 0,
+    lastPurchasedDate:  editMaterial?.lastPurchaseDate
+      ? new Date(editMaterial.lastPurchaseDate).toISOString().split('T')[0] : '',
+    description:        editMaterial?.description        || '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!form.nameAr.trim() || !form.nameEn.trim()) { toast.error(lang === 'ar' ? 'اسم المادة مطلوب' : 'Material name is required'); return; }
+    if (!form.code.trim())   { toast.error(lang === 'ar' ? 'الكود مطلوب' : 'Code is required'); return; }
+    if (!form.baseUnit)      { toast.error(lang === 'ar' ? 'الوحدة الأساسية مطلوبة' : 'Base unit is required'); return; }
+
+    try {
+      setSubmitting(true);
+      const payload = {
+        nameAr:            form.nameAr.trim(),
+        nameEn:            form.nameEn.trim(),
+        code:              form.code.trim().toUpperCase(),
+        mainCategory:      form.mainCategory,
+        subCategory:       form.subCategory.trim() || '',
+        baseUnit:          form.baseUnit,
+        minLevelStock:     Number(form.minLevelStock) || 0,
+        lastPurchasedPrice: Number(form.lastPurchasedPrice) || undefined,
+        lastPurchasedDate: form.lastPurchasedDate || undefined,
+        description:       form.description.trim() || '',
+      };
+      Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
+      if (mode === 'add') await axiosInstance.post('/materials', payload);
+      else await axiosInstance.put(`/materials/${editMaterial._id}`, payload);
+
+      toast.success(lang === 'ar' ? 'تم الحفظ بنجاح' : 'Saved successfully');
+      onSaved();
+      onClose();
+    } catch (err) {
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل حفظ المادة' : 'Failed to save material'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {mode === 'add' ? (lang === 'ar' ? 'إضافة مادة جديدة' : 'Add New Material') : (lang === 'ar' ? 'تعديل المادة' : 'Edit Material')}
+          </h2>
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 text-gray-400"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)'} <span className="text-red-500">*</span></label>
+              <input type="text" dir="rtl" value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)'} <span className="text-red-500">*</span></label>
+              <input type="text" dir="ltr" value={form.nameEn} onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الكود' : 'Code'} <span className="text-red-500">*</span></label>
+              <input type="text" placeholder="STEEL-14MM" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الفئة الرئيسية' : 'Main Category'} <span className="text-red-500">*</span></label>
+              <select value={form.mainCategory} onChange={e => setForm(f => ({ ...f, mainCategory: e.target.value }))} disabled={mode === 'edit'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 disabled:opacity-60">
+                {MAIN_CATEGORIES.map(c => <option key={c.value} value={c.value}>{lang === 'ar' ? c.labelAr : c.labelEn}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الفئة الفرعية' : 'Sub Category'}</label>
+              <input type="text" dir={lang === 'ar' ? 'rtl' : 'ltr'} value={form.subCategory} onChange={e => setForm(f => ({ ...f, subCategory: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الوحدة الأساسية' : 'Base Unit'} <span className="text-red-500">*</span></label>
+              <select value={form.baseUnit} onChange={e => setForm(f => ({ ...f, baseUnit: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50">
+                <option value="">{lang === 'ar' ? 'اختر الوحدة' : 'Select Unit'}</option>
+                {units.map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الحد الأدنى للمخزون' : 'Min Stock Level'}</label>
+              <input type="number" min="0" value={form.minLevelStock} onChange={e => setForm(f => ({ ...f, minLevelStock: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'آخر سعر شراء' : 'Last Purchase Price'}</label>
+              <input type="number" min="0" step="0.01" value={form.lastPurchasedPrice} onChange={e => setForm(f => ({ ...f, lastPurchasedPrice: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'تاريخ آخر شراء' : 'Last Purchase Date'}</label>
+            <input type="date" value={form.lastPurchasedDate} onChange={e => setForm(f => ({ ...f, lastPurchasedDate: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الوصف' : 'Description'}</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows="2" dir={lang === 'ar' ? 'rtl' : 'ltr'} placeholder={lang === 'ar' ? 'أضف وصفاً للمادة...' : 'Add material description...'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none" />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+          </button>
+          <button onClick={handleSubmit} disabled={submitting} className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50">
+            {submitting ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (lang === 'ar' ? 'حفظ' : 'Save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Confirm Modal ──────────────────────────────────────────
+const ConfirmModal = ({ material, lang, onConfirm, onClose }) => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-11 h-11 rounded-full flex items-center justify-center bg-red-100">
+          <Trash2 className="w-5 h-5 text-red-600" />
+        </div>
+        <div>
+          <h3 className="text-base font-semibold text-gray-900">{lang === 'ar' ? 'تأكيد الحذف' : 'Confirm Delete'}</h3>
+          <p className="text-sm text-gray-500">{lang === 'ar' ? 'هل أنت متأكد من حذف هذه المادة؟' : 'Are you sure you want to delete this material?'}</p>
+        </div>
+      </div>
+      <div className="bg-gray-50 rounded-xl p-4 mb-4">
+        <p className="font-medium text-gray-900 text-sm">{lang === 'ar' ? material?.nameAr : material?.nameEn}</p>
+        <p className="text-xs text-gray-500">{lang === 'ar' ? 'الكود: ' : 'Code: '}{material?.code}</p>
+      </div>
+      <div className="flex gap-3">
+        <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+          {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+        </button>
+        <button onClick={onConfirm} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium text-sm">
+          {lang === 'ar' ? 'حذف' : 'Delete'}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// ── Main Component ─────────────────────────────────────────
 export default function Supplies() {
   const { lang, t } = useContext(LanguageContext);
-  
-  const [materials, setMaterials] = useState([]);
-  const [units, setUnits] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  
-  const [showModal, setShowModal] = useState(false);
-  const [editingMaterial, setEditingMaterial] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('ALL');
-  
-  const [formData, setFormData] = useState({
-    nameAr: '',
-    nameEn: '',
-    code: '',
-    mainCategory: 'Construction-Materials',
-    subCategory: '',
-    baseUnit: '',
-    alternativeUnits: [],
-    minLevelStock: 0,
-    lastPurchasedPrice: 0,
-    lastPurchasedDate: '',
-    description: '',
-  });
 
-  // ================= FETCH =================
+  const [materials,     setMaterials]     = useState([]);
+  const [units,         setUnits]         = useState([]);
+  const [loading,       setLoading]       = useState(false);
+  const [searchTerm,    setSearchTerm]    = useState('');
+  const [filterCat,     setFilterCat]     = useState('all');
+  const [filterStatus,  setFilterStatus]  = useState('ALL');
+  const [sortField,     setSortField]     = useState('nameEn');
+  const [sortDir,       setSortDir]       = useState('asc');
+  const [addModal,      setAddModal]      = useState(false);
+  const [editTarget,    setEditTarget]    = useState(null);
+  const [deleteModal,   setDeleteModal]   = useState({ show: false, material: null });
+
+  useEffect(() => { fetchMaterials(); fetchUnits(); }, []);
+
   const fetchMaterials = async () => {
     try {
       setLoading(true);
       const { data } = await axiosInstance.get('/materials');
       setMaterials(data.result || data || []);
-    } catch (err) {
-      console.error(err);
-      toast.error(t?.errorLoadingMaterials || "Error loading materials");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error(lang === 'ar' ? 'فشل تحميل المواد' : 'Failed to load materials'); }
+    finally { setLoading(false); }
   };
 
   const fetchUnits = async () => {
     try {
       const { data } = await axiosInstance.get('/units');
       setUnits(data.result || data || []);
-    } catch (err) {
-      console.error(err);
-      setUnits([
-        { _id: 'default-1', nameAr: 'متر', nameEn: 'Meter' },
-        { _id: 'default-2', nameAr: 'كيلو', nameEn: 'Kilogram' },
-        { _id: 'default-3', nameAr: 'طن', nameEn: 'Ton' },
-        { _id: 'default-4', nameAr: 'قطعة', nameEn: 'Piece' },
-      ]);
-    }
+    } catch { setUnits([]); }
   };
 
-  useEffect(() => {
-    fetchMaterials();
-    fetchUnits();
-  }, []);
-
-  // ================= FILTER =================
-  const filteredMaterials = useMemo(() => {
-    let filtered = [...materials];
-    
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(material => 
-        material.nameEn?.toLowerCase().includes(term) ||
-        material.nameAr?.includes(term) ||
-        material.code?.toLowerCase().includes(term) ||
-        material.subCategory?.toLowerCase().includes(term)
-      );
-    }
-
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(m => m.mainCategory === filterCategory);
-    }
-
-    if (filterStatus !== 'ALL') {
-      filtered = filtered.filter(m => 
-        filterStatus === 'ACTIVE' ? m.isActive !== false : m.isActive === false
-      );
-    }
-
-    return filtered;
-  }, [materials, searchTerm, filterCategory, filterStatus]);
-
-  // ================= EXPORT =================
-  const handleExportToExcel = () => {
+  const handleDelete = async () => {
     try {
-      const exportData = filteredMaterials.map(material => ({
-        [lang === "ar" ? "الكود" : "Code"]: material.code,
-        [lang === "ar" ? "الاسم بالعربية" : "Name (Arabic)"]: material.nameAr,
-        [lang === "ar" ? "الاسم بالإنجليزية" : "Name (English)"]: material.nameEn,
-        [lang === "ar" ? "الفئة الرئيسية" : "Main Category"]: MAIN_CATEGORIES.find(c => c.value === material.mainCategory)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || material.mainCategory,
-        [lang === "ar" ? "الفئة الفرعية" : "Sub Category"]: material.subCategory || '-',
-        [lang === "ar" ? "الوحدة" : "Unit"]: getUnitName(material.baseUnit?._id || material.baseUnit),
-        [lang === "ar" ? "المخزون الحالي" : "Current Stock"]: material.currentStock || 0,
-        [lang === "ar" ? "آخر سعر" : "Last Price"]: material.lastPurchasePrice || 0,
-        [lang === "ar" ? "الحالة" : "Status"]: material.isActive !== false ? (lang === "ar" ? "نشط" : "Active") : (lang === "ar" ? "غير نشط" : "Inactive"),
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, lang === "ar" ? "المواد" : "Materials");
-      
-      const fileName = `Materials_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      
-      toast.success(lang === "ar" ? "تم تصدير البيانات بنجاح" : "Data exported successfully");
-    } catch (error) {
-      toast.error(lang === "ar" ? "فشل التصدير" : "Export failed");
-      console.error("Export error:", error);
-    }
-  };
-
-  // ================= SAVE =================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.nameAr?.trim() || !formData.nameEn?.trim()) {
-      toast.error(t?.materialNameRequired || "Material name is required");
-      return;
-    }
-
-    if (!formData.code?.trim()) {
-      toast.error(t?.codeRequired || "Code is required");
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      const payload = {
-        nameAr: formData.nameAr.trim(),
-        nameEn: formData.nameEn.trim(),
-        code: formData.code.trim().toUpperCase(),
-        mainCategory: formData.mainCategory,
-        subCategory: formData.subCategory.trim() || '',
-        baseUnit: formData.baseUnit,
-        alternativeUnits: formData.alternativeUnits || [],
-        minLevelStock: Number(formData.minLevelStock) || 0,
-        lastPurchasedPrice: Number(formData.lastPurchasedPrice) || undefined,
-        lastPurchasedDate: formData.lastPurchasedDate || undefined,
-        description: formData.description?.trim() || '',
-      };
-
-      Object.keys(payload).forEach(key => 
-        payload[key] === undefined && delete payload[key]
-      );
-      
-      if (editingMaterial) {
-        await axiosInstance.put(`/materials/${editingMaterial._id}`, payload);
-        toast.success(t?.materialUpdated || "Material updated successfully");
-      } else {
-        await axiosInstance.post("/materials", payload);
-        toast.success(t?.materialAdded || "Material added successfully");
-      }
-      
-      setShowModal(false);
-      setEditingMaterial(null);
-      resetForm();
-      await fetchMaterials();
-      
-    } catch (err) {
-      console.error("Error saving material:", err);
-      
-      let errorMsg = "Error saving material";
-      
-      if (err.response?.data?.message && Array.isArray(err.response.data.message)) {
-        errorMsg = err.response.data.message.join(", ");
-      } else if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err.response?.data?.error) {
-        errorMsg = err.response.data.error;
-      }
-      
-      toast.error(errorMsg);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleEdit = (material) => {
-    setEditingMaterial(material);
-    setFormData({
-      nameAr: material.nameAr || '',
-      nameEn: material.nameEn || '',
-      code: material.code || '',
-      mainCategory: material.mainCategory || 'Construction-Materials',
-      subCategory: material.subCategory || '',
-      baseUnit: material.baseUnit?._id || material.baseUnit || '',
-      alternativeUnits: material.alternativeUnits || [],
-      minLevelStock: material.minStockLevel || 0,
-      lastPurchasedPrice: material.lastPurchasePrice || 0,
-      lastPurchasedDate: material.lastPurchaseDate ? new Date(material.lastPurchaseDate).toISOString().split('T')[0] : '',
-      description: material.description || '',
-    });
-    setShowModal(true);
-  };
-
-  const confirmDeleteAction = async () => {
-    if (!confirmDelete) return;
-    
-    try {
-      await axiosInstance.delete(`/materials/${confirmDelete._id}`);
-      toast.success(t?.materialDeleted || "Material deleted successfully");
-      setConfirmDelete(null);
+      await axiosInstance.delete(`/materials/${deleteModal.material._id}`);
+      toast.success(lang === 'ar' ? 'تم حذف المادة بنجاح' : 'Material deleted');
+      setDeleteModal({ show: false, material: null });
       fetchMaterials();
     } catch (err) {
-      console.error(err);
-      const errorMsg = err.response?.data?.message || err.message || "Error deleting material";
-      toast.error(errorMsg);
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      nameAr: '',
-      nameEn: '',
-      code: '',
-      mainCategory: 'Construction-Materials',
-      subCategory: '',
-      baseUnit: '',
-      alternativeUnits: [],
-      minLevelStock: 0,
-      lastPurchasedPrice: 0,
-      lastPurchasedDate: '',
-      description: '',
-    });
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
   };
 
   const getUnitName = (unitId) => {
@@ -256,581 +328,240 @@ export default function Supplies() {
     return unit ? (lang === 'ar' ? unit.nameAr : unit.nameEn) : '-';
   };
 
-  const activeMaterials = filteredMaterials.filter(m => m.isActive !== false).length;
-  const inactiveMaterials = filteredMaterials.filter(m => m.isActive === false).length;
-  const lowStockMaterials = filteredMaterials.filter(m => m.currentStock < m.minStockLevel).length;
+  const getCategoryLabel = (val) =>
+    MAIN_CATEGORIES.find(c => c.value === val)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || val;
+
+  const handleExport = () => {
+    try {
+      const data = displayed.map(m => ({
+        [lang === 'ar' ? 'الكود' : 'Code']: m.code,
+        [lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)']: m.nameAr,
+        [lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)']: m.nameEn,
+        [lang === 'ar' ? 'الفئة الرئيسية' : 'Main Category']: getCategoryLabel(m.mainCategory),
+        [lang === 'ar' ? 'الفئة الفرعية' : 'Sub Category']: m.subCategory || '-',
+        [lang === 'ar' ? 'الوحدة' : 'Unit']: getUnitName(m.baseUnit?._id || m.baseUnit),
+        [lang === 'ar' ? 'المخزون الحالي' : 'Current Stock']: m.currentStock || 0,
+        [lang === 'ar' ? 'آخر سعر' : 'Last Price']: m.lastPurchasePrice || 0,
+        [lang === 'ar' ? 'الحالة' : 'Status']: m.isActive !== false ? (lang === 'ar' ? 'نشط' : 'Active') : (lang === 'ar' ? 'غير نشط' : 'Inactive'),
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, lang === 'ar' ? 'المواد' : 'Materials');
+      XLSX.writeFile(wb, `Materials_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success(lang === 'ar' ? 'تم التصدير بنجاح' : 'Exported successfully');
+    } catch { toast.error(lang === 'ar' ? 'فشل التصدير' : 'Export failed'); }
+  };
+
+  // Filter + Sort
+  const displayed = useMemo(() => {
+    return materials
+      .filter(m => {
+        const q = searchTerm.toLowerCase();
+        const matchSearch = !q || m.nameEn?.toLowerCase().includes(q) || m.nameAr?.includes(q) || m.code?.toLowerCase().includes(q) || m.subCategory?.toLowerCase().includes(q);
+        const matchCat    = filterCat === 'all' || m.mainCategory === filterCat;
+        const matchStatus = filterStatus === 'ALL' || (filterStatus === 'ACTIVE' && m.isActive !== false) || (filterStatus === 'INACTIVE' && m.isActive === false);
+        return matchSearch && matchCat && matchStatus;
+      })
+      .sort((a, b) => {
+        let va = a[sortField] ?? '';
+        let vb = b[sortField] ?? '';
+        if (typeof va === 'string') va = va.toLowerCase();
+        if (typeof vb === 'string') vb = vb.toLowerCase();
+        return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+      });
+  }, [materials, searchTerm, filterCat, filterStatus, sortField, sortDir]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Package className="w-8 h-8 text-white" />
-                <div>
-                  <h1 className="text-2xl font-bold text-white">
-                    {lang === 'ar' ? 'المستلزمات والمواد' : 'Supplies & Materials'}
-                  </h1>
-                  <p className="text-blue-100 mt-1">
-                    {lang === 'ar' 
-                      ? 'عرض وإدارة المواد المستخدمة في المشاريع' 
-                      : 'View and manage materials used in projects'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleExportToExcel}
-                  className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition font-semibold shadow-md"
-                >
-                  <Download className="w-5 h-5" />
-                  <span>{lang === "ar" ? "تصدير" : "Export"}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingMaterial(null);
-                    resetForm();
-                    setShowModal(true);
-                  }}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold shadow-md"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>{lang === 'ar' ? 'إضافة مادة جديدة' : 'Add New Material'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-gray-50">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "إجمالي المواد" : "Total Materials"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{filteredMaterials.length}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "مواد نشطة" : "Active Materials"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{activeMaterials}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-orange-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "مخزون منخفض" : "Low Stock"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{lowStockMaterials}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-red-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "مواد غير نشطة" : "Inactive Materials"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{inactiveMaterials}</p>
-            </div>
+        {/* ── Page Header ── */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {lang === 'ar' ? 'المستلزمات والمواد' : 'Supplies & Materials'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {lang === 'ar' ? 'عرض وإدارة المواد المستخدمة في المشاريع' : 'View and manage materials used in projects.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              {lang === 'ar' ? 'تصدير' : 'Export'}
+            </button>
+            <button
+              onClick={() => setAddModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              {lang === 'ar' ? 'إضافة مادة' : 'Add Material'}
+            </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder={lang === 'ar' ? 'بحث عن مادة...' : 'Search materials...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                dir={lang === 'ar' ? 'rtl' : 'ltr'}
-              />
-            </div>
-
-            {/* Category Filter */}
-            <div>
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              >
-                <option value="all">{lang === 'ar' ? 'كل الفئات' : 'All Categories'}</option>
-                {MAIN_CATEGORIES.map(cat => (
-                  <option key={cat.value} value={cat.value}>
-                    {lang === 'ar' ? cat.labelAr : cat.labelEn}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              >
-                <option value="ALL">{lang === "ar" ? "كل الحالات" : "All Status"}</option>
-                <option value="ACTIVE">{lang === "ar" ? "نشط" : "Active"}</option>
-                <option value="INACTIVE">{lang === "ar" ? "غير نشط" : "Inactive"}</option>
-              </select>
-            </div>
+        {/* ── Filters ── */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={lang === 'ar' ? 'بحث عن مادة...' : 'Search materials...'}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            />
           </div>
 
-          {/* Clear Filters */}
-          {(searchTerm || filterCategory !== 'all' || filterStatus !== 'ALL') && (
+          <select
+            value={filterCat}
+            onChange={e => setFilterCat(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+          >
+            <option value="all">{lang === 'ar' ? 'كل الفئات' : 'All Categories'}</option>
+            {MAIN_CATEGORIES.map(c => <option key={c.value} value={c.value}>{lang === 'ar' ? c.labelAr : c.labelEn}</option>)}
+          </select>
+
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+          >
+            <option value="ALL">{lang === 'ar' ? 'كل الحالات' : 'All Status'}</option>
+            <option value="ACTIVE">{lang === 'ar' ? 'نشط' : 'Active'}</option>
+            <option value="INACTIVE">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</option>
+          </select>
+
+          {(searchTerm || filterCat !== 'all' || filterStatus !== 'ALL') && (
             <button
-              onClick={() => {
-                setSearchTerm('');
-                setFilterCategory('all');
-                setFilterStatus('ALL');
-              }}
-              className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              onClick={() => { setSearchTerm(''); setFilterCat('all'); setFilterStatus('ALL'); }}
+              className="text-sm text-indigo-600 hover:underline"
             >
-              {lang === "ar" ? "مسح الفلاتر" : "Clear Filters"}
+              {lang === 'ar' ? 'مسح الفلاتر' : 'Clear'}
             </button>
           )}
         </div>
 
-        {/* Materials Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {/* ── Table ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin inline-block w-12 h-12 border-4 border-current border-t-transparent text-blue-600 rounded-full" role="status">
-                <span className="sr-only">Loading...</span>
-              </div>
-              <p className="mt-4 text-gray-600">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
+            <div className="p-16 text-center">
+              <div className="animate-spin inline-block w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3" />
+              <p className="text-sm text-gray-500">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
             </div>
-          ) : filteredMaterials.length === 0 ? (
-            <div className="p-12 text-center">
-              <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {lang === 'ar' ? 'لا توجد مواد' : 'No Materials Found'}
-              </h3>
-              <p className="text-gray-600 mb-6">
-                {lang === 'ar' ? 'لم يتم العثور على مواد مطابقة للفلاتر المحددة' : 'No materials match your current filters'}
-              </p>
-              <button
-                onClick={() => {
-                  setEditingMaterial(null);
-                  resetForm();
-                  setShowModal(true);
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-              >
-                <Plus className="w-5 h-5" />
-                {lang === 'ar' ? 'إضافة أول مادة' : 'Add First Material'}
-              </button>
+          ) : displayed.length === 0 ? (
+            <div className="p-16 text-center">
+              <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="font-medium text-gray-600">{lang === 'ar' ? 'لا توجد مواد' : 'No materials found'}</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'الكود' : 'Code'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'اسم المادة' : 'Material Name'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'الفئة' : 'Category'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'الوحدة' : 'Unit'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'المخزون' : 'Stock'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'آخر سعر' : 'Last Price'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'الحالة' : 'Status'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'الإجراءات' : 'Actions'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredMaterials.map((material) => (
-                    <tr key={material._id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
-                          {material.code}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <SortHeader label={lang === 'ar' ? 'المادة'       : 'Material'}      field={lang === 'ar' ? 'nameAr' : 'nameEn'} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الكود'         : 'Code'}          field="code"             sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الفئة'         : 'Category'}      field="mainCategory"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الوحدة'        : 'Unit'}          field="baseUnit"         sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'المخزون'       : 'Stock'}         field="currentStock"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'آخر سعر'       : 'Last Price'}    field="lastPurchasePrice" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الحالة'        : 'Status'}        field="isActive"         sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {displayed.map(material => {
+                  const isLowStock = (material.currentStock || 0) < (material.minStockLevel || 0);
+                  return (
+                    <tr key={material._id} className="hover:bg-gray-50/60 transition">
+                      {/* Avatar + Name */}
+                      <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Package className="w-5 h-5 text-blue-600" />
+                          <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                            <Package className="w-4 h-4 text-indigo-600" />
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-900">
+                            <span className="font-medium text-gray-900 text-sm block">
                               {lang === 'ar' ? material.nameAr : material.nameEn}
-                            </p>
+                            </span>
                             {material.subCategory && (
-                              <p className="text-sm text-gray-500">{material.subCategory}</p>
+                              <span className="text-xs text-gray-400">{material.subCategory}</span>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
-                          {MAIN_CATEGORIES.find(c => c.value === material.mainCategory)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || material.mainCategory}
+
+                      {/* Code */}
+                      <td className="px-4 py-3.5">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{material.code}</span>
+                      </td>
+
+                      {/* Category */}
+                      <td className="px-4 py-3.5">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                          {getCategoryLabel(material.mainCategory)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-gray-700">{getUnitName(material.baseUnit?._id || material.baseUnit)}</span>
+
+                      {/* Unit */}
+                      <td className="px-4 py-3.5 text-sm text-gray-500">
+                        {getUnitName(material.baseUnit?._id || material.baseUnit)}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`font-semibold ${
-                          material.currentStock < material.minStockLevel 
-                            ? 'text-red-600' 
-                            : 'text-green-600'
-                        }`}>
+
+                      {/* Stock */}
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-flex items-center gap-1 text-sm font-semibold ${isLowStock ? 'text-red-600' : 'text-gray-700'}`}>
+                          {isLowStock && <AlertTriangle className="w-3.5 h-3.5" />}
                           {material.currentStock || 0}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-semibold text-gray-900">
+
+                      {/* Last Price */}
+                      <td className="px-4 py-3.5 text-sm text-gray-700 font-medium">
                         {material.lastPurchasePrice ? formatCurrency(material.lastPurchasePrice, lang) : '-'}
                       </td>
-                      <td className="px-6 py-4">
-                        {material.isActive !== false ? (
-                          <span className="flex items-center gap-2 text-green-600 font-semibold">
-                            <CheckCircle className="w-4 h-4" />
-                            {lang === 'ar' ? 'نشط' : 'Active'}
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-2 text-red-600 font-semibold">
-                            <X className="w-4 h-4" />
-                            {lang === 'ar' ? 'غير نشط' : 'Inactive'}
-                          </span>
-                        )}
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5">
+                        <StatusBadge isActive={material.isActive} lang={lang} />
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEdit(material)}
-                            className="flex items-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition font-medium"
-                          >
-                            <Edit className="w-4 h-4" />
-                            {lang === 'ar' ? 'تعديل' : 'Edit'}
-                          </button>
-                          <button
-                            onClick={() => setConfirmDelete(material)}
-                            className="flex items-center gap-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            {lang === 'ar' ? 'حذف' : 'Delete'}
-                          </button>
-                        </div>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3.5 text-right">
+                        <ActionsMenu
+                          material={material}
+                          lang={lang}
+                          onEdit={m => setEditTarget(m)}
+                          onDelete={m => setDeleteModal({ show: true, material: m })}
+                        />
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <MaterialModal
-          material={editingMaterial}
-          formData={formData}
-          setFormData={setFormData}
-          units={units}
-          categories={MAIN_CATEGORIES}
-          onClose={() => {
-            setShowModal(false);
-            setEditingMaterial(null);
-            resetForm();
-          }}
-          onSubmit={handleSubmit}
-          saving={saving}
-          t={t}
-          lang={lang}
-        />
+      {/* ── Modals ── */}
+      {addModal && (
+        <MaterialModal lang={lang} mode="add" units={units}
+          onClose={() => setAddModal(false)}
+          onSaved={fetchMaterials} />
       )}
-
-      {/* Delete Confirmation Modal */}
-      {confirmDelete && (
-        <ConfirmModal
-          material={confirmDelete}
-          onClose={() => setConfirmDelete(null)}
-          onConfirm={confirmDeleteAction}
-          t={t}
-          lang={lang}
-        />
+      {editTarget && (
+        <MaterialModal lang={lang} mode="edit" material={editTarget} units={units}
+          onClose={() => setEditTarget(null)}
+          onSaved={fetchMaterials} />
       )}
-    </div>
-  );
-}
-
-// ================= MODALS =================
-
-function MaterialModal({ material, formData, setFormData, units, categories, onClose, onSubmit, saving, t, lang }) {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 border-b border-blue-500">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white">
-              {material 
-                ? (lang === 'ar' ? 'تعديل المادة' : 'Edit Material')
-                : (lang === 'ar' ? 'إضافة مادة جديدة' : 'Add New Material')
-              }
-            </h2>
-            <button
-              onClick={onClose}
-              disabled={saving}
-              className="text-white hover:text-gray-200 transition-colors disabled:opacity-50"
-            >
-              <X size={24} />
-            </button>
-          </div>
-        </div>
-
-        <form onSubmit={onSubmit} className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Names */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'الاسم بالعربي' : 'Name (Arabic)'} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.nameAr}
-                onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
-                disabled={saving}
-                dir="rtl"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'الاسم بالإنجليزي' : 'Name (English)'} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.nameEn}
-                onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                disabled={saving}
-                dir="ltr"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-
-            {/* Code & Category */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'الكود' : 'Code'} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                disabled={saving}
-                placeholder="STEEL-14MM"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'الفئة الرئيسية' : 'Main Category'} <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.mainCategory}
-                onChange={(e) => setFormData({ ...formData, mainCategory: e.target.value })}
-                disabled={saving || !!material}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                required
-              >
-                {categories.map(cat => (
-                  <option key={cat.value} value={cat.value}>
-                    {lang === 'ar' ? cat.labelAr : cat.labelEn}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sub Category & Unit */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'الفئة الفرعية' : 'Sub Category'}
-              </label>
-              <input
-                type="text"
-                value={formData.subCategory}
-                onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
-                disabled={saving}
-                dir={lang === 'ar' ? 'rtl' : 'ltr'}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'الوحدة الأساسية' : 'Base Unit'} <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.baseUnit}
-                onChange={(e) => setFormData({ ...formData, baseUnit: e.target.value })}
-                disabled={saving}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                required
-              >
-                <option value="">{lang === 'ar' ? 'اختر الوحدة' : 'Select Unit'}</option>
-                {units.map(unit => (
-                  <option key={unit._id} value={unit._id}>
-                    {lang === 'ar' ? unit.nameAr : unit.nameEn}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Stock & Price */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'الحد الأدنى للمخزون' : 'Min Stock Level'}
-              </label>
-              <input
-                type="number"
-                value={formData.minLevelStock}
-                onChange={(e) => setFormData({ ...formData, minLevelStock: e.target.value })}
-                disabled={saving}
-                min="0"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'آخر سعر شراء' : 'Last Purchase Price'}
-              </label>
-              <input
-                type="number"
-                value={formData.lastPurchasedPrice}
-                onChange={(e) => setFormData({ ...formData, lastPurchasedPrice: e.target.value })}
-                disabled={saving}
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-
-            {/* Last Purchase Date */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'تاريخ آخر شراء' : 'Last Purchase Date'}
-              </label>
-              <input
-                type="date"
-                value={formData.lastPurchasedDate}
-                onChange={(e) => setFormData({ ...formData, lastPurchasedDate: e.target.value })}
-                disabled={saving}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'الوصف' : 'Description'}
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                disabled={saving}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                rows={3}
-                dir={lang === 'ar' ? 'rtl' : 'ltr'}
-                placeholder={lang === 'ar' ? 'أضف وصفاً للمادة...' : 'Add material description...'}
-              />
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-4 mt-8">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {saving && (
-                <div className="animate-spin inline-block w-5 h-5 border-2 border-current border-t-transparent text-white rounded-full" role="status">
-                  <span className="sr-only">Loading...</span>
-                </div>
-              )}
-              {saving 
-                ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') 
-                : (lang === 'ar' ? 'حفظ' : 'Save')}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold disabled:opacity-50"
-            >
-              {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function ConfirmModal({ material, onClose, onConfirm, t, lang }) {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-            <Trash2 className="w-6 h-6 text-red-600" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">
-              {t?.deleteMaterial || (lang === 'ar' ? 'حذف المادة' : 'Delete Material')}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {lang === 'ar' 
-                ? 'هل أنت متأكد من حذف هذه المادة؟' 
-                : 'Are you sure you want to delete this material?'}
-            </p>
-          </div>
-        </div>
-        
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'المادة:' : 'Material:'}</p>
-          <p className="font-semibold text-gray-900">
-            {lang === 'ar' ? material.nameAr : material.nameEn}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            {t?.code || 'Code'}: {material.code}
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-          >
-            {t?.cancel || 'Cancel'}
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-          >
-            {t?.delete || 'Delete'}
-          </button>
-        </div>
-      </div>
+      {deleteModal.show && (
+        <ConfirmModal material={deleteModal.material} lang={lang}
+          onConfirm={handleDelete}
+          onClose={() => setDeleteModal({ show: false, material: null })} />
+      )}
     </div>
   );
 }

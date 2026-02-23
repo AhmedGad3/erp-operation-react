@@ -1,45 +1,282 @@
-import { useState, useEffect, useMemo, useContext } from "react";
-import { Plus, Edit, Trash2, Download, X, Users, CheckCircle } from "lucide-react";
+import { useState, useEffect, useMemo, useContext, useRef } from "react";
+import {
+  Users, Search, Plus, Edit, Trash2, CheckCircle,
+  ChevronUp, ChevronDown, MoreHorizontal, X, Download
+} from "lucide-react";
 import { toast } from "react-toastify";
 import { formatCurrency } from "../../utils/dateFormat";
 import axiosInstance from "../../utils/axiosInstance";
+import { getErrorMessage } from "../../utils/errorHandler";
 import { LanguageContext } from "../../context/LanguageContext";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
+// ── Sortable column header ─────────────────────────────────
+const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
+  <th
+    className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer select-none"
+    onClick={() => onSort(field)}
+  >
+    <span className="inline-flex items-center gap-1">
+      {label}
+      <span className="flex flex-col leading-none">
+        <ChevronUp   className={`w-3 h-3 ${sortField === field && sortDir === "asc"  ? "text-gray-900" : "text-gray-300"}`} />
+        <ChevronDown className={`w-3 h-3 ${sortField === field && sortDir === "desc" ? "text-gray-900" : "text-gray-300"}`} />
+      </span>
+    </span>
+  </th>
+);
+
+// ── Status badge ───────────────────────────────────────────
+const StatusBadge = ({ isActive, lang }) => {
+  if (isActive === false)
+    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === "ar" ? "غير نشط" : "Inactive"}</span>;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === "ar" ? "نشط" : "Active"}</span>;
+};
+
+// ── Three-dots menu ────────────────────────────────────────
+const ActionsMenu = ({ supplier, lang, onEdit, onToggle }) => {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const ref = useRef();
+  const btnRef = useRef();
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+    const handleOpen = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const menuHeight = 80; // زرارين
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      const top = spaceBelow < menuHeight
+        ? rect.top - menuHeight - 4
+        : rect.bottom + 4;
+
+      setMenuPos({ top, left: rect.right - 160 });
+    }
+    setOpen(o => !o);
+  };
+
+  const isActive = supplier.isActive !== false;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        ref={btnRef}
+        onClick={handleOpen}
+        className="p-1.5 rounded-md hover:bg-gray-100 transition text-gray-500"
+      >
+        <MoreHorizontal className="w-5 h-5" />
+      </button>
+
+      {open && (
+        <div
+          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
+          className="w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1"
+        >
+          <button
+            onClick={() => { setOpen(false); onEdit(supplier); }}
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+          >
+            <Edit className="w-4 h-4" />
+            {lang === "ar" ? "تعديل" : "Edit"}
+          </button>
+
+          {isActive ? (
+            <button
+              onClick={() => { setOpen(false); onToggle(supplier); }}
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
+            >
+              <Trash2 className="w-4 h-4" />
+              {lang === "ar" ? "إلغاء التفعيل" : "Deactivate"}
+            </button>
+          ) : (
+            <button
+              onClick={() => { setOpen(false); onToggle(supplier); }}
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-green-600 hover:bg-green-50 transition"
+            >
+              <CheckCircle className="w-4 h-4" />
+              {lang === "ar" ? "تفعيل" : "Activate"}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Add/Edit Modal ─────────────────────────────────────────
+const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved }) => {
+  const [form, setForm] = useState({
+    nameAr:  editSupplier?.nameAr  || "",
+    nameEn:  editSupplier?.nameEn  || "",
+    code:    editSupplier?.code    || "",
+    phone:   editSupplier?.phone   || "",
+    email:   editSupplier?.email   || "",
+    address: editSupplier?.address || "",
+    notes:   editSupplier?.notes   || "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!form.nameAr.trim() && !form.nameEn.trim()) {
+      toast.error(lang === "ar" ? "اسم المورد مطلوب" : "Supplier name is required"); return;
+    }
+    try {
+      setSubmitting(true);
+      const payload = {
+        nameAr:  form.nameAr.trim()  || "",
+        nameEn:  form.nameEn.trim()  || "",
+        code:    form.code.trim()    || "",
+        phone:   form.phone.trim()   || "",
+        email:   form.email.trim()   || "",
+        address: form.address.trim() || "",
+        notes:   form.notes.trim()   || "",
+      };
+
+      if (mode === "add") await axiosInstance.post("/suppliers", payload);
+      else await axiosInstance.put(`/suppliers/${editSupplier._id}`, payload);
+
+      toast.success(lang === "ar" ? "تم الحفظ بنجاح" : "Saved successfully");
+      onSaved();
+      onClose();
+    } catch (err) {
+      toast.error(getErrorMessage(err, lang === "ar" ? "فشل حفظ المورد" : "Failed to save supplier"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {mode === "add" ? (lang === "ar" ? "إضافة مورد جديد" : "Add New Supplier") : (lang === "ar" ? "تعديل المورد" : "Edit Supplier")}
+          </h2>
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "الاسم بالعربية" : "Name (Arabic)"} <span className="text-red-500">*</span></label>
+              <input type="text" dir="rtl" value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "الاسم بالإنجليزية" : "Name (English)"}</label>
+              <input type="text" dir="ltr" value={form.nameEn} onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "الكود" : "Code"}</label>
+              <input type="text" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "الهاتف" : "Phone"}</label>
+              <input type="text" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "البريد الإلكتروني" : "Email"}</label>
+            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "العنوان" : "Address"}</label>
+            <input type="text" dir={lang === "ar" ? "rtl" : "ltr"} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "ملاحظات" : "Notes"}</label>
+            <textarea rows="2" dir={lang === "ar" ? "rtl" : "ltr"} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={lang === "ar" ? "أضف ملاحظات..." : "Add notes..."} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none" />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+            {lang === "ar" ? "إلغاء" : "Cancel"}
+          </button>
+          <button onClick={handleSubmit} disabled={submitting} className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50">
+            {submitting ? (lang === "ar" ? "جاري الحفظ..." : "Saving...") : (lang === "ar" ? "حفظ" : "Save")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Confirm Modal ──────────────────────────────────────────
+const ConfirmModal = ({ type, supplier, lang, onConfirm, onClose }) => {
+  const isDeactivate = type === "deactivate";
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center ${isDeactivate ? "bg-red-100" : "bg-green-100"}`}>
+            {isDeactivate ? <Trash2 className="w-5 h-5 text-red-600" /> : <CheckCircle className="w-5 h-5 text-green-600" />}
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">
+              {isDeactivate ? (lang === "ar" ? "تأكيد إلغاء التفعيل" : "Confirm Deactivation") : (lang === "ar" ? "تأكيد التفعيل" : "Confirm Activation")}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {isDeactivate ? (lang === "ar" ? "هل أنت متأكد من إلغاء تفعيل هذا المورد؟" : "Are you sure you want to deactivate this supplier?") : (lang === "ar" ? "هل أنت متأكد من تفعيل هذا المورد؟" : "Are you sure you want to activate this supplier?")}
+            </p>
+          </div>
+        </div>
+        <div className="bg-gray-50 rounded-xl p-4 mb-4">
+          <p className="font-medium text-gray-900 text-sm">{lang === "ar" ? supplier?.nameAr : supplier?.nameEn}</p>
+          {supplier?.code && <p className="text-xs text-gray-500">{lang === "ar" ? "الكود: " : "Code: "}{supplier.code}</p>}
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+            {lang === "ar" ? "إلغاء" : "Cancel"}
+          </button>
+          <button onClick={onConfirm} className={`flex-1 px-4 py-2.5 text-white rounded-xl transition font-medium text-sm ${isDeactivate ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}>
+            {isDeactivate ? (lang === "ar" ? "إلغاء التفعيل" : "Deactivate") : (lang === "ar" ? "تفعيل" : "Activate")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main Component ─────────────────────────────────────────
 export default function Suppliers() {
   const { lang, t } = useContext(LanguageContext);
-  
-  const [suppliers, setSuppliers] = useState([]);
-  const [balances, setBalances] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [suppliers,     setSuppliers]     = useState([]);
+  const [balances,      setBalances]      = useState({});
+  const [loading,       setLoading]       = useState(false);
+  const [searchTerm,    setSearchTerm]    = useState("");
+  const [filterStatus,  setFilterStatus]  = useState("ALL");
+  const [sortField,     setSortField]     = useState("nameEn");
+  const [sortDir,       setSortDir]       = useState("asc");
+  const [addModal,      setAddModal]      = useState(false);
+  const [editTarget,    setEditTarget]    = useState(null);
+  const [toggleModal,   setToggleModal]   = useState({ show: false, supplier: null });
 
-  const [formData, setFormData] = useState({
-    nameAr: "",
-    nameEn: "",
-    code: "",
-    phone: "",
-    email: "",
-    address: "",
-    notes: "",
-    isActive: true,
-  });
+  useEffect(() => { fetchSuppliers(); }, []);
 
-  // ================= FETCH =================
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
       const { data } = await axiosInstance.get("/suppliers");
-      setSuppliers(data.result || []);
-    } catch (err) {
-      console.error(err);
-      toast.error(t?.errorLoadingSuppliers || "Error loading suppliers");
+      const list = data.result || [];
+      setSuppliers(list);
+      loadBalances(list);
+    } catch {
+      toast.error(lang === "ar" ? "فشل تحميل الموردين" : "Failed to load suppliers");
     } finally {
       setLoading(false);
     }
@@ -47,694 +284,247 @@ export default function Suppliers() {
 
   const loadBalances = async (list) => {
     const map = {};
-    for (let s of list) {
+    for (const s of list) {
       try {
         const { data } = await axiosInstance.get(`/ledger/supplier/${s._id}/balance`);
         map[s._id] = Number(data.result || 0);
-      } catch {
-        map[s._id] = 0;
-      }
+      } catch { map[s._id] = 0; }
     }
     setBalances(map);
   };
 
-  useEffect(() => { fetchSuppliers(); }, []);
-  useEffect(() => { if (suppliers.length) loadBalances(suppliers); }, [suppliers]);
-
-  // ================= DATA =================
-  const suppliersWithBalance = useMemo(() => {
-    return suppliers.map((s) => ({
-      ...s,
-      balance: Number(balances[s._id] || 0),
-    }));
-  }, [suppliers, balances]);
-
-  const filteredSuppliers = useMemo(() => {
-    let filtered = [...suppliersWithBalance];
-
-    if (searchQuery) {
-      const term = searchQuery.toLowerCase();
-      filtered = filtered.filter(supplier =>
-        supplier.nameAr?.toLowerCase().includes(term) ||
-        supplier.nameEn?.toLowerCase().includes(term) ||
-        supplier.code?.toLowerCase().includes(term) ||
-        supplier.phone?.includes(term) ||
-        supplier.email?.toLowerCase().includes(term)
-      );
-    }
-
-    if (filterStatus !== 'ALL') {
-      filtered = filtered.filter(supplier => 
-        filterStatus === 'ACTIVE' ? supplier.isActive !== false : supplier.isActive === false
-      );
-    }
-
-    return filtered;
-  }, [suppliersWithBalance, searchQuery, filterStatus]);
-
-  // ================= EXPORT =================
-  const handleExportExcel = () => {
+  const handleToggle = async () => {
+    const supplier = toggleModal.supplier;
+    if (!supplier) return;
     try {
-      if (filteredSuppliers.length === 0) {
-        toast.warning(t?.noDataToExport || "No data to export");
-        return;
-      }
-
-      const exportData = filteredSuppliers.map((s) => ({
-        [t?.supplierName || "Supplier Name"]: lang === "ar" ? s.nameAr : s.nameEn,
-        [t?.code || "Code"]: s.code || "",
-        [t?.phone || "Phone"]: s.phone || "",
-        [t?.email || "Email"]: s.email || "",
-        [t?.address || "Address"]: s.address || "",
-        [t?.currentBalance || "Current Balance"]: s.balance,
-        [t?.status || "Status"]: s.isActive ? (t?.active || "Active") : (t?.inactive || "Inactive"),
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, lang === "ar" ? "الموردين" : "Suppliers");
-      
-      const fileName = `Suppliers_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      
-      toast.success(t?.exportedSuccessfully || "Exported successfully");
-    } catch (err) {
-      console.error(err);
-      toast.error(t?.exportError || "Error exporting data");
-    }
-  };
-
-  // ================= SAVE =================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.nameAr?.trim() && !formData.nameEn?.trim()) {
-      toast.error(t?.supplierNameRequired || "Supplier name is required");
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      const payload = {
-        nameAr: formData.nameAr?.trim() || "",
-        nameEn: formData.nameEn?.trim() || "",
-        code: formData.code?.trim() || "",
-        phone: formData.phone?.trim() || "",
-        email: formData.email?.trim() || "",
-        address: formData.address?.trim() || "",
-        notes: formData.notes?.trim() || "",
-      };
-  
-      if (editingSupplier) {
-        await axiosInstance.put(`/suppliers/${editingSupplier._id}`, payload);
-        toast.success(t?.supplierUpdated || "Supplier updated successfully");
-      } else {
-        await axiosInstance.post("/suppliers", payload);
-        toast.success(t?.supplierAdded || "Supplier added successfully");
-      }
-      
-      setShowModal(false);
-      setEditingSupplier(null);
-      setFormData({
-        nameAr: "",
-        nameEn: "",
-        code: "",
-        phone: "",
-        email: "",
-        address: "",
-        notes: "",
-        isActive: true,
-      });
-      
-      await fetchSuppliers();
-      
-    } catch (err) {
-      console.error("Error saving supplier:", err);
-      
-      let errorMsg = "Error saving supplier";
-      
-      if (err.response?.data?.message && Array.isArray(err.response.data.message)) {
-        errorMsg = err.response.data.message.join(", ");
-      } else if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err.response?.data?.error) {
-        errorMsg = err.response.data.error;
-      } else if (err.message) {
-        errorMsg = err.message;
-      }
-      
-      toast.error(errorMsg);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleEdit = (supplier) => {
-    setEditingSupplier(supplier);
-    setFormData({
-      nameAr: supplier.nameAr || "",
-      nameEn: supplier.nameEn || "",
-      code: supplier.code || "",
-      phone: supplier.phone || "",
-      email: supplier.email || "",
-      address: supplier.address || "",
-      notes: supplier.notes || "",
-      isActive: supplier.isActive,
-    });
-    setShowModal(true);
-  };
-
-  const confirmDeleteAction = async () => {
-    if (!confirmDelete) return;
-    
-    try {
-      await axiosInstance.delete(`/suppliers/${confirmDelete._id}`);
-      
-      const successMsg = confirmDelete.isActive 
-        ? (t?.supplierDeactivated || "Supplier deactivated successfully")
-        : (t?.supplierActivated || "Supplier activated successfully");
-      
-      toast.success(successMsg);
-      setConfirmDelete(null);
+      await axiosInstance.delete(`/suppliers/${supplier._id}`);
+      toast.success(supplier.isActive !== false
+        ? (lang === "ar" ? "تم إلغاء تفعيل المورد" : "Supplier deactivated")
+        : (lang === "ar" ? "تم تفعيل المورد" : "Supplier activated"));
+      setToggleModal({ show: false, supplier: null });
       fetchSuppliers();
     } catch (err) {
-      console.error(err);
-      const errorMsg = err.response?.data?.message || err.message || (t?.errorUpdatingSupplier || "Error updating supplier status");
-      toast.error(errorMsg);
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 
-  const activeSuppliers = filteredSuppliers.filter(s => s.isActive !== false).length;
-  const inactiveSuppliers = filteredSuppliers.filter(s => s.isActive === false).length;
-  const totalDebt = filteredSuppliers.reduce((sum, s) => sum + (s.balance > 0 ? s.balance : 0), 0);
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDir("asc"); }
+  };
+
+  const handleExport = () => {
+    try {
+      if (displayed.length === 0) { toast.warning(lang === "ar" ? "لا توجد بيانات للتصدير" : "No data to export"); return; }
+      const data = displayed.map(s => ({
+        [lang === "ar" ? "اسم المورد" : "Supplier Name"]: lang === "ar" ? s.nameAr : s.nameEn,
+        [lang === "ar" ? "الكود" : "Code"]: s.code || "",
+        [lang === "ar" ? "الهاتف" : "Phone"]: s.phone || "",
+        [lang === "ar" ? "البريد الإلكتروني" : "Email"]: s.email || "",
+        [lang === "ar" ? "العنوان" : "Address"]: s.address || "",
+        [lang === "ar" ? "الرصيد الحالي" : "Current Balance"]: s.balance || 0,
+        [lang === "ar" ? "الحالة" : "Status"]: s.isActive !== false ? (lang === "ar" ? "نشط" : "Active") : (lang === "ar" ? "غير نشط" : "Inactive"),
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, lang === "ar" ? "الموردين" : "Suppliers");
+      XLSX.writeFile(wb, `Suppliers_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success(lang === "ar" ? "تم التصدير بنجاح" : "Exported successfully");
+    } catch { toast.error(lang === "ar" ? "فشل التصدير" : "Export failed"); }
+  };
+
+  // Merge balances + filter + sort
+  const displayed = useMemo(() => {
+    return suppliers
+      .map(s => ({ ...s, balance: Number(balances[s._id] || 0) }))
+      .filter(s => {
+        const q = searchTerm.toLowerCase();
+        const matchSearch = !q || s.nameAr?.toLowerCase().includes(q) || s.nameEn?.toLowerCase().includes(q) || s.code?.toLowerCase().includes(q) || s.phone?.includes(q) || s.email?.toLowerCase().includes(q);
+        const matchStatus = filterStatus === "ALL" || (filterStatus === "ACTIVE" && s.isActive !== false) || (filterStatus === "INACTIVE" && s.isActive === false);
+        return matchSearch && matchStatus;
+      })
+      .sort((a, b) => {
+        let va = a[sortField] ?? "";
+        let vb = b[sortField] ?? "";
+        if (typeof va === "string") va = va.toLowerCase();
+        if (typeof vb === "string") vb = vb.toLowerCase();
+        return sortDir === "asc" ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+      });
+  }, [suppliers, balances, searchTerm, filterStatus, sortField, sortDir]);
+
+  if (loading && suppliers.length === 0)
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Users className="w-8 h-8 text-white" />
-                <div>
-                  <h1 className="text-2xl font-bold text-white">
-                    {t?.allSuppliers || "All Suppliers"}
-                  </h1>
-                  <p className="text-blue-100 mt-1">
-                    {lang === "ar" 
-                      ? "عرض وإدارة الموردين وحساباتهم" 
-                      : "View and manage suppliers and their accounts"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleExportExcel}
-                  className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition font-semibold shadow-md"
-                >
-                  <Download className="w-5 h-5" />
-                  <span>{lang === "ar" ? "تصدير" : "Export"}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingSupplier(null);
-                    setFormData({ 
-                      nameAr: "", 
-                      nameEn: "", 
-                      code: "", 
-                      phone: "", 
-                      email: "", 
-                      address: "", 
-                      notes: "", 
-                      isActive: true 
-                    });
-                    setShowModal(true);
-                  }}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold shadow-md"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>{t?.addSupplier || "Add Supplier"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-gray-50">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "إجمالي الموردين" : "Total Suppliers"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{filteredSuppliers.length}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "موردين نشطين" : "Active Suppliers"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{activeSuppliers}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-red-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "إجمالي المديونية" : "Total Debt"}
-              </p>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(totalDebt, lang)}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-gray-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === "ar" ? "موردين غير نشطين" : "Inactive Suppliers"}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{inactiveSuppliers}</p>
-            </div>
+        {/* ── Page Header ── */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {lang === "ar" ? "الموردين" : "Suppliers"}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {lang === "ar" ? "عرض وإدارة الموردين وحساباتهم" : "View and manage suppliers and their accounts."}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              {lang === "ar" ? "تصدير" : "Export"}
+            </button>
+            <button
+              onClick={() => setAddModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              {lang === "ar" ? "إضافة مورد" : "Add Supplier"}
+            </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Users className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder={lang === "ar" ? "البحث في الموردين..." : "Search suppliers..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              >
-                <option value="ALL">{lang === "ar" ? "كل الحالات" : "All Status"}</option>
-                <option value="ACTIVE">{lang === "ar" ? "نشط" : "Active"}</option>
-                <option value="INACTIVE">{lang === "ar" ? "غير نشط" : "Inactive"}</option>
-              </select>
-            </div>
+        {/* ── Filters ── */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={lang === "ar" ? "بحث في الموردين..." : "Search suppliers..."}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            />
           </div>
 
-          {/* Clear Filters */}
-          {(searchQuery || filterStatus !== 'ALL') && (
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+          >
+            <option value="ALL">{lang === "ar" ? "كل الحالات" : "All Status"}</option>
+            <option value="ACTIVE">{lang === "ar" ? "نشط" : "Active"}</option>
+            <option value="INACTIVE">{lang === "ar" ? "غير نشط" : "Inactive"}</option>
+          </select>
+
+          {(searchTerm || filterStatus !== "ALL") && (
             <button
-              onClick={() => {
-                setSearchQuery('');
-                setFilterStatus('ALL');
-              }}
-              className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              onClick={() => { setSearchTerm(""); setFilterStatus("ALL"); }}
+              className="text-sm text-indigo-600 hover:underline"
             >
-              {lang === "ar" ? "مسح الفلاتر" : "Clear Filters"}
+              {lang === "ar" ? "مسح الفلاتر" : "Clear"}
             </button>
           )}
         </div>
 
-        {/* Suppliers Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin inline-block w-12 h-12 border-4 border-current border-t-transparent text-blue-600 rounded-full" role="status">
-                <span className="sr-only">Loading...</span>
-              </div>
-              <p className="mt-4 text-gray-600">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
-            </div>
-          ) : filteredSuppliers.length === 0 ? (
-            <div className="p-12 text-center">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {lang === "ar" ? "لا يوجد موردين" : "No Suppliers Found"}
-              </h3>
-              <p className="text-gray-600 mb-6">
-                {lang === "ar" ? "لم يتم العثور على موردين مطابقين للفلاتر المحددة" : "No suppliers match your current filters"}
+        {/* ── Table ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          {displayed.length === 0 ? (
+            <div className="p-16 text-center">
+              <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="font-medium text-gray-600">
+                {lang === "ar" ? "لا يوجد موردين" : "No suppliers found"}
               </p>
-              <button
-                onClick={() => {
-                  setEditingSupplier(null);
-                  setFormData({ 
-                    nameAr: "", 
-                    nameEn: "", 
-                    code: "", 
-                    phone: "", 
-                    email: "", 
-                    address: "", 
-                    notes: "", 
-                    isActive: true 
-                  });
-                  setShowModal(true);
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-              >
-                <Plus className="w-5 h-5" />
-                {lang === "ar" ? "إضافة أول مورد" : "Add First Supplier"}
-              </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {t?.supplierName || "Supplier Name"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {t?.phone || "Phone"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {t?.currentBalance || "Current Balance"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {t?.status || "Status"}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === "ar" ? "الإجراءات" : "Actions"}
-                    </th>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <SortHeader label={lang === "ar" ? "المورد"         : "Supplier"}         field={lang === "ar" ? "nameAr" : "nameEn"} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "الكود"           : "Code"}             field="code"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "الهاتف"          : "Phone"}            field="phone"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "الرصيد الحالي"   : "Balance"}          field="balance"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "الحالة"          : "Status"}           field="isActive"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {displayed.map(supplier => (
+                  <tr key={supplier._id} className="hover:bg-gray-50/60 transition">
+                    {/* Avatar + Name */}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-indigo-600 font-semibold text-sm">
+                            {(lang === "ar" ? supplier.nameAr : supplier.nameEn)?.charAt(0)?.toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-900 text-sm block">
+                            {lang === "ar" ? supplier.nameAr : supplier.nameEn}
+                          </span>
+                          {supplier.email && (
+                            <span className="text-xs text-gray-400">{supplier.email}</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Code */}
+                    <td className="px-4 py-3.5">
+                      {supplier.code
+                        ? <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{supplier.code}</span>
+                        : <span className="text-gray-400 text-sm">—</span>}
+                    </td>
+
+                    {/* Phone */}
+                    <td className="px-4 py-3.5 text-sm text-gray-500">{supplier.phone || "—"}</td>
+
+                    {/* Balance */}
+                    <td className="px-4 py-3.5">
+                      <span className={`text-sm font-semibold ${supplier.balance > 0 ? "text-red-600" : supplier.balance < 0 ? "text-green-600" : "text-gray-500"}`}>
+                        {formatCurrency(supplier.balance, lang)}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3.5">
+                      <StatusBadge isActive={supplier.isActive} lang={lang} />
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5 text-right">
+                      <ActionsMenu
+                        supplier={supplier}
+                        lang={lang}
+                        onEdit={s => setEditTarget(s)}
+                        onToggle={s => setToggleModal({ show: true, supplier: s })}
+                      />
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredSuppliers.map((supplier) => (
-                    <tr key={supplier._id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Users className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">
-                              {lang === "ar" ? supplier.nameAr : supplier.nameEn}
-                            </p>
-                            {supplier.code && (
-                              <p className="text-sm text-gray-500">{supplier.code}</p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {supplier.phone || "-"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`font-semibold ${supplier.balance > 0 ? "text-red-600" : supplier.balance < 0 ? "text-green-600" : "text-gray-600"}`}>
-                          {formatCurrency(supplier.balance, lang)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {supplier.isActive !== false ? (
-                          <span className="flex items-center gap-2 text-green-600 font-semibold">
-                            <CheckCircle className="w-4 h-4" />
-                            {t?.active || "Active"}
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-2 text-red-600 font-semibold">
-                            <X className="w-4 h-4" />
-                            {t?.inactive || "Inactive"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEdit(supplier)}
-                            className="flex items-center gap-1 px-3 py-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition font-medium"
-                            title={t?.edit || "Edit"}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setConfirmDelete(supplier)}
-                            className={`flex items-center gap-1 px-3 py-2 rounded-lg transition font-medium ${
-                              supplier.isActive 
-                                ? "bg-red-50 text-red-600 hover:bg-red-100" 
-                                : "bg-green-50 text-green-600 hover:bg-green-100"
-                            }`}
-                            title={supplier.isActive ? (t?.deactivate || "Deactivate") : (t?.activate || "Activate")}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
 
-      {/* Modals */}
-      {showModal && (
-        <SupplierModal 
-          t={t} 
-          lang={lang}
-          formData={formData} 
-          setFormData={setFormData} 
-          onClose={() => {
-            setShowModal(false);
-            setEditingSupplier(null);
-          }} 
-          onSubmit={handleSubmit} 
-          editing={!!editingSupplier}
-          saving={saving}
-        />
+      {/* ── Modals ── */}
+      {addModal && (
+        <SupplierModal lang={lang} t={t} mode="add"
+          onClose={() => setAddModal(false)}
+          onSaved={fetchSuppliers} />
       )}
-
-      {confirmDelete && (
+      {editTarget && (
+        <SupplierModal lang={lang} t={t} mode="edit" supplier={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={fetchSuppliers} />
+      )}
+      {toggleModal.show && (
         <ConfirmModal
-          supplier={confirmDelete}
-          onClose={() => setConfirmDelete(null)}
-          onConfirm={confirmDeleteAction}
-          t={t}
+          type={toggleModal.supplier?.isActive !== false ? "deactivate" : "activate"}
+          supplier={toggleModal.supplier}
           lang={lang}
-        />
+          onConfirm={handleToggle}
+          onClose={() => setToggleModal({ show: false, supplier: null })} />
       )}
-    </div>
-  );
-}
-
-// ================= MODALS =================
-
-function SupplierModal({ t, lang, formData, setFormData, onClose, onSubmit, editing, saving }) {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 border-b border-blue-500">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white">
-              {editing ? (t?.editSupplier || "Edit Supplier") : (t?.addSupplier || "Add Supplier")}
-            </h2>
-            <button
-              onClick={onClose}
-              disabled={saving}
-              className="text-white hover:text-gray-200 transition-colors disabled:opacity-50"
-            >
-              <X size={24} />
-            </button>
-          </div>
-        </div>
-
-        <form onSubmit={onSubmit} className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t?.nameAr || "Name (Arabic)"} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder={t?.nameAr || "Name (Arabic)"}
-                value={formData.nameAr}
-                onChange={e => setFormData({ ...formData, nameAr: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                dir="rtl"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t?.nameEn || "Name (English)"}
-              </label>
-              <input
-                type="text"
-                placeholder={t?.nameEn || "Name (English)"}
-                value={formData.nameEn}
-                onChange={e => setFormData({ ...formData, nameEn: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                dir="ltr"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t?.code || "Code"}
-              </label>
-              <input
-                type="text"
-                placeholder={t?.code || "Code"}
-                value={formData.code}
-                onChange={e => setFormData({ ...formData, code: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t?.phone || "Phone"}
-              </label>
-              <input
-                type="text"
-                placeholder={t?.phone || "Phone"}
-                value={formData.phone}
-                onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t?.email || "Email"}
-              </label>
-              <input
-                type="email"
-                placeholder={t?.email || "Email"}
-                value={formData.email}
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t?.address || "Address"}
-              </label>
-              <input
-                type="text"
-                placeholder={t?.address || "Address"}
-                value={formData.address}
-                onChange={e => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                dir={lang === "ar" ? "rtl" : "ltr"}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t?.notes || "Notes"}
-              </label>
-              <textarea
-                placeholder={t?.notes || "Notes"}
-                value={formData.notes}
-                onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                rows={3}
-                dir={lang === "ar" ? "rtl" : "ltr"}
-              />
-            </div>
-
-            <div className="md:col-span-2 flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive === true}
-                onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
-                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <label htmlFor="isActive" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                {t?.active || "Active"}
-              </label>
-            </div>
-          </div>
-
-          <div className="flex gap-4 mt-8">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {saving && (
-                <div className="animate-spin inline-block w-5 h-5 border-2 border-current border-t-transparent text-white rounded-full" role="status">
-                  <span className="sr-only">Loading...</span>
-                </div>
-              )}
-              {saving ? (t?.saving || "Saving...") : (t?.save || "Save")}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold disabled:opacity-50"
-            >
-              {t?.cancel || "Cancel"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function ConfirmModal({ supplier, onClose, onConfirm, t, lang }) {
-  const isActive = supplier.isActive;
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-            isActive ? "bg-red-100" : "bg-green-100"
-          }`}>
-            {isActive ? (
-              <Trash2 className="w-6 h-6 text-red-600" />
-            ) : (
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            )}
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">
-              {isActive 
-                ? (t?.deactivateSupplier || "Deactivate Supplier") 
-                : (t?.activateSupplier || "Activate Supplier")}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {isActive 
-                ? (t?.confirmDeactivate || "Are you sure you want to deactivate this supplier?")
-                : (t?.confirmActivate || "Are you sure you want to activate this supplier?")}
-            </p>
-          </div>
-        </div>
-        
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <p className="text-sm text-gray-600 mb-1">{lang === "ar" ? "المورد:" : "Supplier:"}</p>
-          <p className="font-semibold text-gray-900">
-            {lang === "ar" ? supplier.nameAr : supplier.nameEn}
-          </p>
-          {supplier.code && (
-            <p className="text-sm text-gray-500 mt-1">
-              {t?.code || "Code"}: {supplier.code}
-            </p>
-          )}
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-          >
-            {t?.cancel || "Cancel"}
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`flex-1 px-4 py-2 text-white rounded-lg transition font-semibold ${
-              isActive 
-                ? "bg-red-600 hover:bg-red-700" 
-                : "bg-green-600 hover:bg-green-700"
-            }`}
-          >
-            {isActive ? (t?.deactivate || "Deactivate") : (t?.activate || "Activate")}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

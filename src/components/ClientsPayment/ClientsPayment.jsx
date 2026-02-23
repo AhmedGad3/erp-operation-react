@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { CreditCard, Search, Plus, AlertCircle, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../../utils/axiosInstance';
+import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { exportToExcel } from '../../utils/excelExport';
@@ -32,8 +32,7 @@ const PaymentsList = () => {
       const paymentsData = Array.isArray(response.data) ? response.data : (response.data.result || []);
       setPayments(paymentsData);
     } catch (error) {
-      console.error('Fetch payments error:', error);
-      toast.error(lang === 'ar' ? 'فشل تحميل الدفعات' : 'Failed to load payments');
+      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل تحميل الدفعات' : 'Failed to load payments'));
     } finally {
       setLoading(false);
     }
@@ -118,8 +117,7 @@ const PaymentsList = () => {
       exportToExcel(data, headers, lang === 'ar' ? 'قائمة_الدفعات' : 'Payments_List', lang);
       
       toast.success(lang === 'ar' ? 'تم التصدير بنجاح' : 'Exported successfully');
-    } catch (err) {
-      console.error('Export error:', err);
+    } catch {
       toast.error(lang === 'ar' ? 'فشل التصدير' : 'Export failed');
     }
   };

@@ -56,7 +56,6 @@ export default function ProjectMiscellaneousDetails() {
       const records = miscRes.data.result || [];
       setMiscellaneousRecords(records);
       
-      // Fetch categories
       const categoriesRes = await axiosInstance.get(`/projects/${id}/miscellaneous/categories`);
       setCategories(categoriesRes.data.result || []);
       
@@ -76,6 +75,9 @@ export default function ProjectMiscellaneousDetails() {
     }
   };
 
+  // ─── Project Locked ──────────────────────────
+  const isLocked = project?.status === "COMPLETED";
+
   const handleDelete = async (miscId) => {
     try {
       await axiosInstance.delete(`/projects/${id}/miscellaneous/${miscId}`);
@@ -93,12 +95,9 @@ export default function ProjectMiscellaneousDetails() {
       const recordDate = new Date(record.date);
       const from = dateFrom ? new Date(dateFrom) : null;
       const to = dateTo ? new Date(dateTo + 'T23:59:59') : null;
-
       if (from && recordDate < from) return false;
       if (to && recordDate > to) return false;
-      
       if (selectedCategory && record.category !== selectedCategory) return false;
-
       return true;
     });
   }, [miscellaneousRecords, dateFrom, dateTo, selectedCategory]);
@@ -106,61 +105,57 @@ export default function ProjectMiscellaneousDetails() {
   const totalRecords = filteredRecords.length;
   const totalAmount = filteredRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
 
-  // Group by category for summary
   const categoryTotals = useMemo(() => {
     const totals = {};
     filteredRecords.forEach(record => {
       const cat = record.category || (lang === 'ar' ? 'غير مصنف' : 'Uncategorized');
-      if (!totals[cat]) {
-        totals[cat] = 0;
-      }
+      if (!totals[cat]) totals[cat] = 0;
       totals[cat] += record.amount;
     });
     return totals;
   }, [filteredRecords, lang]);
 
- const handleExportPDF = async () => {
-  try {
-    const data = filteredRecords.map(record => ({
-      date: formatDateShort(record.date, lang),
-      category: record.category || (lang === 'ar' ? 'غير مصنف' : 'Uncategorized'),
-      description: record.description,
-      amount: formatCurrency(record.amount, lang),
-      notes: record.notes || '-'
-    }));
+  const handleExportPDF = async () => {
+    try {
+      const data = filteredRecords.map(record => ({
+        date: formatDateShort(record.date, lang),
+        category: record.category || (lang === 'ar' ? 'غير مصنف' : 'Uncategorized'),
+        description: record.description,
+        amount: formatCurrency(record.amount, lang),
+        notes: record.notes || '-'
+      }));
 
-    // إضافة صف الإجمالي
-    data.push({
-      date: lang === 'ar' ? 'الإجمالي' : 'Total',
-      category: '',
-      description: '',
-      amount: formatCurrency(totalAmount, lang),
-      notes: ''
-    });
+      data.push({
+        date: lang === 'ar' ? 'الإجمالي' : 'Total',
+        category: '',
+        description: '',
+        amount: formatCurrency(totalAmount, lang),
+        notes: ''
+      });
 
-    const headers = [
-      { date: lang === "ar" ? "التاريخ" : "Date" },
-      { category: lang === "ar" ? "الفئة" : "Category" },
-      { description: lang === "ar" ? "الوصف" : "Description" },
-      { amount: lang === "ar" ? "المبلغ" : "Amount" },
-      { notes: lang === "ar" ? "ملاحظات" : "Notes" }
-    ];
+      const headers = [
+        { date: lang === "ar" ? "التاريخ" : "Date" },
+        { category: lang === "ar" ? "الفئة" : "Category" },
+        { description: lang === "ar" ? "الوصف" : "Description" },
+        { amount: lang === "ar" ? "المبلغ" : "Amount" },
+        { notes: lang === "ar" ? "ملاحظات" : "Notes" }
+      ];
 
-    const title = lang === 'ar' ? 'النثريات والمصروفات الأخرى - المشروع' : 'Miscellaneous Expenses - Project';
-    const fileName = `miscellaneous_details_${project.code}`;
-    const projectInfo = {
-      name: lang === 'ar' ? project.nameAr : project.nameEn,
-      code: project.code
-    };
+      const title = lang === 'ar' ? 'النثريات والمصروفات الأخرى - المشروع' : 'Miscellaneous Expenses - Project';
+      const fileName = `miscellaneous_details_${project.code}`;
+      const projectInfo = {
+        name: lang === 'ar' ? project.nameAr : project.nameEn,
+        code: project.code
+      };
 
-    await exportToPDF(data, headers, fileName, lang, title, projectInfo);
-    toast.success(lang === "ar" ? "تم تصدير PDF بنجاح" : "PDF exported successfully");
+      await exportToPDF(data, headers, fileName, lang, title, projectInfo);
+      toast.success(lang === "ar" ? "تم تصدير PDF بنجاح" : "PDF exported successfully");
 
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    toast.error(lang === "ar" ? "حدث خطأ أثناء تصدير PDF" : "Error exporting PDF");
-  }
-};
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error(lang === "ar" ? "حدث خطأ أثناء تصدير PDF" : "Error exporting PDF");
+    }
+  };
 
   if (loading) {
     return <FullPageLoader text={lang === 'ar' ? 'جاري التحميل...' : 'Loading...'} />;
@@ -191,6 +186,7 @@ export default function ProjectMiscellaneousDetails() {
         </button>
 
         <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
+          {/* Header */}
           <div className="flex justify-between items-start p-6 border-b bg-gradient-to-br from-slate-50 to-slate-100">
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
@@ -217,14 +213,27 @@ export default function ProjectMiscellaneousDetails() {
             </div>
             
             <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-semibold"
+              onClick={() => !isLocked && setShowAddModal(true)}
+              disabled={isLocked}
+              title={isLocked ? (lang === "ar" ? "المشروع مكتمل — لا يمكن الإضافة" : "Project completed — cannot add") : undefined}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Plus size={20} />
               {lang === 'ar' ? 'إضافة مصروف' : 'Add Expense'}
             </button>
           </div>
 
+          {/* ── Locked Banner ── */}
+          {isLocked && (
+            <div className="flex items-center gap-2 px-6 py-3 bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-sm font-medium">
+              <AlertCircle size={16} className="shrink-0" />
+              {lang === "ar"
+                ? "هذا المشروع مكتمل — لا يمكن إضافة أو تعديل أو حذف المصروفات"
+                : "This project is completed — adding, editing, or deleting expenses is not allowed"}
+            </div>
+          )}
+
+          {/* Filters & Actions Bar */}
           <div className="flex items-center justify-between gap-4 p-4 bg-gray-50 border-b">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-300">
@@ -296,6 +305,7 @@ export default function ProjectMiscellaneousDetails() {
             </div>
           )}
 
+          {/* Table */}
           <div className="overflow-auto max-h-[600px]">
             {filteredRecords.length === 0 ? (
               <div className="text-center py-12">
@@ -369,31 +379,25 @@ export default function ProjectMiscellaneousDetails() {
 
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-600 max-w-xs">
-                          {record.notes || (
-                            <span className="text-gray-400">—</span>
-                          )}
+                          {record.notes || <span className="text-gray-400">—</span>}
                         </div>
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => {
-                              setSelectedMiscellaneous(record);
-                              setShowEditModal(true);
-                            }}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
-                            title={lang === 'ar' ? 'تعديل' : 'Edit'}
+                            onClick={() => { if (!isLocked) { setSelectedMiscellaneous(record); setShowEditModal(true); } }}
+                            disabled={isLocked}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={isLocked ? (lang === "ar" ? "المشروع مكتمل" : "Project completed") : (lang === 'ar' ? 'تعديل' : 'Edit')}
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
-                            onClick={() => {
-                              setSelectedMiscellaneous(record);
-                              setShowDeleteModal(true);
-                            }}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                            title={lang === 'ar' ? 'حذف' : 'Delete'}
+                            onClick={() => { if (!isLocked) { setSelectedMiscellaneous(record); setShowDeleteModal(true); } }}
+                            disabled={isLocked}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={isLocked ? (lang === "ar" ? "المشروع مكتمل" : "Project completed") : (lang === 'ar' ? 'حذف' : 'Delete')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -406,6 +410,7 @@ export default function ProjectMiscellaneousDetails() {
             )}
           </div>
 
+          {/* Footer */}
           <div className="border-t bg-gray-50">
             <div className="px-6 py-4">
               <div className="flex items-center justify-between">
@@ -414,9 +419,7 @@ export default function ProjectMiscellaneousDetails() {
                     <p className="text-xs text-gray-500 mb-1">
                       {lang === "ar" ? "عدد المصروفات" : "Total Records"}
                     </p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {totalRecords}
-                    </p>
+                    <p className="text-lg font-bold text-gray-900">{totalRecords}</p>
                   </div>
 
                   <div className="h-12 w-px bg-gray-300"></div>
@@ -454,6 +457,7 @@ export default function ProjectMiscellaneousDetails() {
         </div>
       </div>
 
+      {/* Delete Modal */}
       {showDeleteModal && selectedMiscellaneous && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
@@ -481,10 +485,7 @@ export default function ProjectMiscellaneousDetails() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setSelectedMiscellaneous(null);
-                }}
+                onClick={() => { setShowDeleteModal(false); setSelectedMiscellaneous(null); }}
                 className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
               >
                 {lang === 'ar' ? 'إلغاء' : 'Cancel'}
@@ -500,8 +501,13 @@ export default function ProjectMiscellaneousDetails() {
         </div>
       )}
 
-      {/* TODO: Add/Edit Modals */}
-      {showAddModal && <AddMiscellaneousModal projectId={id} onClose={() => setShowAddModal(false)} onSuccess={() => { fetchData(); setShowAddModal(false); }} />}
+      {showAddModal && (
+        <AddMiscellaneousModal
+          projectId={id}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => { fetchData(); setShowAddModal(false); }}
+        />
+      )}
       {showEditModal && selectedMiscellaneous && (
         <EditMiscellaneousModal 
           projectId={id} 
@@ -514,7 +520,9 @@ export default function ProjectMiscellaneousDetails() {
   );
 }
 
-// ✅ Add Miscellaneous Modal
+// ─────────────────────────────────────────────
+// Add Miscellaneous Modal
+// ─────────────────────────────────────────────
 function AddMiscellaneousModal({ projectId, onClose, onSuccess }) {
   const { lang } = useContext(LanguageContext);
   const [saving, setSaving] = useState(false);
@@ -529,7 +537,6 @@ function AddMiscellaneousModal({ projectId, onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-
     try {
       await axiosInstance.post(`/projects/${projectId}/miscellaneous`, {
         ...formData,
@@ -631,19 +638,12 @@ function AddMiscellaneousModal({ projectId, onClose, onSuccess }) {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-              disabled={saving}
-            >
+            <button type="button" onClick={onClose} disabled={saving}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">
               {lang === 'ar' ? 'إلغاء' : 'Cancel'}
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50"
-              disabled={saving}
-            >
+            <button type="submit" disabled={saving}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50">
               {saving ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (lang === 'ar' ? 'حفظ' : 'Save')}
             </button>
           </div>
@@ -653,7 +653,9 @@ function AddMiscellaneousModal({ projectId, onClose, onSuccess }) {
   );
 }
 
-// ✅ Edit Miscellaneous Modal
+// ─────────────────────────────────────────────
+// Edit Miscellaneous Modal
+// ─────────────────────────────────────────────
 function EditMiscellaneousModal({ projectId, miscellaneous, onClose, onSuccess }) {
   const { lang } = useContext(LanguageContext);
   const [saving, setSaving] = useState(false);
@@ -668,7 +670,6 @@ function EditMiscellaneousModal({ projectId, miscellaneous, onClose, onSuccess }
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-
     try {
       await axiosInstance.put(`/projects/${projectId}/miscellaneous/${miscellaneous._id}`, {
         ...formData,
@@ -768,19 +769,12 @@ function EditMiscellaneousModal({ projectId, miscellaneous, onClose, onSuccess }
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-              disabled={saving}
-            >
+            <button type="button" onClick={onClose} disabled={saving}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">
               {lang === 'ar' ? 'إلغاء' : 'Cancel'}
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50"
-              disabled={saving}
-            >
+            <button type="submit" disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50">
               {saving ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (lang === 'ar' ? 'حفظ التعديلات' : 'Save Changes')}
             </button>
           </div>

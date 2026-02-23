@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { ShieldCheck } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function VerifyLogin() {
   const fieldsRef = useRef();
@@ -88,9 +89,9 @@ export default function VerifyLogin() {
       setCanResend(false);
       setTimer(60);
       await axios.post("https://erp-operations.vercel.app/auth/login", { email });
-      alert("Code resent successfully");
+      toast.success("Code resent successfully");
     } catch (err) {
-      alert("Failed to resend code");
+      toast.error(err.response?.data?.message || "Failed to resend code");
     }
   };
 

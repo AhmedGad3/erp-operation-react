@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { DollarSign, ArrowLeft, AlertCircle, CheckCircle, CreditCard, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../../utils/axiosInstance';
+import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
@@ -51,8 +51,7 @@ const CreateClientPayment = () => {
       const clientsData = Array.isArray(response.data) ? response.data : (response.data.result || []);
       setClients(clientsData.filter(c => c.isActive !== false));
     } catch (error) {
-      console.error('Error fetching clients:', error);
-      toast.error(lang === 'ar' ? 'فشل تحميل العملاء' : 'Failed to load clients');
+      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل تحميل العملاء' : 'Failed to load clients'));
     } finally {
       setLoading(false);
     }
@@ -76,8 +75,7 @@ const CreateClientPayment = () => {
       
       setProjects(clientProjects);
     } catch (error) {
-      console.error('Error fetching projects:', error);
-      toast.error(lang === 'ar' ? 'فشل تحميل المشاريع' : 'Failed to load projects');
+      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل تحميل المشاريع' : 'Failed to load projects'));
     }
   };
   
@@ -163,9 +161,7 @@ const CreateClientPayment = () => {
         navigate(`/finance/client-payments/${paymentId}`);
       }, 1500);
     } catch (error) {
-      console.error('Error creating payment:', error);
-      const message = error.response?.data?.message || (lang === 'ar' ? 'فشل إنشاء الدفعة' : 'Failed to create payment');
-      toast.error(message);
+      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل إنشاء الدفعة' : 'Failed to create payment'));
     } finally {
       setSubmitting(false);
     }

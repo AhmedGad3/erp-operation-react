@@ -22,6 +22,27 @@ import { toast } from "react-toastify";
 const todayISO = () => new Date().toISOString().split("T")[0];
 
 // ─────────────────────────────────────────────
+// Field Component (خارج المودال لمنع إعادة الـ mount)
+// ─────────────────────────────────────────────
+function Field({ label, required, optional, lang, error, children }) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-1">
+        {label}{" "}
+        {required && <span className="text-red-500">*</span>}
+        {optional && (
+          <span className="text-gray-400 text-xs font-normal">
+            ({lang === "ar" ? "اختياري" : "optional"})
+          </span>
+        )}
+      </label>
+      {children}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────
 export default function ProjectSubcontractorWork() {
@@ -69,6 +90,9 @@ export default function ProjectSubcontractorWork() {
   }, [id, lang]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ─── Project Locked ──────────────────────────
+  const isLocked = project?.status === "COMPLETED";
 
   // ─── Filtered Records by Date ─────────────────
   const filteredRecords = useMemo(() => {
@@ -209,13 +233,25 @@ export default function ProjectSubcontractorWork() {
               </div>
             </div>
             <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition font-semibold"
+              onClick={() => !isLocked && setShowAddModal(true)}
+              disabled={isLocked}
+              title={isLocked ? (lang === "ar" ? "المشروع مكتمل — لا يمكن الإضافة" : "Project completed — cannot add") : undefined}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Plus size={20} />
               {lang === "ar" ? "إضافة بند" : "Add Item"}
             </button>
           </div>
+
+          {/* ── Locked Banner ── */}
+          {isLocked && (
+            <div className="flex items-center gap-2 px-6 py-3 bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-sm font-medium">
+              <AlertCircle size={16} className="shrink-0" />
+              {lang === "ar"
+                ? "هذا المشروع مكتمل — لا يمكن إضافة أو تعديل أو حذف البنود"
+                : "This project is completed — adding, editing, or deleting items is not allowed"}
+            </div>
+          )}
 
           {/* ── Filters & Actions Bar ── */}
           <div className="flex items-center justify-between gap-4 p-4 bg-gray-50 border-b flex-wrap">
@@ -361,16 +397,18 @@ export default function ProjectSubcontractorWork() {
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => { setSelectedRecord(record); setShowEditModal(true); }}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
-                            title={lang === "ar" ? "تعديل" : "Edit"}
+                            onClick={() => { if (!isLocked) { setSelectedRecord(record); setShowEditModal(true); } }}
+                            disabled={isLocked}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={isLocked ? (lang === "ar" ? "المشروع مكتمل" : "Project completed") : (lang === "ar" ? "تعديل" : "Edit")}
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
-                            onClick={() => { setSelectedRecord(record); setShowDeleteModal(true); }}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                            title={lang === "ar" ? "حذف" : "Delete"}
+                            onClick={() => { if (!isLocked) { setSelectedRecord(record); setShowDeleteModal(true); } }}
+                            disabled={isLocked}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={isLocked ? (lang === "ar" ? "المشروع مكتمل" : "Project completed") : (lang === "ar" ? "حذف" : "Delete")}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -567,18 +605,6 @@ function SubcontractorWorkModal({ projectId, record, onClose, onSuccess }) {
   const ringClass = isEdit ? "focus:ring-blue-500" : "focus:ring-amber-400";
   const submitClass = isEdit ? "bg-blue-600 hover:bg-blue-700" : "bg-amber-500 hover:bg-amber-600";
 
-  const Field = ({ label, required, optional, error, children }) => (
-    <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-1">
-        {label}{" "}
-        {required && <span className="text-red-500">*</span>}
-        {optional && <span className="text-gray-400 text-xs font-normal">({lang === "ar" ? "اختياري" : "optional"})</span>}
-      </label>
-      {children}
-      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-    </div>
-  );
-
   const inputClass = (fieldName) =>
     `w-full px-3 py-2 border rounded focus:ring-2 focus:border-transparent ${ringClass} ${errors[fieldName] ? "border-red-400 bg-red-50" : "border-gray-300"}`;
 
@@ -594,34 +620,34 @@ function SubcontractorWorkModal({ projectId, record, onClose, onSuccess }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4" noValidate>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label={lang === "ar" ? "اسم المقاول" : "Contractor Name"} required error={errors.contractorName}>
+            <Field label={lang === "ar" ? "اسم المقاول" : "Contractor Name"} required lang={lang} error={errors.contractorName}>
               <input type="text" value={formData.contractorName} onChange={handleChange("contractorName")} className={inputClass("contractorName")} dir={lang === "ar" ? "rtl" : "ltr"} />
             </Field>
 
-            <Field label={lang === "ar" ? "تاريخ العمل" : "Work Date"} required error={errors.workDate}>
+            <Field label={lang === "ar" ? "تاريخ العمل" : "Work Date"} required lang={lang} error={errors.workDate}>
               <input type="date" value={formData.workDate} onChange={handleChange("workDate")} className={inputClass("workDate")} max={todayISO()} />
             </Field>
           </div>
 
-          <Field label={lang === "ar" ? "وصف البند" : "Item Description"} required error={errors.itemDescription}>
+          <Field label={lang === "ar" ? "وصف البند" : "Item Description"} required lang={lang} error={errors.itemDescription}>
             <textarea value={formData.itemDescription} onChange={handleChange("itemDescription")} className={inputClass("itemDescription")} rows={2} dir={lang === "ar" ? "rtl" : "ltr"} />
           </Field>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Field label={lang === "ar" ? "الوحدة" : "Unit"} optional>
+            <Field label={lang === "ar" ? "الوحدة" : "Unit"} optional lang={lang}>
               <input type="text" value={formData.unit} onChange={handleChange("unit")} className={inputClass("unit")} placeholder={lang === "ar" ? "م / ط" : "m / t"} />
             </Field>
 
-            <Field label={lang === "ar" ? "الكمية" : "Quantity"} required error={errors.quantity}>
+            <Field label={lang === "ar" ? "الكمية" : "Quantity"} required lang={lang} error={errors.quantity}>
               <input type="number" value={formData.quantity} onChange={handleChange("quantity")} className={inputClass("quantity")} min="0" step="0.01" />
             </Field>
 
-            <Field label={lang === "ar" ? "سعر الوحدة" : "Unit Price"} required error={errors.unitPrice}>
+            <Field label={lang === "ar" ? "سعر الوحدة" : "Unit Price"} required lang={lang} error={errors.unitPrice}>
               <input type="number" value={formData.unitPrice} onChange={handleChange("unitPrice")} className={inputClass("unitPrice")} min="0" step="0.01" />
             </Field>
           </div>
 
-          <Field label={lang === "ar" ? "ملاحظات" : "Notes"} optional>
+          <Field label={lang === "ar" ? "ملاحظات" : "Notes"} optional lang={lang}>
             <input type="text" value={formData.notes} onChange={handleChange("notes")} className={inputClass("notes")} placeholder={lang === "ar" ? "أي ملاحظات..." : "Any notes..."} />
           </Field>
 

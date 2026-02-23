@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo, useContext } from "react";
+import { useState, useEffect, useMemo, useContext, useRef } from "react";
 import {
-  Plus, Search, Eye, Download, ShoppingCart, Calendar,
-  DollarSign, FileText, Printer, Package, X, Trash2,
-  AlertCircle, TrendingUp, Clock, CheckCircle
+  ShoppingCart, Search, Plus, Eye, Download,
+  ChevronUp, ChevronDown, FileText, Calendar,
+  Clock, Package, X, Trash2, DollarSign,
+  TrendingUp, Printer
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/errorHandler";
 import { formatCurrency, formatDateShort } from "../../utils/dateFormat";
 import { exportToExcel } from "../../utils/excelExport";
 import { Button } from "../ui/button";
@@ -17,108 +19,86 @@ import megabuildLogo from "../../assets/megabuild1.svg";
 const RED  = "#C41E3A";
 const BLUE = "#003764";
 
+// ── Sortable column header ─────────────────────────────────
+const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
+  <th
+    className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer select-none"
+    onClick={() => onSort(field)}
+  >
+    <span className="inline-flex items-center gap-1">
+      {label}
+      <span className="flex flex-col leading-none">
+        <ChevronUp   className={`w-3 h-3 ${sortField === field && sortDir === "asc"  ? "text-gray-900" : "text-gray-300"}`} />
+        <ChevronDown className={`w-3 h-3 ${sortField === field && sortDir === "desc" ? "text-gray-900" : "text-gray-300"}`} />
+      </span>
+    </span>
+  </th>
+);
+
+// ── Main Component ─────────────────────────────────────────
 export default function PurchaseOrders() {
   const { lang, t } = useContext(LanguageContext);
-  const [purchases, setPurchases]               = useState([]);
-  const [suppliers, setSuppliers]               = useState([]);
-  const [materials, setMaterials]               = useState([]);
-  const [units, setUnits]                       = useState([]);
-  const [loading, setLoading]                   = useState(false);
-  const [saving, setSaving]                     = useState(false);
-  const [showModal, setShowModal]               = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(null);
-  const [editingPurchase, setEditingPurchase]   = useState(null);
-  const [searchTerm, setSearchTerm]             = useState("");
-  const [filterSupplier, setFilterSupplier]     = useState("all");
-  const [filterStatus, setFilterStatus]         = useState("all");
-  const [toastMessage, setToastMessage]         = useState(null);
+
+  const [purchases,       setPurchases]       = useState([]);
+  const [suppliers,       setSuppliers]       = useState([]);
+  const [materials,       setMaterials]       = useState([]);
+  const [units,           setUnits]           = useState([]);
+  const [loading,         setLoading]         = useState(false);
+  const [saving,          setSaving]          = useState(false);
+  const [showModal,       setShowModal]       = useState(false);
+  const [detailsTarget,   setDetailsTarget]   = useState(null);
+  const [editingPurchase, setEditingPurchase] = useState(null);
+  const [searchTerm,      setSearchTerm]      = useState("");
+  const [filterSupplier,  setFilterSupplier]  = useState("all");
+  const [sortField,       setSortField]       = useState("invoiceDate");
+  const [sortDir,         setSortDir]         = useState("desc");
 
   const [formData, setFormData] = useState({
     supplierId: "",
     invoiceDate: new Date().toISOString().split("T")[0],
     supplierInvoiceNo: "",
     creditDays: 30,
-    items: [{ materialId: "", quantity: 1, unitPrice: 0 }],
+    items: [{ materialId: "", unitId: "", quantity: 1, unitPrice: 0 }],
     notes: ""
   });
+
+  useEffect(() => {
+    fetchPurchases(); fetchSuppliers(); fetchMaterials(); fetchUnits();
+  }, [lang]);
 
   const fetchPurchases = async () => {
     try {
       setLoading(true);
       const { data } = await axiosInstance.get("/purchases?lang=" + lang);
       setPurchases(data.result || []);
-    } catch (err) {
-      console.error(err);
-      showToast(t?.errorLoadingPurchases || "Error loading purchases", "error");
+    } catch {
+      toast.error(t?.errorLoadingPurchases || "Error loading purchases");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUnits = async () => {
-    try {
-      const res = await axiosInstance.get("/units");
-      setUnits(res.data.result || res.data);
-    } catch (err) { console.error("Failed to load units", err); }
-  };
+  const fetchUnits     = async () => { try { const res = await axiosInstance.get("/units"); setUnits(res.data.result || res.data); } catch {} };
+  const fetchSuppliers = async () => { try { const { data } = await axiosInstance.get("/suppliers"); setSuppliers(data.result || []); } catch {} };
+  const fetchMaterials = async () => { try { const { data } = await axiosInstance.get("/materials?lang=" + lang); setMaterials(data.result || []); } catch {} };
 
-  const fetchSuppliers = async () => {
-    try {
-      const { data } = await axiosInstance.get("/suppliers");
-      setSuppliers(data.result || []);
-    } catch (err) { console.error(err); }
-  };
-
-  const fetchMaterials = async () => {
-    try {
-      const { data } = await axiosInstance.get("/materials?lang=" + lang);
-      setMaterials(data.result || []);
-    } catch (err) { console.error(err); }
-  };
-
-  useEffect(() => {
-    fetchPurchases(); fetchSuppliers(); fetchMaterials(); fetchUnits();
-  }, [lang]);
-
-  const showToast = (message, type) => {
-    setToastMessage({ message, type });
-    setTimeout(() => setToastMessage(null), 5000);
-  };
-
-  const calculateTotal   = (items) => items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  const calculateTotal   = (items) => items.reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0);
   const calculateDueDate = (invoiceDate, creditDays) => {
-    const date = new Date(invoiceDate);
-    date.setDate(date.getDate() + creditDays);
-    return date.toISOString().split("T")[0];
+    const d = new Date(invoiceDate);
+    d.setDate(d.getDate() + creditDays);
+    return d.toISOString().split("T")[0];
   };
 
-  const filteredPurchases = useMemo(() => {
-    let filtered = purchases;
-    if (filterSupplier !== "all")
-      filtered = filtered.filter(p => (p.supplierId?._id || p.supplier?._id) === filterSupplier);
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.supplierInvoiceNo?.toLowerCase().includes(term) ||
-        p.supplierId?.nameEn?.toLowerCase().includes(term) ||
-        p.supplierId?.nameAr?.includes(term) ||
-        p.supplier?.nameEn?.toLowerCase().includes(term) ||
-        p.supplier?.nameAr?.includes(term)
-      );
-    }
-    return filtered;
-  }, [purchases, filterSupplier, searchTerm]);
-
-  const totalPurchases = filteredPurchases.length;
-  const totalAmount    = filteredPurchases.reduce((sum, p) => sum + calculateTotal(p.items || []), 0);
-  const totalItems     = filteredPurchases.reduce((sum, p) => sum + (p.items?.length || 0), 0);
+  const resetForm = () => setFormData({
+    supplierId: "", invoiceDate: new Date().toISOString().split("T")[0],
+    supplierInvoiceNo: "", creditDays: 30,
+    items: [{ materialId: "", unitId: "", quantity: 1, unitPrice: 0 }], notes: ""
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.supplierId) { showToast(t?.selectSupplier || "Please select a supplier", "error"); return; }
-    if (formData.items.length === 0 || !formData.items.some(i => i.materialId)) {
-      showToast(t?.addAtLeastOneItem || "Please add at least one item", "error"); return;
-    }
+    if (!formData.supplierId) { toast.error(t?.selectSupplier || "Please select a supplier"); return; }
+    if (!formData.items.some(i => i.materialId)) { toast.error(t?.addAtLeastOneItem || "Please add at least one item"); return; }
     setSaving(true);
     try {
       const payload = {
@@ -132,192 +112,244 @@ export default function PurchaseOrders() {
       };
       if (editingPurchase) {
         await axiosInstance.put(`/purchases/${editingPurchase._id}`, payload);
-        showToast(t?.purchaseUpdated || "Purchase order updated successfully", "success");
+        toast.success(t?.purchaseUpdated || "Purchase order updated successfully");
       } else {
         await axiosInstance.post("/purchases", payload);
-        showToast(t?.purchaseCreated || "Purchase order created successfully", "success");
+        toast.success(t?.purchaseCreated || "Purchase order created successfully");
       }
       setShowModal(false); setEditingPurchase(null); resetForm(); fetchPurchases();
     } catch (err) {
-      console.error("Error saving purchase:", err);
-      let errorMsg = "Error saving purchase order";
-      if (err.response?.data?.message)
-        errorMsg = Array.isArray(err.response.data.message) ? err.response.data.message.join(", ") : err.response.data.message;
-      showToast(errorMsg, "error");
+      toast.error(getErrorMessage(err, "Error saving purchase order"));
     } finally {
       setSaving(false);
     }
   };
 
-  const resetForm = () => setFormData({
-    supplierId: "", invoiceDate: new Date().toISOString().split("T")[0],
-    supplierInvoiceNo: "", creditDays: 30,
-    items: [{ materialId: "", unitId: "", quantity: 1, unitPrice: 0 }], notes: ""
-  });
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDir("asc"); }
+  };
 
-  const openAddModal     = () => { setEditingPurchase(null); resetForm(); setShowModal(true); };
-  const openDetailsModal = (purchase) => setShowDetailsModal(purchase);
-
-  const handleExportExcel = () => {
+  const handleExport = () => {
     try {
-      if (filteredPurchases.length === 0) { showToast(t?.noDataToExport || "No data to export", "error"); return; }
-      const data = filteredPurchases.map(p => ({
-        [t?.invoiceNo  || "Invoice No"]:  p.supplierInvoiceNo,
-        [t?.supplier   || "Supplier"]:    lang === "ar" ? (p.supplierId?.nameAr || p.supplier?.nameAr) : (p.supplierId?.nameEn || p.supplier?.nameEn),
-        [t?.date       || "Date"]:        formatDateShort(p.invoiceDate, lang),
-        [t?.itemsCount || "Items"]:       p.items?.length || 0,
-        [t?.total      || "Total"]:       calculateTotal(p.items || []),
-        [t?.creditDays || "Credit Days"]: p.creditDays,
-        [t?.dueDate    || "Due Date"]:    formatDateShort(calculateDueDate(p.invoiceDate, p.creditDays), lang),
+      if (displayed.length === 0) { toast.error(t?.noDataToExport || "No data to export"); return; }
+      const data = displayed.map(p => ({
+        [t?.invoiceNo   || "Invoice No"]:  p.supplierInvoiceNo,
+        [t?.supplier    || "Supplier"]:    lang === "ar" ? (p.supplierId?.nameAr || p.supplier?.nameAr) : (p.supplierId?.nameEn || p.supplier?.nameEn),
+        [t?.date        || "Date"]:        formatDateShort(p.invoiceDate, lang),
+        [t?.itemsCount  || "Items"]:       p.items?.length || 0,
+        [t?.total       || "Total"]:       calculateTotal(p.items || []),
+        [t?.creditDays  || "Credit Days"]: p.creditDays,
+        [t?.dueDate     || "Due Date"]:    formatDateShort(calculateDueDate(p.invoiceDate, p.creditDays), lang),
       }));
       exportToExcel(data, Object.keys(data[0]).map(k => ({ [k]: k })), "Purchase_Orders", lang);
-      showToast(t?.exportedSuccessfully || "Exported successfully", "success");
-    } catch (err) {
-      console.error(err);
-      showToast(t?.exportError || "Error exporting data", "error");
+      toast.success(t?.exportedSuccessfully || "Exported successfully");
+    } catch {
+      toast.error(t?.exportError || "Error exporting data");
     }
   };
 
+  const getSupplierName = (p) =>
+    lang === "ar"
+      ? (p.supplierId?.nameAr || p.supplier?.nameAr || "")
+      : (p.supplierId?.nameEn || p.supplier?.nameEn || "");
+
+  const displayed = useMemo(() => {
+    return purchases
+      .filter(p => {
+        const q = searchTerm.toLowerCase();
+        const matchSearch = !q
+          || p.supplierInvoiceNo?.toLowerCase().includes(q)
+          || p.supplierId?.nameEn?.toLowerCase().includes(q)
+          || p.supplierId?.nameAr?.includes(q)
+          || p.supplier?.nameEn?.toLowerCase().includes(q)
+          || p.supplier?.nameAr?.includes(q);
+        const matchSupplier = filterSupplier === "all" || (p.supplierId?._id || p.supplier?._id) === filterSupplier;
+        return matchSearch && matchSupplier;
+      })
+      .sort((a, b) => {
+        let va, vb;
+        if (sortField === "total") { va = calculateTotal(a.items || []); vb = calculateTotal(b.items || []); }
+        else if (sortField === "invoiceDate") { va = new Date(a.invoiceDate); vb = new Date(b.invoiceDate); }
+        else { va = (a[sortField] ?? "").toString().toLowerCase(); vb = (b[sortField] ?? "").toString().toLowerCase(); }
+        return sortDir === "asc" ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+      });
+  }, [purchases, searchTerm, filterSupplier, sortField, sortDir]);
+
+  const totalAmount = displayed.reduce((sum, p) => sum + calculateTotal(p.items || []), 0);
+  const totalItems  = displayed.reduce((sum, p) => sum + (p.items?.length || 0), 0);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
-      {toastMessage && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${toastMessage.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
-          <AlertCircle className="w-5 h-5" /><span className="font-medium">{toastMessage.message}</span>
-        </div>
-      )}
-      {loading && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="text-center">
-            <div className="animate-spin inline-block size-12 border-4 border-current border-t-transparent text-blue-600 rounded-full" />
-            <p className="mt-4 text-gray-600 font-medium">{lang === "ar" ? "جاري تحميل البيانات..." : "Loading data..."}</p>
-          </div>
-        </div>
-      )}
-
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ShoppingCart className="w-8 h-8 text-white" />
-                <div>
-                  <h1 className="text-2xl font-bold text-white">{lang === "ar" ? "أوامر الشراء" : "Purchase Orders"}</h1>
-                  <p className="text-blue-100 mt-1">{lang === "ar" ? "عرض وإدارة جميع أوامر الشراء" : "View and manage all purchase orders"}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={handleExportExcel} className="flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold shadow-md">
-                  <Download className="w-5 h-5" />{lang === "ar" ? "تصدير" : "Export"}
-                </button>
-                <button onClick={fetchPurchases} disabled={loading} className="p-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition shadow-md disabled:opacity-50">
-                  <div className={loading ? "animate-spin" : ""}><i className="fa-solid fa-arrows-rotate" /></div>
-                </button>
-                <button onClick={openAddModal} className="flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold shadow-md">
-                  <Plus className="w-5 h-5" />{lang === "ar" ? "إضافة أمر شراء" : "Add Purchase Order"}
-                </button>
-              </div>
-            </div>
+
+        {/* ── Page Header ── */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {t?.purchaseOrders || (lang === "ar" ? "أوامر الشراء" : "Purchase Orders")}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {lang === "ar" ? "عرض وإدارة جميع أوامر الشراء" : "View and manage all purchase orders."}
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-gray-50">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
-              <div className="flex items-center justify-between"><div><p className="text-sm text-gray-600 mb-1">{lang === "ar" ? "إجمالي أوامر الشراء" : "Total Orders"}</p><p className="text-2xl font-bold text-gray-900">{totalPurchases}</p></div><ShoppingCart className="w-10 h-10 text-blue-500 opacity-20" /></div>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
-              <div className="flex items-center justify-between"><div><p className="text-sm text-gray-600 mb-1">{lang === "ar" ? "إجمالي المبلغ" : "Total Amount"}</p><p className="text-2xl font-bold text-gray-900">{formatCurrency(totalAmount, lang)}</p></div><TrendingUp className="w-10 h-10 text-green-500 opacity-20" /></div>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-purple-500">
-              <div className="flex items-center justify-between"><div><p className="text-sm text-gray-600 mb-1">{lang === "ar" ? "إجمالي المواد" : "Total Items"}</p><p className="text-2xl font-bold text-gray-900">{totalItems}</p></div><Package className="w-10 h-10 text-purple-500 opacity-20" /></div>
-            </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              {t?.export || (lang === "ar" ? "تصدير" : "Export")}
+            </button>
+            <button
+              onClick={() => { setEditingPurchase(null); resetForm(); setShowModal(true); }}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              {t?.addPurchaseOrder || (lang === "ar" ? "إضافة أمر شراء" : "Add Purchase Order")}
+            </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-              <input type="text" placeholder={lang === "ar" ? "بحث برقم الفاتورة أو المورد..." : "Search by invoice or supplier..."} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" dir={lang === "ar" ? "rtl" : "ltr"} />
-            </div>
-            <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-              <option value="all">{lang === "ar" ? "كل الموردين" : "All Suppliers"}</option>
-              {suppliers.map(s => <option key={s._id} value={s._id}>{lang === "ar" ? s.nameAr : s.nameEn}</option>)}
-            </select>
+        {/* ── Stats ── */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 mb-1">{t?.totalOrders || (lang === "ar" ? "إجمالي الأوامر" : "Total Orders")}</p>
+            <p className="text-2xl font-bold text-gray-900">{displayed.length}</p>
           </div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 mb-1">{t?.totalAmount || (lang === "ar" ? "إجمالي المبلغ" : "Total Amount")}</p>
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalAmount, lang)}</p>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 mb-1">{t?.totalItems || (lang === "ar" ? "إجمالي المواد" : "Total Items")}</p>
+            <p className="text-2xl font-bold text-gray-900">{totalItems}</p>
+          </div>
+        </div>
+
+        {/* ── Filters ── */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={lang === "ar" ? "بحث برقم الفاتورة أو المورد..." : "Search by invoice or supplier..."}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            />
+          </div>
+          <select
+            value={filterSupplier}
+            onChange={e => setFilterSupplier(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+          >
+            <option value="all">{t?.allSuppliers || (lang === "ar" ? "كل الموردين" : "All Suppliers")}</option>
+            {suppliers.map(s => <option key={s._id} value={s._id}>{lang === "ar" ? s.nameAr : s.nameEn}</option>)}
+          </select>
           {(searchTerm || filterSupplier !== "all") && (
-            <button onClick={() => { setSearchTerm(""); setFilterSupplier("all"); }} className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium">
-              {lang === "ar" ? "مسح الفلاتر" : "Clear Filters"}
+            <button onClick={() => { setSearchTerm(""); setFilterSupplier("all"); }} className="text-sm text-indigo-600 hover:underline">
+              {t?.clearFilters || (lang === "ar" ? "مسح الفلاتر" : "Clear")}
             </button>
           )}
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {!loading && filteredPurchases.length === 0 ? (
-            <div className="p-12 text-center">
-              <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{lang === "ar" ? "لا توجد أوامر شراء" : "No Purchase Orders Found"}</h3>
-              <p className="text-gray-600 mb-6">{lang === "ar" ? "لم يتم العثور على أوامر شراء مطابقة للفلاتر المحددة" : "No purchase orders match your current filters"}</p>
-              <button onClick={openAddModal} className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
-                <Plus className="w-5 h-5" />{lang === "ar" ? "إضافة أول أمر شراء" : "Add First Purchase Order"}
-              </button>
+        {/* ── Table ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          {loading ? (
+            <div className="p-16 text-center">
+              <div className="animate-spin inline-block w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3" />
+              <p className="text-sm text-gray-500">{lang === "ar" ? "جاري التحميل..." : "Loading..."}</p>
+            </div>
+          ) : displayed.length === 0 ? (
+            <div className="p-16 text-center">
+              <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="font-medium text-gray-600">{lang === "ar" ? "لا توجد أوامر شراء" : "No purchase orders found"}</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    {[lang === "ar" ? "رقم الفاتورة" : "Invoice No", lang === "ar" ? "المورد" : "Supplier", lang === "ar" ? "التاريخ" : "Date", lang === "ar" ? "المواد" : "Items", lang === "ar" ? "الإجمالي" : "Total", lang === "ar" ? "الائتمان" : "Credit", lang === "ar" ? "الاستحقاق" : "Due Date", lang === "ar" ? "إجراءات" : "Actions"].map((h, i) => (
-                      <th key={i} className="px-6 py-4 text-left text-sm font-semibold text-gray-900">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredPurchases.map(purchase => (
-                    <tr key={purchase._id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4"><div className="flex items-center gap-2"><FileText className="w-4 h-4 text-blue-500" /><span className="font-medium text-gray-900">{purchase.invoiceNo || purchase.supplierInvoiceNo}</span></div></td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span className="text-purple-600 font-semibold text-lg">{(lang === "ar" ? (purchase.supplierId?.nameAr || purchase.supplier?.nameAr) : (purchase.supplierId?.nameEn || purchase.supplier?.nameEn))?.charAt(0).toUpperCase()}</span>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <SortHeader label={t?.invoiceNo  || (lang === "ar" ? "رقم الفاتورة" : "Invoice No")} field="supplierInvoiceNo" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={t?.supplier   || (lang === "ar" ? "المورد"       : "Supplier")}   field="supplierId"        sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={t?.date       || (lang === "ar" ? "التاريخ"      : "Date")}       field="invoiceDate"       sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={t?.itemsCount || (lang === "ar" ? "المواد"       : "Items")}      field="items"             sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={t?.total      || (lang === "ar" ? "الإجمالي"     : "Total")}      field="total"             sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={t?.creditDays || (lang === "ar" ? "الائتمان"     : "Credit")}     field="creditDays"        sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={t?.dueDate    || (lang === "ar" ? "الاستحقاق"    : "Due Date")}   field="dueDate"           sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {displayed.map(purchase => {
+                  const supplierName = getSupplierName(purchase);
+                  const total = calculateTotal(purchase.items || []);
+                  return (
+                    <tr key={purchase._id} className="hover:bg-gray-50/60 transition">
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-4 h-4 text-indigo-600" />
                           </div>
-                          <span className="font-medium text-gray-900">{lang === "ar" ? (purchase.supplierId?.nameAr || purchase.supplier?.nameAr) : (purchase.supplierId?.nameEn || purchase.supplier?.nameEn)}</span>
+                          <span className="font-medium text-gray-900 text-sm">{purchase.invoiceNo || purchase.supplierInvoiceNo || "—"}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4"><div className="flex items-center gap-2 text-gray-700"><Calendar className="w-4 h-4 text-gray-400" />{formatDateShort(purchase.invoiceDate, lang)}</div></td>
-                      <td className="px-6 py-4"><span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">{purchase.items?.length || 0} {lang === "ar" ? "مادة" : "items"}</span></td>
-                      <td className="px-6 py-4"><span className="font-semibold text-gray-900">{formatCurrency(calculateTotal(purchase.items || []), lang)}</span></td>
-                      <td className="px-6 py-4"><div className="flex items-center gap-2 text-gray-700"><Clock className="w-4 h-4 text-gray-400" />{purchase.creditDays} {lang === "ar" ? "يوم" : "days"}</div></td>
-                      <td className="px-6 py-4 text-gray-700">{formatDateShort(calculateDueDate(purchase.invoiceDate, purchase.creditDays), lang)}</td>
-                      <td className="px-6 py-4">
-                        <button onClick={() => openDetailsModal(purchase)} className="flex items-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition font-medium">
-                          <Eye className="w-4 h-4" />{lang === "ar" ? "عرض" : "View"}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-purple-600 font-semibold text-xs">{supplierName?.charAt(0)?.toUpperCase()}</span>
+                          </div>
+                          <span className="text-sm text-gray-700 font-medium">{supplierName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 text-sm text-gray-500">{formatDateShort(purchase.invoiceDate, lang)}</td>
+                      <td className="px-4 py-3.5">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                          {purchase.items?.length || 0} {lang === "ar" ? "مادة" : "items"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-sm font-semibold text-gray-900">{formatCurrency(total, lang)}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-500">{purchase.creditDays} {lang === "ar" ? "يوم" : "d"}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-500">{formatDateShort(calculateDueDate(purchase.invoiceDate, purchase.creditDays), lang)}</td>
+                      <td className="px-4 py-3.5 text-right">
+                        <button onClick={() => setDetailsTarget(purchase)} className="p-1.5 rounded-md hover:bg-indigo-50 transition text-indigo-600" title={lang === "ar" ? "عرض" : "View"}>
+                          <Eye className="w-5 h-5" />
                         </button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
 
+      {/* ── Modals ── */}
       {showModal && (
-        <PurchaseModal formData={formData} setFormData={setFormData} suppliers={suppliers} materials={materials} units={units}
+        <PurchaseModal
+          formData={formData} setFormData={setFormData}
+          suppliers={suppliers} materials={materials} units={units}
           onClose={() => { setShowModal(false); setEditingPurchase(null); resetForm(); }}
-          onSubmit={handleSubmit} saving={saving} editing={!!editingPurchase} t={t} lang={lang} />
+          onSubmit={handleSubmit} saving={saving} editing={!!editingPurchase}
+          t={t} lang={lang}
+        />
       )}
-      {showDetailsModal && (
-        <PurchaseDetailsModal purchase={showDetailsModal} onClose={() => setShowDetailsModal(null)}
-          t={t} lang={lang} calculateTotal={calculateTotal} />
+      {detailsTarget && (
+        <PurchaseDetailsModal
+          purchase={detailsTarget}
+          onClose={() => setDetailsTarget(null)}
+          t={t} lang={lang}
+          calculateTotal={calculateTotal}
+          units={units}  // ← الإضافة المهمة
+        />
       )}
     </div>
   );
 }
 
 // ═══════════════════════════════════════════
-// PURCHASE MODAL (unchanged from original)
+// PURCHASE MODAL
 // ═══════════════════════════════════════════
 function PurchaseModal({ formData, setFormData, suppliers, materials, units, onClose, onSubmit, saving, editing, t, lang }) {
   const handleAddItem    = () => setFormData({ ...formData, items: [...formData.items, { materialId: "", unitId: "", quantity: 1, unitPrice: 0 }] });
@@ -327,99 +359,114 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onC
   const getMaterialName  = (id) => { const m = materials.find(m => m._id === id); return m ? (lang === "ar" ? m.nameAr : m.nameEn) : ""; };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3"><Package size={28} /><h3 className="text-2xl font-bold">{editing ? (lang === "ar" ? "تعديل أمر الشراء" : "Edit Purchase Order") : (lang === "ar" ? "إضافة أمر شراء جديد" : "New Purchase Order")}</h3></div>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors"><X size={24} /></button>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Package size={20} className="text-indigo-500" />
+            {editing ? (lang === "ar" ? "تعديل أمر الشراء" : "Edit Purchase Order") : (lang === "ar" ? "إضافة أمر شراء جديد" : "New Purchase Order")}
+          </h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition"><X size={20} /></button>
         </div>
         <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div className="p-6 space-y-6">
-            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-              <h4 className="font-semibold text-gray-700 flex items-center gap-2"><FileText size={20} />{lang === "ar" ? "المعلومات الأساسية" : "Basic Information"}</h4>
+          <div className="p-6 space-y-5">
+            <div className="bg-gray-50 rounded-2xl p-5 space-y-4">
+              <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <FileText size={16} className="text-indigo-500" />
+                {lang === "ar" ? "المعلومات الأساسية" : "Basic Information"}
+              </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{lang === "ar" ? "المورد" : "Supplier"} <span className="text-red-500">*</span></label>
-                  <select value={formData.supplierId} onChange={e => setFormData({ ...formData, supplierId: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required dir={lang === "ar" ? "rtl" : "ltr"}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "المورد" : "Supplier"} <span className="text-red-500">*</span></label>
+                  <select value={formData.supplierId} onChange={e => setFormData({ ...formData, supplierId: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" dir={lang === "ar" ? "rtl" : "ltr"}>
                     <option value="">{lang === "ar" ? "اختر المورد" : "Select Supplier"}</option>
                     {suppliers.map(s => <option key={s._id} value={s._id}>{lang === "ar" ? s.nameAr : s.nameEn}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{lang === "ar" ? "رقم فاتورة المورد" : "Supplier Invoice No"}</label>
-                  <Input type="text" value={formData.supplierInvoiceNo} onChange={e => setFormData({ ...formData, supplierInvoiceNo: e.target.value })} placeholder={lang === "ar" ? "أدخل رقم الفاتورة" : "Enter invoice number"} dir={lang === "ar" ? "rtl" : "ltr"} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "رقم فاتورة المورد" : "Supplier Invoice No"}</label>
+                  <Input type="text" value={formData.supplierInvoiceNo} onChange={e => setFormData({ ...formData, supplierInvoiceNo: e.target.value })} placeholder={lang === "ar" ? "أدخل رقم الفاتورة" : "Enter invoice number"} dir={lang === "ar" ? "rtl" : "ltr"} className="rounded-xl border-gray-200" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2"><Calendar size={16} className="inline mr-1" />{lang === "ar" ? "تاريخ الفاتورة" : "Invoice Date"} <span className="text-red-500">*</span></label>
-                  <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} required />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "تاريخ الفاتورة" : "Invoice Date"} <span className="text-red-500">*</span></label>
+                  <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} className="rounded-xl border-gray-200" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{lang === "ar" ? "أيام الائتمان" : "Credit Days"}</label>
-                  <Input type="number" value={formData.creditDays} onChange={e => setFormData({ ...formData, creditDays: e.target.value })} min="0" dir={lang === "ar" ? "rtl" : "ltr"} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "أيام الائتمان" : "Credit Days"}</label>
+                  <Input type="number" value={formData.creditDays} onChange={e => setFormData({ ...formData, creditDays: e.target.value })} min="0" dir={lang === "ar" ? "rtl" : "ltr"} className="rounded-xl border-gray-200" />
                 </div>
               </div>
             </div>
-            <div className="space-y-4">
+
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-gray-700 flex items-center gap-2"><Package size={20} />{lang === "ar" ? "المواد" : "Items"} <span className="text-red-500">*</span></h4>
-                <Button type="button" onClick={handleAddItem} className="bg-green-500 hover:bg-green-600 text-white" size="sm"><Plus size={16} className="mr-1" />{lang === "ar" ? "إضافة مادة" : "Add Item"}</Button>
+                <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Package size={16} className="text-indigo-500" />
+                  {lang === "ar" ? "المواد" : "Items"} <span className="text-red-500">*</span>
+                </h4>
+                <button type="button" onClick={handleAddItem} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition">
+                  <Plus size={14} />{lang === "ar" ? "إضافة مادة" : "Add Item"}
+                </button>
               </div>
-              <div className="space-y-3">
-                {formData.items.map((item, index) => (
-                  <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                      <div className="md:col-span-5">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">{lang === "ar" ? "المادة" : "Material"}</label>
-                        <select value={item.materialId} onChange={e => { const materialId = e.target.value; const material = materials.find(m => m._id === materialId); const newItems = [...formData.items]; newItems[index] = { ...newItems[index], materialId, unitId: material?.baseUnit || "" }; setFormData({ ...formData, items: newItems }); }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" dir={lang === "ar" ? "rtl" : "ltr"}>
-                          <option value="">{lang === "ar" ? "اختر المادة" : "Select Material"}</option>
-                          {materials.map(m => <option key={m._id} value={m._id}>{lang === "ar" ? m.nameAr : m.nameEn}</option>)}
-                        </select>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">{lang === "ar" ? "الوحدة" : "Unit"}</label>
-                        <select value={item.unitId} onChange={e => handleItemChange(index, "unitId", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" disabled={!item.materialId}>
-                          <option value="">{lang === "ar" ? "اختر الوحدة" : "Select Unit"}</option>
-                          {item.materialId && (() => { const material = materials.find(m => m._id === item.materialId); if (!material) return null; const avail = []; if (material.baseUnit) { const u = units.find(u => u._id === material.baseUnit); if (u) avail.push(u); } (material.alternativeUnits || []).forEach(id => { const u = units.find(u => u._id === id); if (u) avail.push(u); }); return avail.map(u => <option key={u._id} value={u._id}>{lang === "ar" ? u.nameAr : u.nameEn}</option>); })()}
-                        </select>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">{lang === "ar" ? "الكمية" : "Quantity"}</label>
-                        <Input type="number" value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} min="0.01" step="0.01" required className="text-sm" dir={lang === "ar" ? "rtl" : "ltr"} />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-600 mb-1"><DollarSign size={14} className="inline" />{lang === "ar" ? "سعر الوحدة" : "Unit Price"}</label>
-                        <Input type="number" value={item.unitPrice} onChange={e => handleItemChange(index, "unitPrice", e.target.value)} min="0" step="0.01" required className="text-sm" dir={lang === "ar" ? "rtl" : "ltr"} />
-                      </div>
-                      <div className="md:col-span-1 flex justify-end">
-                        {formData.items.length > 1 && <button type="button" onClick={() => handleRemoveItem(index)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>}
-                      </div>
+              {formData.items.map((item, index) => (
+                <div key={index} className="bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-200 transition">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                    <div className="md:col-span-5">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "المادة" : "Material"}</label>
+                      <select value={item.materialId} onChange={e => { const materialId = e.target.value; const material = materials.find(m => m._id === materialId); const newItems = [...formData.items]; newItems[index] = { ...newItems[index], materialId, unitId: material?.baseUnit || "" }; setFormData({ ...formData, items: newItems }); }} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50" dir={lang === "ar" ? "rtl" : "ltr"}>
+                        <option value="">{lang === "ar" ? "اختر المادة" : "Select Material"}</option>
+                        {materials.map(m => <option key={m._id} value={m._id}>{lang === "ar" ? m.nameAr : m.nameEn}</option>)}
+                      </select>
                     </div>
-                    {item.materialId && (
-                      <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center text-sm">
-                        <span className="text-gray-600">{getMaterialName(item.materialId)}</span>
-                        <span className="font-semibold text-gray-900">{lang === "ar" ? "المجموع:" : "Subtotal:"} {formatCurrency((item.quantity || 0) * (item.unitPrice || 0), lang)}</span>
-                      </div>
-                    )}
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الوحدة" : "Unit"}</label>
+                      <select value={item.unitId} onChange={e => handleItemChange(index, "unitId", e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 disabled:opacity-50" disabled={!item.materialId}>
+                        <option value="">{lang === "ar" ? "اختر الوحدة" : "Select Unit"}</option>
+                        {item.materialId && (() => { const material = materials.find(m => m._id === item.materialId); if (!material) return null; const avail = []; if (material.baseUnit) { const u = units.find(u => u._id === material.baseUnit); if (u) avail.push(u); } (material.alternativeUnits || []).forEach(id => { const u = units.find(u => u._id === id); if (u) avail.push(u); }); return avail.map(u => <option key={u._id} value={u._id}>{lang === "ar" ? u.nameAr : u.nameEn}</option>); })()}
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الكمية" : "Quantity"}</label>
+                      <Input type="number" value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} min="0.01" step="0.01" className="text-sm rounded-xl border-gray-200" dir={lang === "ar" ? "rtl" : "ltr"} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "سعر الوحدة" : "Unit Price"}</label>
+                      <Input type="number" value={item.unitPrice} onChange={e => handleItemChange(index, "unitPrice", e.target.value)} min="0" step="0.01" className="text-sm rounded-xl border-gray-200" dir={lang === "ar" ? "rtl" : "ltr"} />
+                    </div>
+                    <div className="md:col-span-1 flex justify-end">
+                      {formData.items.length > 1 && (
+                        <button type="button" onClick={() => handleRemoveItem(index)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition"><Trash2 size={16} /></button>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  {item.materialId && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-sm">
+                      <span className="text-gray-500">{getMaterialName(item.materialId)}</span>
+                      <span className="font-semibold text-gray-900">{lang === "ar" ? "المجموع:" : "Subtotal:"} {formatCurrency((item.quantity || 0) * (item.unitPrice || 0), lang)}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-gray-700">{lang === "ar" ? "الإجمالي الكلي:" : "Grand Total:"}</span>
-                  <span className="text-xl font-semibold text-blue-600">{formatCurrency(calculateTotal(), lang)}</span>
+                  <span className="text-sm font-semibold text-gray-700">{lang === "ar" ? "الإجمالي الكلي:" : "Grand Total:"}</span>
+                  <span className="text-lg font-bold text-indigo-600">{formatCurrency(calculateTotal(), lang)}</span>
                 </div>
               </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{lang === "ar" ? "ملاحظات" : "Notes"}</label>
-              <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none" placeholder={lang === "ar" ? "أضف ملاحظات إضافية..." : "Add additional notes..."} dir={lang === "ar" ? "rtl" : "ltr"} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "ملاحظات" : "Notes"}</label>
+              <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={3} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 resize-none" placeholder={lang === "ar" ? "أضف ملاحظات إضافية..." : "Add additional notes..."} dir={lang === "ar" ? "rtl" : "ltr"} />
             </div>
           </div>
         </div>
-        <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200">
-          <button type="button" onClick={onClose} disabled={saving} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">{lang === "ar" ? "إلغاء" : "Cancel"}</button>
-          <button type="button" onClick={e => onSubmit(e)} disabled={saving} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold min-w-[120px]">
-            {saving ? <div className="flex items-center justify-center gap-2"><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />{lang === "ar" ? "جاري الحفظ..." : "Saving..."}</div> : <>{lang === "ar" ? "حفظ" : "Save"}</>}
+        <div className="px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-100">
+          <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+            {lang === "ar" ? "إلغاء" : "Cancel"}
+          </button>
+          <button type="button" onClick={e => onSubmit(e)} disabled={saving} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition font-semibold text-sm min-w-[100px]">
+            {saving ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />{lang === "ar" ? "جاري الحفظ..." : "Saving..."}</> : <>{lang === "ar" ? "حفظ" : "Save"}</>}
           </button>
         </div>
       </div>
@@ -428,35 +475,48 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onC
 }
 
 // ═══════════════════════════════════════════
-// PURCHASE DETAILS MODAL — Mega Build branded
+// PURCHASE DETAILS MODAL
 // ═══════════════════════════════════════════
-function PurchaseDetailsModal({ purchase, onClose, calculateTotal }) {
+function PurchaseDetailsModal({ purchase, onClose, calculateTotal, units = [] }) {
   const { lang } = useContext(LanguageContext);
   const isAr = lang === "ar";
-  const t    = (ar, en) => isAr ? ar : en;
+  const tr   = (ar, en) => isAr ? ar : en;
 
   const [isPrinting, setIsPrinting] = useState(false);
-  const [materials, setMaterials]   = useState([]);
+  const [materials,  setMaterials]  = useState([]);
 
   useEffect(() => {
     (async () => {
-      try {
-        const { data } = await axiosInstance.get("/materials?lang=" + lang);
-        setMaterials(data.result || []);
-      } catch (err) { console.error(err); }
+      try { const { data } = await axiosInstance.get("/materials?lang=" + lang); setMaterials(data.result || []); } catch {}
     })();
   }, [lang]);
 
   const getMaterialName = (item) => {
     if (item.material) return isAr ? item.material?.nameAr : item.material?.nameEn;
     const m = materials.find(m => m._id === item.materialId);
-    return m ? (isAr ? m.nameAr : m.nameEn) : t("غير معروف", "Unknown");
+    return m ? (isAr ? m.nameAr : m.nameEn) : tr("غير معروف", "Unknown");
   };
 
+  // ── الإصلاح: بحث في units array ──
   const getMaterialUnit = (item) => {
-    if (item.material) return isAr ? item.material?.unitAr : item.material?.unitEn;
-    const m = materials.find(m => m._id === item.materialId);
-    return m ? (isAr ? m.unitAr : m.unitEn) : "";
+    // لو unitId هو object متاح (populated من الـ backend)
+    if (item.unitId && typeof item.unitId === "object") {
+      return isAr ? item.unitId.nameAr : item.unitId.nameEn;
+    }
+    // ابحث في الـ units array بالـ string id
+    const unitId = typeof item.unitId === "string" ? item.unitId : null;
+    if (unitId) {
+      const unit = units.find(u => u._id === unitId);
+      if (unit) return isAr ? unit.nameAr : unit.nameEn;
+    }
+    // fallback: ابحث عن الـ baseUnit من الـ material
+    const materialId = typeof item.materialId === "string" ? item.materialId : item.materialId?._id;
+    const material = materials.find(m => m._id === materialId);
+    if (material?.baseUnit) {
+      const unit = units.find(u => u._id === material.baseUnit);
+      if (unit) return isAr ? unit.nameAr : unit.nameEn;
+    }
+    return "—";
   };
 
   const dueDate = (() => {
@@ -470,10 +530,7 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal }) {
     ? (purchase.supplierId?.nameAr || purchase.supplier?.nameAr)
     : (purchase.supplierId?.nameEn || purchase.supplier?.nameEn);
 
-  const handlePrint = () => {
-    setIsPrinting(true);
-    setTimeout(() => { window.print(); setIsPrinting(false); }, 100);
-  };
+  const handlePrint = () => { setIsPrinting(true); setTimeout(() => { window.print(); setIsPrinting(false); }, 100); };
 
   return (
     <>
@@ -487,31 +544,24 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal }) {
       `}</style>
 
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
 
-          {/* modal title bar (no-print) */}
           <div className="bg-gradient-to-r from-red-700 to-blue-900 text-white p-2 no-print flex items-center justify-between">
             <div className="flex items-center gap-3">
               <FileText size={24} />
-              <h3 className="text-xl font-bold">{t("تفاصيل أمر الشراء", "Purchase Order Details")}</h3>
+              <h3 className="text-xl font-bold">{tr("تفاصيل أمر الشراء", "Purchase Order Details")}</h3>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors"><X size={22} /></button>
           </div>
 
-          {/* ══ PRINTABLE CONTENT ══ */}
           <div id="printable-invoice" className="overflow-y-auto max-h-[calc(90vh-130px)]">
             <div style={{ background: "#fff", fontFamily: isAr ? "Tahoma,Arial,sans-serif" : "Segoe UI,Arial,sans-serif", direction: isAr ? "rtl" : "ltr" }}>
 
-              {/* ── HEADER: لوجو يسار — MEGA BUILD + بيانات يمين ── */}
               <div style={{ padding: "24px 36px 18px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-
-                {/* يسار: اللوجو */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                   <img src={megabuildLogo} alt="Mega Build" style={{ width: 70, height: 70, objectFit: "contain" }} />
-                  <p style={{ fontSize: 8, color: "#aaa", marginTop: 3, letterSpacing: 0.8 }}>{t("نبني القيمة", "We Build Value")}</p>
+                  <p style={{ fontSize: 8, color: "#aaa", marginTop: 3, letterSpacing: 0.8 }}>{tr("نبني القيمة", "We Build Value")}</p>
                 </div>
-
-                {/* يمين: MEGA BUILD + بيانات + badge */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: isAr ? "flex-start" : "flex-end", gap: 4 }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
                     <span style={{ fontSize: 26, fontWeight: 900, color: RED,  letterSpacing: 2, lineHeight: 1 }}>MEGA</span>
@@ -524,31 +574,29 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal }) {
                     ))}
                   </div>
                   <div style={{ marginTop: 8, background: BLUE, color: "#fff", padding: "5px 16px", borderRadius: 5 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>{t("أمر شراء", "PURCHASE ORDER")}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>{tr("أمر شراء", "PURCHASE ORDER")}</span>
                   </div>
                   <p style={{ fontSize: 12, color: "#555", margin: 0 }}>
-                    <strong style={{ color: BLUE }}>{t("رقم:", "No:")}</strong>{" "}
-                    {purchase.invoiceNo || purchase.supplierInvoiceNo || t("غير محدد", "N/A")}
+                    <strong style={{ color: BLUE }}>{tr("رقم:", "No:")}</strong>{" "}
+                    {purchase.invoiceNo || purchase.supplierInvoiceNo || tr("غير محدد", "N/A")}
                   </p>
                 </div>
               </div>
 
-              {/* ── Red divider ── */}
               <div style={{ height: 3, background: RED }} />
               <div style={{ height: 1, background: "#eee" }} />
 
-              {/* ── SUPPLIER / DATES ── */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
                 <div style={{ padding: "20px 36px", borderBottom: "1px solid #eee", borderInlineEnd: "1px solid #eee" }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{t("المورد", "Supplier")}</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{tr("المورد", "Supplier")}</p>
                   <p style={{ fontSize: 16, fontWeight: 800, color: "#1a1a2e", margin: 0 }}>{supplierName}</p>
                 </div>
                 <div style={{ padding: "20px 36px", borderBottom: "1px solid #eee", display: "flex", flexDirection: "column", gap: 10 }}>
                   {[
-                    [t("فاتورة المورد",   "Supplier Invoice"), purchase.supplierInvoiceNo],
-                    [t("تاريخ الفاتورة", "Invoice Date"),     formatDateShort(purchase.invoiceDate, lang)],
-                    [t("تاريخ الاستحقاق","Due Date"),         formatDateShort(dueDate, lang)],
-                    [t("أيام الائتمان",  "Credit Days"),      `${purchase.creditDays} ${t("يوم", "days")}`],
+                    [tr("فاتورة المورد",   "Supplier Invoice"), purchase.supplierInvoiceNo],
+                    [tr("تاريخ الفاتورة", "Invoice Date"),     formatDateShort(purchase.invoiceDate, lang)],
+                    [tr("تاريخ الاستحقاق","Due Date"),         formatDateShort(dueDate, lang)],
+                    [tr("أيام الائتمان",  "Credit Days"),      `${purchase.creditDays} ${tr("يوم", "days")}`],
                   ].map(([label, value], i) => (
                     <div key={i} style={{ textAlign: isAr ? "left" : "right" }}>
                       <p style={{ fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>{label}</p>
@@ -558,11 +606,10 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal }) {
                 </div>
               </div>
 
-              {/* ── ITEMS TABLE ── */}
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: BLUE }}>
-                    {[t("المادة","Item"), t("الوحدة","Unit"), t("الكمية","Qty"), t("سعر الوحدة","Unit Price"), t("الإجمالي","Amount")].map((h, i) => (
+                    {[tr("المادة","Item"), tr("الوحدة","Unit"), tr("الكمية","Qty"), tr("سعر الوحدة","Unit Price"), tr("الإجمالي","Amount")].map((h, i) => (
                       <th key={i} style={{ padding: "11px 20px", fontSize: 11, fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: 0.8, textAlign: i === 0 ? (isAr ? "right" : "left") : "center", borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.15)" : "none" }}>{h}</th>
                     ))}
                   </tr>
@@ -580,46 +627,40 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal }) {
                 </tbody>
               </table>
 
-              {/* ── TOTAL ── */}
               <div style={{ padding: "16px 36px", display: "flex", justifyContent: isAr ? "flex-start" : "flex-end" }}>
                 <div style={{ display: "flex" }}>
-                  <div style={{ background: BLUE, color: "#fff", padding: "9px 22px", fontWeight: 800, fontSize: 13, borderRadius: "4px 0 0 4px", letterSpacing: 1 }}>{t("الإجمالي الكلي", "GRAND TOTAL")}</div>
+                  <div style={{ background: BLUE, color: "#fff", padding: "9px 22px", fontWeight: 800, fontSize: 13, borderRadius: "4px 0 0 4px", letterSpacing: 1 }}>{tr("الإجمالي الكلي", "GRAND TOTAL")}</div>
                   <div style={{ border: `2px solid ${BLUE}`, padding: "7px 22px", fontWeight: 900, fontSize: 16, minWidth: 160, textAlign: "center", color: BLUE, borderRadius: "0 4px 4px 0" }}>{formatCurrency(total, lang)}</div>
                 </div>
               </div>
 
-              {/* ── NOTES (dynamic) ── */}
               {purchase.notes && (
                 <div style={{ padding: "16px 36px", borderTop: "1px solid #eee", background: "#fafafa" }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{t("ملاحظات", "Notes")}</p>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{tr("ملاحظات", "Notes")}</p>
                   <p style={{ fontSize: 13, color: "#444", lineHeight: 1.6, margin: 0 }}>{purchase.notes}</p>
                 </div>
               )}
 
-              {/* ── FOOTER TEXT ── */}
               <div style={{ padding: "12px 36px", borderTop: "1px solid #eee", textAlign: "center", background: "#fafafa" }}>
                 <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
-                  {t("هذا مستند من إنتاج الكمبيوتر", "This is a computer-generated document")} — {new Date().toLocaleDateString(isAr ? "ar-EG" : "en-US")}
+                  {tr("هذا مستند من إنتاج الكمبيوتر", "This is a computer-generated document")} — {new Date().toLocaleDateString(isAr ? "ar-EG" : "en-US")}
                 </p>
               </div>
 
-              {/* ── FOOTER BAR ── */}
               <div style={{ display: "flex", height: 24 }}>
                 <div style={{ width: "38%", background: BLUE }} />
                 <div style={{ width: "2%",  background: "#fff" }} />
                 <div style={{ flex: 1,      background: RED }} />
               </div>
-
             </div>
           </div>
 
-          {/* action buttons (no-print) */}
           <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200 no-print">
             <button onClick={handlePrint} disabled={isPrinting} className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
-              <Printer size={18} />{t("طباعة", "Print")}
+              <Printer size={18} />{tr("طباعة", "Print")}
             </button>
             <button onClick={onClose} className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-semibold">
-              {t("إغلاق", "Close")}
+              {tr("إغلاق", "Close")}
             </button>
           </div>
         </div>

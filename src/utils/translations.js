@@ -7,12 +7,13 @@ export const translations = {
     purchases: "Purchases",
     payments: "Payments",
     reports: "Reports",
-    
+
     // Common
     addNew: "Add New",
     edit: "Edit",
     delete: "Delete",
     save: "Save",
+    saving: "Saving...",
     cancel: "Cancel",
     export: "Export",
     search: "Search",
@@ -31,11 +32,33 @@ export const translations = {
     overdue: "Overdue",
     credit: "Credit",
     cash: "Cash",
-    
+    code: "Code",
+    name: "Name",
+    nameAr: "Name (Arabic)",
+    nameEn: "Name (English)",
+    noDataToExport: "No data to export",
+    exportedSuccessfully: "Exported successfully",
+    exportError: "Export failed",
+    clearFilters: "Clear Filters",
+    allStatus: "All Status",
+    loading: "Loading...",
+    activate: "Activate",
+    deactivate: "Deactivate",
+    confirm: "Confirm",
+    confirmDelete: "Are you sure you want to delete this item?",
+    confirmActivate: "Are you sure you want to activate this item?",
+    confirmDeactivate: "Are you sure you want to deactivate this item?",
+    required: "This field is required",
+    invalidNumber: "Please enter a valid number",
+    invalidDate: "Please enter a valid date",
+    noData: "No data available",
+    all: "All",
+
     // Suppliers
     supplierName: "Supplier Name",
     contactPerson: "Contact Person",
     phone: "Phone",
+    email: "Email",
     address: "Address",
     paymentTerms: "Payment Terms",
     days: "days",
@@ -46,7 +69,54 @@ export const translations = {
     addPayment: "Add Payment",
     viewStatement: "View Statement",
     allSuppliers: "All Suppliers",
-    
+    supplierAdded: "Supplier added successfully",
+    supplierUpdated: "Supplier updated successfully",
+    supplierDeleted: "Supplier deleted successfully",
+    supplierActivated: "Supplier activated successfully",
+    supplierDeactivated: "Supplier deactivated successfully",
+    supplierNameRequired: "Supplier name is required",
+    errorLoadingSuppliers: "Error loading suppliers",
+    errorUpdatingSupplier: "Error updating supplier status",
+
+    // Materials / Supplies
+    materialNameRequired: "Material name in Arabic and English is required",
+    codeRequired: "Code is required",
+    materialAdded: "Material added successfully",
+    materialUpdated: "Material updated successfully",
+    materialDeleted: "Material deleted successfully",
+    deleteMaterial: "Delete Material",
+    errorLoadingMaterials: "Error loading materials",
+
+    // Assets
+    assetNameRequired: "Asset name is required",
+    assetTypeRequired: "Asset type is required",
+    assetAdded: "Asset added successfully",
+    assetUpdated: "Asset updated successfully",
+    assetDeleted: "Asset deleted successfully",
+    assetActivated: "Asset activated successfully",
+    errorLoadingAssets: "Error loading assets",
+
+    // Units
+    unitAdded: "Unit added successfully",
+    unitUpdated: "Unit updated successfully",
+    unitDeleted: "Unit deleted successfully",
+    unitActivated: "Unit activated successfully",
+    errorLoadingUnits: "Failed to load units",
+
+    // Clients
+    clientAdded: "Client added successfully",
+    clientUpdated: "Client updated successfully",
+    clientDeleted: "Client deleted successfully",
+    clientActivated: "Client activated successfully",
+    errorLoadingClients: "Failed to load clients",
+
+    // Projects
+    projectAdded: "Project added successfully",
+    projectUpdated: "Project updated successfully",
+    projectDeleted: "Project deleted successfully",
+    projectActivated: "Project activated successfully",
+    errorLoadingProjects: "Failed to load projects",
+
     // Invoices
     invoiceNumber: "Invoice Number",
     invoiceDate: "Invoice Date",
@@ -63,7 +133,7 @@ export const translations = {
     createReturn: "Create Return",
     returnInvoice: "Return Invoice",
     originalInvoice: "Original Invoice",
-    
+
     // Payments
     paymentAmount: "Payment Amount",
     paymentDate: "Payment Date",
@@ -74,7 +144,7 @@ export const translations = {
     check: "Check",
     bankTransfer: "Bank Transfer",
     createdBy: "Created By",
-    
+
     // Dashboard
     totalOutstanding: "Total Outstanding Balance",
     overdueInvoices: "Overdue Invoices",
@@ -84,9 +154,7 @@ export const translations = {
     topSuppliers: "Top 5 Suppliers by Balance",
     paymentMethods: "Payment Methods Distribution",
     recentActivity: "Recent Activity",
-    purchases: "Purchases",
-    payments: "Payments",
-    
+
     // Reports
     supplierStatement: "Supplier Statement",
     purchaseHistory: "Purchase History",
@@ -97,24 +165,8 @@ export const translations = {
     from: "From",
     to: "To",
     print: "Print",
-    
-    // Messages
-    success: "Success",
-    error: "Error",
-    supplierAdded: "Supplier added successfully",
-    supplierUpdated: "Supplier updated successfully",
-    supplierDeleted: "Supplier deleted successfully",
-    invoiceCreated: "Invoice created successfully",
-    invoiceUpdated: "Invoice updated successfully",
-    paymentRecorded: "Payment recorded successfully",
-    confirmDelete: "Are you sure you want to delete this item?",
-    required: "This field is required",
-    invalidNumber: "Please enter a valid number",
-    invalidDate: "Please enter a valid date",
-    selectSupplier: "Select Supplier",
-    items: "Items",
-    noData: "No data available",
-    all: "All",
+
+    // Misc
     currentUser: "Current User",
     warehouses: "Warehouses",
     warehouse: "Warehouse",
@@ -126,22 +178,18 @@ export const translations = {
     in: "In",
     out: "Out",
     transfer: "Transfer",
-    quantity: "Quantity",
     financialReport: "Financial Report",
     financialMovements: "Financial Movements",
     transactionType: "Transaction Type",
     debit: "Debit",
-    credit: "Credit",
     openingBalance: "Opening Balance",
     closingBalance: "Closing Balance",
     user: "User",
     role: "Role",
-    email: "Email",
-    phone: "Phone",
     department: "Department",
     switchUser: "Switch User",
     loggedInAs: "Logged in as",
-    
+
     // Auth
     auth: {
       login: "Login",
@@ -164,6 +212,7 @@ export const translations = {
       sendOTPError: "Failed to send OTP. Please try again.",
     },
   },
+
   ar: {
     // Navigation
     dashboard: "لوحة التحكم",
@@ -172,12 +221,13 @@ export const translations = {
     purchases: "المشتريات",
     payments: "المدفوعات",
     reports: "التقارير",
-    
+
     // Common
     addNew: "إضافة جديد",
     edit: "تعديل",
     delete: "حذف",
     save: "حفظ",
+    saving: "جاري الحفظ...",
     cancel: "إلغاء",
     export: "تصدير",
     search: "بحث",
@@ -196,11 +246,33 @@ export const translations = {
     overdue: "متأخر",
     credit: "آجل",
     cash: "نقدي",
-    
+    code: "الكود",
+    name: "الاسم",
+    nameAr: "الاسم بالعربي",
+    nameEn: "الاسم بالإنجليزي",
+    noDataToExport: "لا توجد بيانات للتصدير",
+    exportedSuccessfully: "تم التصدير بنجاح",
+    exportError: "فشل التصدير",
+    clearFilters: "مسح الفلاتر",
+    allStatus: "كل الحالات",
+    loading: "جاري التحميل...",
+    activate: "تفعيل",
+    deactivate: "إلغاء التفعيل",
+    confirm: "تأكيد",
+    confirmDelete: "هل أنت متأكد من حذف هذا العنصر؟",
+    confirmActivate: "هل أنت متأكد من تفعيل هذا العنصر؟",
+    confirmDeactivate: "هل أنت متأكد من إلغاء تفعيل هذا العنصر؟",
+    required: "هذا الحقل مطلوب",
+    invalidNumber: "يرجى إدخال رقم صحيح",
+    invalidDate: "يرجى إدخال تاريخ صحيح",
+    noData: "لا توجد بيانات متاحة",
+    all: "الكل",
+
     // Suppliers
     supplierName: "اسم المورد",
     contactPerson: "الشخص المسؤول",
     phone: "الهاتف",
+    email: "البريد الإلكتروني",
     address: "العنوان",
     paymentTerms: "شروط الدفع",
     days: "يوم",
@@ -211,7 +283,54 @@ export const translations = {
     addPayment: "إضافة دفعة",
     viewStatement: "عرض الكشف",
     allSuppliers: "جميع الموردين",
-    
+    supplierAdded: "تم إضافة المورد بنجاح",
+    supplierUpdated: "تم تعديل بيانات المورد بنجاح",
+    supplierDeleted: "تم حذف المورد بنجاح",
+    supplierActivated: "تم تفعيل المورد بنجاح",
+    supplierDeactivated: "تم إلغاء تفعيل المورد بنجاح",
+    supplierNameRequired: "اسم المورد مطلوب",
+    errorLoadingSuppliers: "خطأ في تحميل الموردين",
+    errorUpdatingSupplier: "خطأ في تحديث حالة المورد",
+
+    // Materials / Supplies
+    materialNameRequired: "اسم المادة بالعربي والإنجليزي مطلوب",
+    codeRequired: "الكود مطلوب",
+    materialAdded: "تم إضافة المادة بنجاح",
+    materialUpdated: "تم تعديل المادة بنجاح",
+    materialDeleted: "تم حذف المادة بنجاح",
+    deleteMaterial: "حذف المادة",
+    errorLoadingMaterials: "خطأ في تحميل المواد",
+
+    // Assets
+    assetNameRequired: "اسم الأصل مطلوب",
+    assetTypeRequired: "نوع الأصل مطلوب",
+    assetAdded: "تم إضافة الأصل بنجاح",
+    assetUpdated: "تم تعديل الأصل بنجاح",
+    assetDeleted: "تم حذف الأصل بنجاح",
+    assetActivated: "تم تفعيل الأصل بنجاح",
+    errorLoadingAssets: "خطأ في تحميل الأصول",
+
+    // Units
+    unitAdded: "تم إضافة الوحدة بنجاح",
+    unitUpdated: "تم تعديل الوحدة بنجاح",
+    unitDeleted: "تم حذف الوحدة بنجاح",
+    unitActivated: "تم تفعيل الوحدة بنجاح",
+    errorLoadingUnits: "فشل تحميل الوحدات",
+
+    // Clients
+    clientAdded: "تم إضافة العميل بنجاح",
+    clientUpdated: "تم تعديل بيانات العميل بنجاح",
+    clientDeleted: "تم حذف العميل بنجاح",
+    clientActivated: "تم تفعيل العميل بنجاح",
+    errorLoadingClients: "فشل تحميل العملاء",
+
+    // Projects
+    projectAdded: "تم إضافة المشروع بنجاح",
+    projectUpdated: "تم تعديل المشروع بنجاح",
+    projectDeleted: "تم حذف المشروع بنجاح",
+    projectActivated: "تم تفعيل المشروع بنجاح",
+    errorLoadingProjects: "فشل تحميل المشاريع",
+
     // Invoices
     invoiceNumber: "رقم الفاتورة",
     invoiceDate: "تاريخ الفاتورة",
@@ -228,7 +347,7 @@ export const translations = {
     createReturn: "إنشاء مرتجع",
     returnInvoice: "فاتورة مرتجع",
     originalInvoice: "الفاتورة الأصلية",
-    
+
     // Payments
     paymentAmount: "مبلغ الدفعة",
     paymentDate: "تاريخ الدفعة",
@@ -239,7 +358,7 @@ export const translations = {
     check: "شيك",
     bankTransfer: "تحويل بنكي",
     createdBy: "تم الإنشاء بواسطة",
-    
+
     // Dashboard
     totalOutstanding: "إجمالي الرصيد المستحق",
     overdueInvoices: "الفواتير المتأخرة",
@@ -249,9 +368,7 @@ export const translations = {
     topSuppliers: "أفضل 5 موردين حسب الرصيد",
     paymentMethods: "توزيع طرق الدفع",
     recentActivity: "النشاط الأخير",
-    purchases: "المشتريات",
-    payments: "المدفوعات",
-    
+
     // Reports
     supplierStatement: "كشف حساب المورد",
     purchaseHistory: "سجل المشتريات",
@@ -262,24 +379,8 @@ export const translations = {
     from: "من",
     to: "إلى",
     print: "طباعة",
-    
-    // Messages
-    success: "نجح",
-    error: "خطأ",
-    supplierAdded: "تم إضافة المورد بنجاح",
-    supplierUpdated: "تم تحديث المورد بنجاح",
-    supplierDeleted: "تم حذف المورد بنجاح",
-    invoiceCreated: "تم إنشاء الفاتورة بنجاح",
-    invoiceUpdated: "تم تحديث الفاتورة بنجاح",
-    paymentRecorded: "تم تسجيل الدفعة بنجاح",
-    confirmDelete: "هل أنت متأكد من حذف هذا العنصر؟",
-    required: "هذا الحقل مطلوب",
-    invalidNumber: "يرجى إدخال رقم صحيح",
-    invalidDate: "يرجى إدخال تاريخ صحيح",
-    selectSupplier: "اختر المورد",
-    items: "الأصناف",
-    noData: "لا توجد بيانات متاحة",
-    all: "الكل",
+
+    // Misc
     currentUser: "المستخدم الحالي",
     warehouses: "المخازن",
     warehouse: "المخزن",
@@ -291,22 +392,18 @@ export const translations = {
     in: "داخل",
     out: "خارج",
     transfer: "نقل",
-    quantity: "الكمية",
     financialReport: "التقرير المالي",
     financialMovements: "الحركات المالية",
     transactionType: "نوع المعاملة",
     debit: "مدين",
-    credit: "دائن",
     openingBalance: "الرصيد الافتتاحي",
     closingBalance: "الرصيد الختامي",
     user: "المستخدم",
     role: "الدور",
-    email: "البريد الإلكتروني",
-    phone: "الهاتف",
     department: "القسم",
     switchUser: "تغيير المستخدم",
     loggedInAs: "مسجل الدخول ك",
-    
+
     // Auth
     auth: {
       login: "تسجيل الدخول",
@@ -328,7 +425,5 @@ export const translations = {
       invalidOTP: "يرجى إدخال رمز OTP صحيح مكون من 6 أرقام",
       sendOTPError: "فشل إرسال OTP. يرجى المحاولة مرة أخرى.",
     },
-  }
+  },
 };
-
-

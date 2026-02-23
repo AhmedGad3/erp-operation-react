@@ -46,17 +46,14 @@ export default function ProjectLaborDetails() {
     try {
       setLoading(true);
       
-      // Fetch project details
       const projectRes = await axiosInstance.get(`/projects/${id}`);
       setProject(projectRes.data.result);
       
-      // Fetch labor records
       const laborRes = await axiosInstance.get(`/projects/${id}/labor`);
       const records = laborRes.data.result || [];
       
       setLaborRecords(records);
       
-      // Set date range
       if (records.length > 0) {
         const dates = records.map(r => new Date(r.startDate));
         const minDate = new Date(Math.min(...dates));
@@ -73,6 +70,9 @@ export default function ProjectLaborDetails() {
     }
   };
 
+  // ─── Project Locked ──────────────────────────
+  const isLocked = project?.status === "COMPLETED";
+
   const handleDelete = async (laborId) => {
     try {
       await axiosInstance.delete(`/projects/${id}/labor/${laborId}`);
@@ -85,80 +85,75 @@ export default function ProjectLaborDetails() {
     }
   };
 
-  // Filter records by date range
   const filteredRecords = useMemo(() => {
     return laborRecords.filter(record => {
       const recordDate = new Date(record.startDate);
       const from = dateFrom ? new Date(dateFrom) : null;
       const to = dateTo ? new Date(dateTo + 'T23:59:59') : null;
-
       if (from && recordDate < from) return false;
       if (to && recordDate > to) return false;
-
       return true;
     });
   }, [laborRecords, dateFrom, dateTo]);
 
-  // Calculate totals
   const totalWorkers = filteredRecords.length;
   const totalLaborCost = filteredRecords.reduce((sum, r) => sum + (r.laborCost || 0), 0);
   const totalMaterialCost = filteredRecords.reduce((sum, r) => sum + (r.materialCost || 0), 0);
   const totalCost = filteredRecords.reduce((sum, r) => sum + (r.totalCost || 0), 0);
 
- const handleExportPDF = async () => {
-  try {
-    const data = filteredRecords.map(record => ({
-      workerName: record.workerName,
-      specialty: record.specialty,
-      task: record.taskDescription || "-",
-      days: record.numberOfDays,
-      dailyRate: formatCurrency(record.dailyRate, lang),
-      laborCost: formatCurrency(record.laborCost, lang),
-      materialCost: record.materialCost > 0 ? formatCurrency(record.materialCost, lang) : "-",
-      total: formatCurrency(record.totalCost, lang),
-      date: formatDateShort(record.startDate, lang)
-    }));
+  const handleExportPDF = async () => {
+    try {
+      const data = filteredRecords.map(record => ({
+        workerName: record.workerName,
+        specialty: record.specialty,
+        task: record.taskDescription || "-",
+        days: record.numberOfDays,
+        dailyRate: formatCurrency(record.dailyRate, lang),
+        laborCost: formatCurrency(record.laborCost, lang),
+        materialCost: record.materialCost > 0 ? formatCurrency(record.materialCost, lang) : "-",
+        total: formatCurrency(record.totalCost, lang),
+        date: formatDateShort(record.startDate, lang)
+      }));
 
-    // إضافة صف الإجمالي
-    data.push({
-      workerName: lang === 'ar' ? 'الإجمالي' : 'Total',
-      specialty: '',
-      task: '',
-      days: '',
-      dailyRate: '',
-      laborCost: formatCurrency(totalLaborCost, lang),
-      materialCost: formatCurrency(totalMaterialCost, lang),
-      total: formatCurrency(totalCost, lang),
-      date: ''
-    });
+      data.push({
+        workerName: lang === 'ar' ? 'الإجمالي' : 'Total',
+        specialty: '',
+        task: '',
+        days: '',
+        dailyRate: '',
+        laborCost: formatCurrency(totalLaborCost, lang),
+        materialCost: formatCurrency(totalMaterialCost, lang),
+        total: formatCurrency(totalCost, lang),
+        date: ''
+      });
 
-    const headers = [
-      { workerName: lang === "ar" ? "اسم العامل" : "Worker Name" },
-      { specialty: lang === "ar" ? "التخصص" : "Specialty" },
-      { task: lang === "ar" ? "الوصف" : "Description" },
-      { days: lang === "ar" ? "الأيام" : "Days" },
-      { dailyRate: lang === "ar" ? "الأجر اليومي" : "Daily Rate" },
-      { laborCost: lang === "ar" ? "تكلفة العمل" : "Labor Cost" },
-      { materialCost: lang === "ar" ? "تكلفة المواد" : "Material Cost" },
-      { total: lang === "ar" ? "الإجمالي" : "Total" },
-      { date: lang === "ar" ? "التاريخ" : "Date" }
-    ];
+      const headers = [
+        { workerName: lang === "ar" ? "اسم العامل" : "Worker Name" },
+        { specialty: lang === "ar" ? "التخصص" : "Specialty" },
+        { task: lang === "ar" ? "الوصف" : "Description" },
+        { days: lang === "ar" ? "الأيام" : "Days" },
+        { dailyRate: lang === "ar" ? "الأجر اليومي" : "Daily Rate" },
+        { laborCost: lang === "ar" ? "تكلفة العمل" : "Labor Cost" },
+        { materialCost: lang === "ar" ? "تكلفة المواد" : "Material Cost" },
+        { total: lang === "ar" ? "الإجمالي" : "Total" },
+        { date: lang === "ar" ? "التاريخ" : "Date" }
+      ];
 
-    const title = lang === 'ar' ? 'تفاصيل العمالة - المشروع' : 'Labor Details - Project';
-    const fileName = `labor_details_${project.code}`;
-    const projectInfo = {
-      name: lang === 'ar' ? project.nameAr : project.nameEn,
-      code: project.code
-    };
+      const title = lang === 'ar' ? 'تفاصيل العمالة - المشروع' : 'Labor Details - Project';
+      const fileName = `labor_details_${project.code}`;
+      const projectInfo = {
+        name: lang === 'ar' ? project.nameAr : project.nameEn,
+        code: project.code
+      };
 
-    await exportToPDF(data, headers, fileName, lang, title, projectInfo);
-    toast.success(lang === "ar" ? "تم تصدير PDF بنجاح" : "PDF exported successfully");
+      await exportToPDF(data, headers, fileName, lang, title, projectInfo);
+      toast.success(lang === "ar" ? "تم تصدير PDF بنجاح" : "PDF exported successfully");
 
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    toast.error(lang === "ar" ? "حدث خطأ أثناء تصدير PDF" : "Error exporting PDF");
-  }
-};
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error(lang === "ar" ? "حدث خطأ أثناء تصدير PDF" : "Error exporting PDF");
+    }
+  };
 
   if (loading) {
     return <FullPageLoader text={lang === 'ar' ? 'جاري التحميل...' : 'Loading...'} />;
@@ -217,13 +212,25 @@ export default function ProjectLaborDetails() {
             </div>
             
             <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-semibold"
+              onClick={() => !isLocked && setShowAddModal(true)}
+              disabled={isLocked}
+              title={isLocked ? (lang === "ar" ? "المشروع مكتمل — لا يمكن الإضافة" : "Project completed — cannot add") : undefined}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Plus size={20} />
               {lang === 'ar' ? 'إضافة عامل' : 'Add Worker'}
             </button>
           </div>
+
+          {/* ── Locked Banner ── */}
+          {isLocked && (
+            <div className="flex items-center gap-2 px-6 py-3 bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-sm font-medium">
+              <AlertCircle size={16} className="shrink-0" />
+              {lang === "ar"
+                ? "هذا المشروع مكتمل — لا يمكن إضافة أو تعديل أو حذف السجلات"
+                : "This project is completed — adding, editing, or deleting records is not allowed"}
+            </div>
+          )}
 
           {/* Filters & Actions Bar */}
           <div className="flex items-center justify-between gap-4 p-4 bg-gray-50 border-b">
@@ -399,22 +406,18 @@ export default function ProjectLaborDetails() {
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => {
-                              setSelectedLabor(record);
-                              setShowEditModal(true);
-                            }}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
-                            title={lang === 'ar' ? 'تعديل' : 'Edit'}
+                            onClick={() => { if (!isLocked) { setSelectedLabor(record); setShowEditModal(true); } }}
+                            disabled={isLocked}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={isLocked ? (lang === "ar" ? "المشروع مكتمل" : "Project completed") : (lang === 'ar' ? 'تعديل' : 'Edit')}
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
-                            onClick={() => {
-                              setSelectedLabor(record);
-                              setShowDeleteModal(true);
-                            }}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                            title={lang === 'ar' ? 'حذف' : 'Delete'}
+                            onClick={() => { if (!isLocked) { setSelectedLabor(record); setShowDeleteModal(true); } }}
+                            disabled={isLocked}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={isLocked ? (lang === "ar" ? "المشروع مكتمل" : "Project completed") : (lang === 'ar' ? 'حذف' : 'Delete')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -535,7 +538,7 @@ export default function ProjectLaborDetails() {
         </div>
       )}
 
-      {/* Add/Edit Modals - To be implemented */}
+      {/* Add Modal */}
       {showAddModal && (
         <AddLaborModal
           projectId={id}
@@ -547,6 +550,7 @@ export default function ProjectLaborDetails() {
         />
       )}
 
+      {/* Edit Modal */}
       {showEditModal && selectedLabor && (
         <EditLaborModal
           projectId={id}
@@ -566,7 +570,9 @@ export default function ProjectLaborDetails() {
   );
 }
 
-// ✅ Add Labor Modal Component (Placeholder)
+// ─────────────────────────────────────────────
+// Add Labor Modal
+// ─────────────────────────────────────────────
 function AddLaborModal({ projectId, onClose, onSuccess }) {
   const { lang } = useContext(LanguageContext);
   const [saving, setSaving] = useState(false);
@@ -767,7 +773,9 @@ function AddLaborModal({ projectId, onClose, onSuccess }) {
   );
 }
 
-// ✅ Edit Labor Modal Component (Placeholder)
+// ─────────────────────────────────────────────
+// Edit Labor Modal
+// ─────────────────────────────────────────────
 function EditLaborModal({ projectId, labor, onClose, onSuccess }) {
   const { lang } = useContext(LanguageContext);
   const [saving, setSaving] = useState(false);
@@ -817,7 +825,6 @@ function EditLaborModal({ projectId, labor, onClose, onSuccess }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Same form fields as AddLaborModal */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
