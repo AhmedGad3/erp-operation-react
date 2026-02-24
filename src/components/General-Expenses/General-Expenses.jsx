@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo, useContext } from 'react';
-import { Plus, Edit, Trash2, DollarSign, Search, X, RefreshCw, Download, Receipt } from 'lucide-react';
+import {
+  Plus, Edit, Trash2, Search, Download, Receipt,
+  RefreshCw, X, ChevronUp, ChevronDown,
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatCurrency } from '../../utils/dateFormat';
 import axiosInstance from '../../utils/axiosInstance';
@@ -9,763 +12,522 @@ import { LanguageContext } from '../../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 
 const EXPENSE_CATEGORIES = [
-  { value: 'RENT', labelEn: 'Rent', labelAr: 'إيجارات' },
-  { value: 'UTILITIES', labelEn: 'Utilities', labelAr: 'مرافق' },
-  { value: 'MAINTENANCE', labelEn: 'Maintenance', labelAr: 'صيانة' },
-  { value: 'OFFICE_SUPPLIES', labelEn: 'Office Supplies', labelAr: 'أدوات مكتبية' },
-  { value: 'HOSPITALITY', labelEn: 'Hospitality', labelAr: 'ضيافة' },
-  { value: 'COMMUNICATION', labelEn: 'Communication', labelAr: 'اتصالات' },
-  { value: 'TRANSPORTATION', labelEn: 'Transportation', labelAr: 'مواصلات' },
-  { value: 'PROFESSIONAL_FEES', labelEn: 'Professional Fees', labelAr: 'رسوم مهنية' },
-  { value: 'INSURANCE', labelEn: 'Insurance', labelAr: 'تأمينات' },
-  { value: 'MARKETING', labelEn: 'Marketing', labelAr: 'تسويق' },
-  { value: 'SALARIES', labelEn: 'Salaries', labelAr: 'رواتب' },
-  { value: 'OTHERS', labelEn: 'Others', labelAr: 'أخرى' },
+  { value: 'RENT',             labelEn: 'Rent',             labelAr: 'إيجارات' },
+  { value: 'UTILITIES',        labelEn: 'Utilities',        labelAr: 'مرافق' },
+  { value: 'MAINTENANCE',      labelEn: 'Maintenance',      labelAr: 'صيانة' },
+  { value: 'OFFICE_SUPPLIES',  labelEn: 'Office Supplies',  labelAr: 'أدوات مكتبية' },
+  { value: 'HOSPITALITY',      labelEn: 'Hospitality',      labelAr: 'ضيافة' },
+  { value: 'COMMUNICATION',    labelEn: 'Communication',    labelAr: 'اتصالات' },
+  { value: 'TRANSPORTATION',   labelEn: 'Transportation',   labelAr: 'مواصلات' },
+  { value: 'PROFESSIONAL_FEES',labelEn: 'Professional Fees',labelAr: 'رسوم مهنية' },
+  { value: 'INSURANCE',        labelEn: 'Insurance',        labelAr: 'تأمينات' },
+  { value: 'MARKETING',        labelEn: 'Marketing',        labelAr: 'تسويق' },
+  { value: 'SALARIES',         labelEn: 'Salaries',         labelAr: 'رواتب' },
+  { value: 'OTHERS',           labelEn: 'Others',           labelAr: 'أخرى' },
 ];
 
 const PAYMENT_METHODS = [
-  { value: 'CASH', labelEn: 'Cash', labelAr: 'نقدي' },
-  { value: 'TRANSFER', labelEn: 'Bank Transfer', labelAr: 'تحويل بنكي' },
-  { value: 'CHEQUE', labelEn: 'Cheque', labelAr: 'شيك' },
+  { value: 'CASH',     labelEn: 'Cash',          labelAr: 'نقدي' },
+  { value: 'TRANSFER', labelEn: 'Bank Transfer',  labelAr: 'تحويل بنكي' },
+  { value: 'CHEQUE',   labelEn: 'Cheque',         labelAr: 'شيك' },
 ];
 
+// ── Sortable column header ────────────────────────────────
+const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
+  <th
+    className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer select-none"
+    onClick={() => onSort(field)}
+  >
+    <span className="inline-flex items-center gap-1">
+      {label}
+      <span className="flex flex-col leading-none">
+        <ChevronUp   className={`w-3 h-3 ${sortField === field && sortDir === 'asc'  ? 'text-gray-900' : 'text-gray-300'}`} />
+        <ChevronDown className={`w-3 h-3 ${sortField === field && sortDir === 'desc' ? 'text-gray-900' : 'text-gray-300'}`} />
+      </span>
+    </span>
+  </th>
+);
+
+// ── Stat card ─────────────────────────────────────────────
+const StatCard = ({ label, value, color = 'text-gray-900' }) => (
+  <div className="bg-white border border-gray-200 rounded-2xl p-5">
+    <p className="text-sm text-gray-500 mb-1">{label}</p>
+    <p className={`text-2xl font-bold ${color}`}>{value}</p>
+  </div>
+);
+
+// ── Field wrapper ─────────────────────────────────────────
+const Field = ({ label, required, children, colSpan }) => (
+  <div className={colSpan ? `md:col-span-${colSpan}` : ''}>
+    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+    </label>
+    {children}
+  </div>
+);
+
+const inputCls = 'w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition';
+
+// ── Main ──────────────────────────────────────────────────
 export default function GeneralExpenses() {
-  const navigate = useNavigate();
+  const navigate       = useNavigate();
+  const { lang }       = useContext(LanguageContext);
 
-  const { lang, t } = useContext(LanguageContext);
-  
-  const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  
-  const [showModal, setShowModal] = useState(false);
-  const [editingExpense, setEditingExpense] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterPaymentMethod, setFilterPaymentMethod] = useState('all');
-  
-  const [formData, setFormData] = useState({
-    title: '',
-    amount: 0,
-    mainCategory: 'RENT',
-    subCategory: '',
-    paymentMethod: 'CASH',
-    referenceNo: '',
+  const [expenses,           setExpenses]           = useState([]);
+  const [loading,            setLoading]            = useState(false);
+  const [saving,             setSaving]             = useState(false);
+  const [showModal,          setShowModal]          = useState(false);
+  const [editingExpense,     setEditingExpense]     = useState(null);
+  const [confirmDelete,      setConfirmDelete]      = useState(null);
+  const [searchTerm,         setSearchTerm]         = useState('');
+  const [filterCategory,     setFilterCategory]     = useState('all');
+  const [filterPaymentMethod,setFilterPaymentMethod]= useState('all');
+  const [sortField,          setSortField]          = useState('expenseDate');
+  const [sortDir,            setSortDir]            = useState('desc');
+
+  const emptyForm = {
+    title: '', amount: 0, mainCategory: 'RENT', subCategory: '',
+    paymentMethod: 'CASH', referenceNo: '',
     expenseDate: new Date().toISOString().split('T')[0],
-    vendorName: '',
-    notes: '',
-  });
+    vendorName: '', notes: '',
+  };
+  const [formData, setFormData] = useState(emptyForm);
+  const setF = (key, val) => setFormData(p => ({ ...p, [key]: val }));
 
-  // ================= FETCH =================
+  useEffect(() => { fetchExpenses(); }, []);
+
   const fetchExpenses = async () => {
     try {
       setLoading(true);
       const { data } = await axiosInstance.get('/general-expenses');
       setExpenses(data || []);
-    } catch (err) {
-      console.error(err);
-      toast.error(
-        lang === 'ar' ? 'خطأ في تحميل المصاريف' : 'Error loading expenses',
-        { position: 'top-right', autoClose: 3000 }
-      );
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error(lang === 'ar' ? 'خطأ في تحميل المصاريف' : 'Error loading expenses'); }
+    finally   { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchExpenses();
-  }, []);
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
+  };
 
-  // ================= FILTER =================
-  const filteredExpenses = useMemo(() => {
-    let filtered = expenses;
-
+  // ── Derived ───────────────────────────────────────────
+  const filtered = useMemo(() => {
+    let f = expenses;
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(expense => 
-        expense.title?.toLowerCase().includes(term) ||
-        expense.vendorName?.toLowerCase().includes(term) ||
-        expense.subCategory?.toLowerCase().includes(term) ||
-        expense.notes?.toLowerCase().includes(term) ||
-        expense.referenceNo?.toLowerCase().includes(term)
+      const q = searchTerm.toLowerCase();
+      f = f.filter(e =>
+        e.title?.toLowerCase().includes(q) ||
+        e.vendorName?.toLowerCase().includes(q) ||
+        e.subCategory?.toLowerCase().includes(q) ||
+        e.notes?.toLowerCase().includes(q) ||
+        e.referenceNo?.toLowerCase().includes(q)
       );
     }
-
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(expense => expense.mainCategory === filterCategory);
-    }
-
-    if (filterPaymentMethod !== 'all') {
-      filtered = filtered.filter(expense => expense.paymentMethod === filterPaymentMethod);
-    }
-
-    return filtered;
-  }, [expenses, searchTerm, filterCategory, filterPaymentMethod]);
-
-  // ================= STATS =================
-  const stats = useMemo(() => {
-    const total = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const byCategory = {};
-    
-    filteredExpenses.forEach(exp => {
-      if (!byCategory[exp.mainCategory]) {
-        byCategory[exp.mainCategory] = 0;
-      }
-      byCategory[exp.mainCategory] += exp.amount;
+    if (filterCategory !== 'all')      f = f.filter(e => e.mainCategory  === filterCategory);
+    if (filterPaymentMethod !== 'all') f = f.filter(e => e.paymentMethod === filterPaymentMethod);
+    return [...f].sort((a, b) => {
+      let va = a[sortField] ?? '';
+      let vb = b[sortField] ?? '';
+      if (sortField === 'expenseDate') { va = new Date(va); vb = new Date(vb); }
+      if (sortField === 'amount')      { va = Number(va);   vb = Number(vb); }
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
     });
+  }, [expenses, searchTerm, filterCategory, filterPaymentMethod, sortField, sortDir]);
 
-    return { total, count: filteredExpenses.length, byCategory };
-  }, [filteredExpenses]);
+  const total   = filtered.reduce((s, e) => s + e.amount, 0);
+  const catCount = Object.keys(
+    filtered.reduce((m, e) => { m[e.mainCategory] = 1; return m; }, {})
+  ).length;
 
-  // ================= EXPORT TO EXCEL =================
-  const handleExportToExcel = () => {
+  const getCategoryName    = (v) => EXPENSE_CATEGORIES.find(c => c.value === v)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || v;
+  const getPaymentMethodName = (v) => PAYMENT_METHODS.find(m => m.value === v)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || v;
+
+  // ── Export ────────────────────────────────────────────
+  const handleExport = () => {
     try {
-      const exportData = filteredExpenses.map(expense => ({
-        [lang === 'ar' ? 'رقم المصروف' : 'Expense No']: expense.expenseNo,
-        [lang === 'ar' ? 'العنوان' : 'Title']: expense.title,
-        [lang === 'ar' ? 'المبلغ' : 'Amount']: expense.amount,
-        [lang === 'ar' ? 'الفئة' : 'Category']: getCategoryName(expense.mainCategory),
-        [lang === 'ar' ? 'الفئة الفرعية' : 'Sub Category']: expense.subCategory || '-',
-        [lang === 'ar' ? 'طريقة الدفع' : 'Payment Method']: getPaymentMethodName(expense.paymentMethod),
-        [lang === 'ar' ? 'رقم المرجع' : 'Reference No']: expense.referenceNo || '-',
-        [lang === 'ar' ? 'اسم المورد' : 'Vendor Name']: expense.vendorName || '-',
-        [lang === 'ar' ? 'التاريخ' : 'Date']: new Date(expense.expenseDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US'),
-        [lang === 'ar' ? 'الملاحظات' : 'Notes']: expense.notes || '-',
+      const rows = filtered.map(e => ({
+        [lang === 'ar' ? 'رقم المصروف' : 'Expense No']:  e.expenseNo,
+        [lang === 'ar' ? 'العنوان'     : 'Title']:        e.title,
+        [lang === 'ar' ? 'المبلغ'      : 'Amount']:       e.amount,
+        [lang === 'ar' ? 'الفئة'       : 'Category']:     getCategoryName(e.mainCategory),
+        [lang === 'ar' ? 'طريقة الدفع' : 'Method']:       getPaymentMethodName(e.paymentMethod),
+        [lang === 'ar' ? 'المورد'      : 'Vendor']:       e.vendorName || '-',
+        [lang === 'ar' ? 'التاريخ'     : 'Date']:         new Date(e.expenseDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US'),
+        [lang === 'ar' ? 'الملاحظات'   : 'Notes']:        e.notes || '-',
       }));
-
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      
-      const columnWidths = [
-        { wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 18 },
-        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 },
-        { wch: 12 }, { wch: 30 }
-      ];
-      ws['!cols'] = columnWidths;
-
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = [12, 25, 12, 18, 15, 18, 12, 30].map(w => ({ wch: w }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, lang === 'ar' ? 'المصاريف' : 'Expenses');
-      
-      const fileName = `General_Expenses_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      
-      toast.success(
-        lang === 'ar' ? 'تم تصدير البيانات بنجاح' : 'Data exported successfully',
-        { position: 'top-right', autoClose: 2000 }
-      );
-    } catch (error) {
-      toast.error(
-        lang === 'ar' ? 'فشل التصدير' : 'Export failed',
-        { position: 'top-right', autoClose: 3000 }
-      );
-      console.error('Export error:', error);
-    }
+      XLSX.writeFile(wb, `General_Expenses_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success(lang === 'ar' ? 'تم التصدير بنجاح' : 'Exported successfully');
+    } catch { toast.error(lang === 'ar' ? 'فشل التصدير' : 'Export failed'); }
   };
 
-  // ================= SAVE =================
+  // ── Save ──────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.title?.trim()) {
-      toast.error(
-        lang === 'ar' ? 'العنوان مطلوب' : 'Title is required',
-        { position: 'top-right', autoClose: 3000 }
-      );
-      return;
-    }
-
-    if (formData.amount <= 0) {
-      toast.error(
-        lang === 'ar' ? 'المبلغ يجب أن يكون أكبر من صفر' : 'Amount must be greater than zero',
-        { position: 'top-right', autoClose: 3000 }
-      );
-      return;
-    }
-
+    if (!formData.title?.trim()) { toast.error(lang === 'ar' ? 'العنوان مطلوب' : 'Title is required'); return; }
+    if (formData.amount <= 0)    { toast.error(lang === 'ar' ? 'المبلغ يجب أن يكون أكبر من صفر' : 'Amount must be greater than zero'); return; }
     setSaving(true);
-
     try {
-      const payload = {
-        title: formData.title.trim(),
-        amount: Number(formData.amount),
-        mainCategory: formData.mainCategory,
-        subCategory: formData.subCategory?.trim() || undefined,
-        paymentMethod: formData.paymentMethod,
-        referenceNo: formData.referenceNo?.trim() || undefined,
-        expenseDate: formData.expenseDate,
-        vendorName: formData.vendorName?.trim() || undefined,
-        notes: formData.notes?.trim() || undefined,
-      };
-
-      Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
-
+      const payload = Object.fromEntries(
+        Object.entries({
+          title: formData.title.trim(), amount: Number(formData.amount),
+          mainCategory: formData.mainCategory, subCategory: formData.subCategory?.trim() || undefined,
+          paymentMethod: formData.paymentMethod, referenceNo: formData.referenceNo?.trim() || undefined,
+          expenseDate: formData.expenseDate, vendorName: formData.vendorName?.trim() || undefined,
+          notes: formData.notes?.trim() || undefined,
+        }).filter(([, v]) => v !== undefined)
+      );
       if (editingExpense) {
         await axiosInstance.patch(`/general-expenses/${editingExpense._id}`, payload);
-        toast.success(
-          lang === 'ar' ? 'تم تحديث المصروف بنجاح' : 'Expense updated successfully',
-          { position: 'top-right', autoClose: 2000 }
-        );
+        toast.success(lang === 'ar' ? 'تم تحديث المصروف بنجاح' : 'Expense updated successfully');
       } else {
         await axiosInstance.post('/general-expenses', payload);
-        toast.success(
-          lang === 'ar' ? 'تم إضافة المصروف بنجاح' : 'Expense added successfully',
-          { position: 'top-right', autoClose: 2000 }
-        );
+        toast.success(lang === 'ar' ? 'تم إضافة المصروف بنجاح' : 'Expense added successfully');
       }
-      
-      setShowModal(false);
-      setEditingExpense(null);
-      resetForm();
+      setShowModal(false); setEditingExpense(null); setFormData(emptyForm);
       await fetchExpenses();
-      
     } catch (err) {
-      console.error('Error saving expense:', err);
-      
-      let errorMsg = lang === 'ar' ? 'خطأ في حفظ المصروف' : 'Error saving expense';
-      
-      if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      }
-      
-      toast.error(errorMsg, {
-        position: 'top-right',
-        autoClose: 4000,
-      });
-    } finally {
-      setSaving(false);
-    }
+      toast.error(err.response?.data?.message || (lang === 'ar' ? 'خطأ في حفظ المصروف' : 'Error saving expense'));
+    } finally { setSaving(false); }
   };
 
   const handleEdit = (expense) => {
     setEditingExpense(expense);
     setFormData({
-      title: expense.title || '',
-      amount: expense.amount || 0,
-      mainCategory: expense.mainCategory || 'RENT',
-      subCategory: expense.subCategory || '',
-      paymentMethod: expense.paymentMethod || 'CASH',
-      referenceNo: expense.referenceNo || '',
-      expenseDate: expense.expenseDate 
-        ? new Date(expense.expenseDate).toISOString().split('T')[0] 
+      title: expense.title || '', amount: expense.amount || 0,
+      mainCategory: expense.mainCategory || 'RENT', subCategory: expense.subCategory || '',
+      paymentMethod: expense.paymentMethod || 'CASH', referenceNo: expense.referenceNo || '',
+      expenseDate: expense.expenseDate
+        ? new Date(expense.expenseDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
-      vendorName: expense.vendorName || '',
-      notes: expense.notes || '',
+      vendorName: expense.vendorName || '', notes: expense.notes || '',
     });
     setShowModal(true);
   };
 
-  // ================= DELETE =================
-  const handleDeleteClick = (expense) => {
-    setConfirmDelete(expense);
-  };
-
   const confirmDeleteAction = async () => {
-    if (!confirmDelete || !confirmDelete._id) {
-      console.error('No expense to delete');
-      return;
-    }
-
+    if (!confirmDelete?._id) return;
     try {
       await axiosInstance.delete(`/general-expenses/${confirmDelete._id}`);
-      
-      toast.success(
-        lang === 'ar' ? 'تم حذف المصروف بنجاح' : 'Expense deleted successfully',
-        { position: 'top-right', autoClose: 2000 }
-      );
-
-      setConfirmDelete(null);
-      fetchExpenses();
+      toast.success(lang === 'ar' ? 'تم حذف المصروف بنجاح' : 'Expense deleted successfully');
+      setConfirmDelete(null); fetchExpenses();
     } catch (err) {
-      console.error('Error:', err);
-      
-      let errorMsg = lang === 'ar' ? 'خطأ في حذف المصروف' : 'Error deleting expense';
-      
-      if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      }
-      
-      toast.error(errorMsg, { position: 'top-right', autoClose: 3000 });
+      toast.error(err.response?.data?.message || (lang === 'ar' ? 'خطأ في حذف المصروف' : 'Error deleting expense'));
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      amount: 0,
-      mainCategory: 'RENT',
-      subCategory: '',
-      paymentMethod: 'CASH',
-      referenceNo: '',
-      expenseDate: new Date().toISOString().split('T')[0],
-      vendorName: '',
-      notes: '',
-    });
-  };
-
-  const getCategoryName = (categoryValue) => {
-    return EXPENSE_CATEGORIES.find(c => c.value === categoryValue)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || categoryValue;
-  };
-
-  const getPaymentMethodName = (methodValue) => {
-    return PAYMENT_METHODS.find(m => m.value === methodValue)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || methodValue;
-  };
-
-  if (loading && expenses.length === 0) {
+  if (loading && expenses.length === 0)
     return <FullPageLoader text={lang === 'ar' ? 'جاري تحميل المصاريف...' : 'Loading expenses...'} />;
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Receipt className="w-8 h-8 text-white" />
-                <div>
-                  <h1 className="text-2xl font-bold text-white">
-                    {lang === 'ar' ? 'المصاريف العامة' : 'General Expenses'}
-                  </h1>
-                  <p className="text-emerald-100 mt-1">
-                    {lang === 'ar' 
-                      ? 'عرض وإدارة المصاريف العامة للشركة' 
-                      : 'View and manage company general expenses'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={fetchExpenses}
-                  disabled={loading}
-                  className="flex items-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-lg transition font-semibold"
-                  title={lang === 'ar' ? 'تحديث' : 'Refresh'}
-                >
-                  <div className={loading ? 'animate-spin' : ''}>
-                    <RefreshCw className="w-5 h-5" />
-                  </div>
-                </button>
-                <button
-                  onClick={handleExportToExcel}
-                  className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition font-semibold shadow-md"
-                >
-                  <Download className="w-5 h-5" />
-                  <span>{lang === 'ar' ? 'تصدير' : 'Export'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingExpense(null);
-                    resetForm();
-                    setShowModal(true);
-                  }}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-emerald-600 rounded-lg hover:bg-emerald-50 transition font-semibold shadow-md"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>{lang === 'ar' ? 'إضافة مصروف' : 'Add Expense'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-gray-50">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-emerald-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === 'ar' ? 'إجمالي المصاريف' : 'Total Expenses'}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{stats.count}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === 'ar' ? 'إجمالي المبلغ' : 'Total Amount'}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(stats.total, lang)}
-              </p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-purple-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === 'ar' ? 'عدد الفئات' : 'Categories'}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">
-                {Object.keys(stats.byCategory).length}
-              </p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-orange-500">
-              <p className="text-sm text-gray-600 mb-1">
-                {lang === 'ar' ? 'متوسط المصروف' : 'Average Expense'}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(stats.count > 0 ? stats.total / stats.count : 0, lang)}
-              </p>
-            </div>
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {lang === 'ar' ? 'المصاريف العامة' : 'General Expenses'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {lang === 'ar' ? 'عرض وإدارة المصاريف العامة للشركة' : 'View and manage company general expenses'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchExpenses} disabled={loading}
+              className="p-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition bg-white disabled:opacity-50"
+              title={lang === 'ar' ? 'تحديث' : 'Refresh'}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm bg-white"
+            >
+              <Download className="w-4 h-4" />
+              {lang === 'ar' ? 'تصدير' : 'Export'}
+            </button>
+            <button
+              onClick={() => { setEditingExpense(null); setFormData(emptyForm); setShowModal(true); }}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              {lang === 'ar' ? 'إضافة مصروف' : 'Add Expense'}
+            </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder={lang === 'ar' ? 'البحث في المصاريف...' : 'Search expenses...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-              />
-            </div>
+        {/* ── Stats ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <StatCard label={lang === 'ar' ? 'إجمالي المصاريف' : 'Total Expenses'}   value={filtered.length} />
+          <StatCard label={lang === 'ar' ? 'إجمالي المبلغ'  : 'Total Amount'}      value={formatCurrency(total, lang)} color="text-indigo-600" />
+          <StatCard label={lang === 'ar' ? 'عدد الفئات'     : 'Categories'}        value={catCount} />
+          <StatCard label={lang === 'ar' ? 'متوسط المصروف'  : 'Average Expense'}   value={formatCurrency(filtered.length > 0 ? total / filtered.length : 0, lang)} />
+        </div>
 
-            {/* Category Filter */}
-            <div>
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-              >
-                <option value="all">{lang === 'ar' ? 'كل الفئات' : 'All Categories'}</option>
-                {EXPENSE_CATEGORIES.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {lang === 'ar' ? cat.labelAr : cat.labelEn}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Payment Method Filter */}
-            <div>
-              <select
-                value={filterPaymentMethod}
-                onChange={(e) => setFilterPaymentMethod(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-              >
-                <option value="all">{lang === 'ar' ? 'كل طرق الدفع' : 'All Payment Methods'}</option>
-                {PAYMENT_METHODS.map((method) => (
-                  <option key={method.value} value={method.value}>
-                    {lang === 'ar' ? method.labelAr : method.labelEn}
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* ── Filters ── */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={lang === 'ar' ? 'البحث في المصاريف...' : 'Search expenses...'}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            />
           </div>
-
-          {/* Clear Filters */}
+          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+            <option value="all">{lang === 'ar' ? 'كل الفئات' : 'All Categories'}</option>
+            {EXPENSE_CATEGORIES.map(c => (
+              <option key={c.value} value={c.value}>{lang === 'ar' ? c.labelAr : c.labelEn}</option>
+            ))}
+          </select>
+          <select value={filterPaymentMethod} onChange={e => setFilterPaymentMethod(e.target.value)}
+            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+            <option value="all">{lang === 'ar' ? 'كل طرق الدفع' : 'All Methods'}</option>
+            {PAYMENT_METHODS.map(m => (
+              <option key={m.value} value={m.value}>{lang === 'ar' ? m.labelAr : m.labelEn}</option>
+            ))}
+          </select>
           {(searchTerm || filterCategory !== 'all' || filterPaymentMethod !== 'all') && (
             <button
-              onClick={() => {
-                setSearchTerm('');
-                setFilterCategory('all');
-                setFilterPaymentMethod('all');
-              }}
-              className="mt-4 text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+              onClick={() => { setSearchTerm(''); setFilterCategory('all'); setFilterPaymentMethod('all'); }}
+              className="text-sm text-indigo-600 hover:underline"
             >
-              {lang === 'ar' ? 'مسح الفلاتر' : 'Clear Filters'}
+              {lang === 'ar' ? 'مسح الفلاتر' : 'Clear'}
             </button>
           )}
         </div>
 
-        {/* Expenses Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {filteredExpenses.length === 0 ? (
-            <div className="p-12 text-center">
-              <Receipt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {lang === 'ar' ? 'لا توجد مصاريف' : 'No Expenses Found'}
-              </h3>
-              <p className="text-gray-600 mb-6">
-                {lang === 'ar' ? 'لم يتم العثور على مصاريف مطابقة للفلاتر المحددة' : 'No expenses match your current filters'}
+        {/* ── Table ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          {filtered.length === 0 ? (
+            <div className="p-16 text-center">
+              <Receipt className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="font-medium text-gray-600 mb-4">
+                {lang === 'ar' ? 'لا توجد مصاريف' : 'No expenses found'}
               </p>
               <button
-                onClick={() => {
-                  setEditingExpense(null);
-                  resetForm();
-                  setShowModal(true);
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-semibold"
+                onClick={() => { setEditingExpense(null); setFormData(emptyForm); setShowModal(true); }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
                 {lang === 'ar' ? 'إضافة أول مصروف' : 'Add First Expense'}
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? '#' : '#'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'العنوان' : 'Title'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'المبلغ' : 'Amount'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'الفئة' : 'Category'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'التاريخ' : 'Date'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                      {lang === 'ar' ? 'الإجراءات' : 'Actions'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredExpenses.map((expense) => (
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <SortHeader label="#"                                               field="expenseNo"    sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'العنوان'      : 'Title'}       field="title"        sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'المبلغ'       : 'Amount'}      field="amount"       sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الفئة'        : 'Category'}    field="mainCategory" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'طريقة الدفع'  : 'Method'}      field="paymentMethod" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'التاريخ'      : 'Date'}        field="expenseDate"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filtered.map(expense => (
                   <tr
-  key={expense._id}
-  className="hover:bg-gray-50 transition cursor-pointer"
-  onClick={() => navigate(`/finance/general-expenses/${expense._id}`)}
->
+                    key={expense._id}
+                    className="hover:bg-gray-50/60 transition cursor-pointer"
+                    onClick={() => navigate(`/finance/general-expenses/${expense._id}`)}
+                  >
+                    {/* # */}
+                    <td className="px-4 py-3.5">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        {expense.expenseNo}
+                      </span>
+                    </td>
 
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
-                          {expense.expenseNo}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-semibold text-gray-900">{expense.title}</p>
-                          {expense.vendorName && (
-                            <p className="text-sm text-gray-500">{expense.vendorName}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-lg font-bold text-emerald-600">
-                          {formatCurrency(expense.amount, lang)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
-                          {getCategoryName(expense.mainCategory)}
-                        </span>
-                        {expense.subCategory && (
-                          <p className="text-xs text-gray-500 mt-1">{expense.subCategory}</p>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-semibold">
-                          {getPaymentMethodName(expense.paymentMethod)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {new Date(expense.expenseDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEdit(expense)}
-                            className="flex items-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition font-medium"
-                          >
-                            <Edit className="w-4 h-4" />
-                            {lang === 'ar' ? 'تعديل' : 'Edit'}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(expense)}
-                            className="flex items-center gap-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            {lang === 'ar' ? 'حذف' : 'Delete'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    {/* Title */}
+                    <td className="px-4 py-3.5">
+                      <p className="font-medium text-gray-900 text-sm">{expense.title}</p>
+                      {expense.vendorName && (
+                        <p className="text-xs text-gray-400">{expense.vendorName}</p>
+                      )}
+                    </td>
+
+                    {/* Amount */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-semibold text-sm text-indigo-600">
+                        {formatCurrency(expense.amount, lang)}
+                      </span>
+                    </td>
+
+                    {/* Category */}
+                    <td className="px-4 py-3.5">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        {getCategoryName(expense.mainCategory)}
+                      </span>
+                      {expense.subCategory && (
+                        <p className="text-xs text-gray-400 mt-1">{expense.subCategory}</p>
+                      )}
+                    </td>
+
+                    {/* Method */}
+                    <td className="px-4 py-3.5">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        {getPaymentMethodName(expense.paymentMethod)}
+                      </span>
+                    </td>
+
+                    {/* Date */}
+                    <td className="px-4 py-3.5 text-sm text-gray-500">
+                      {new Date(expense.expenseDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleEdit(expense)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium text-sm"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          {lang === 'ar' ? 'تعديل' : 'Edit'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(expense)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium text-sm"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          {lang === 'ar' ? 'حذف' : 'Delete'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* ── Add/Edit Modal ── */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-emerald-600 to-emerald-700 px-8 py-6 border-b border-emerald-500">
-              <h2 className="text-2xl font-bold text-white">
-                {editingExpense 
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {editingExpense
                   ? (lang === 'ar' ? 'تعديل المصروف' : 'Edit Expense')
-                  : (lang === 'ar' ? 'إضافة مصروف جديد' : 'Add New Expense')
-                }
+                  : (lang === 'ar' ? 'إضافة مصروف جديد' : 'Add New Expense')}
               </h2>
+              <button
+                onClick={() => { setShowModal(false); setEditingExpense(null); setFormData(emptyForm); }}
+                className="p-1 rounded-md hover:bg-gray-100 text-gray-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Title */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'العنوان' : 'Title'} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                    required
-                    placeholder={lang === 'ar' ? 'مثال: فاتورة كهرباء يناير' : 'e.g., January Electricity Bill'}
-                  />
+                  <Field label={lang === 'ar' ? 'العنوان' : 'Title'} required>
+                    <input type="text" value={formData.title} onChange={e => setF('title', e.target.value)}
+                      placeholder={lang === 'ar' ? 'مثال: فاتورة كهرباء يناير' : 'e.g., January Electricity Bill'}
+                      className={inputCls} required />
+                  </Field>
                 </div>
 
                 {/* Amount */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'المبلغ' : 'Amount'} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
+                <Field label={lang === 'ar' ? 'المبلغ' : 'Amount'} required>
+                  <input type="number" min="0" step="0.01" value={formData.amount}
+                    onChange={e => setF('amount', e.target.value)} className={inputCls} required />
+                </Field>
 
-                {/* Expense Date */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'تاريخ المصروف' : 'Expense Date'} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.expenseDate}
-                    onChange={(e) => setFormData({ ...formData, expenseDate: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                    required
-                  />
-                </div>
+                {/* Date */}
+                <Field label={lang === 'ar' ? 'تاريخ المصروف' : 'Expense Date'} required>
+                  <input type="date" value={formData.expenseDate}
+                    onChange={e => setF('expenseDate', e.target.value)} className={inputCls} required />
+                </Field>
 
-                {/* Main Category */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'الفئة' : 'Category'} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.mainCategory}
-                    onChange={(e) => setFormData({ ...formData, mainCategory: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                    required
-                  >
-                    {EXPENSE_CATEGORIES.map(cat => (
-                      <option key={cat.value} value={cat.value}>
-                        {lang === 'ar' ? cat.labelAr : cat.labelEn}
-                      </option>
+                {/* Category */}
+                <Field label={lang === 'ar' ? 'الفئة' : 'Category'} required>
+                  <select value={formData.mainCategory} onChange={e => setF('mainCategory', e.target.value)}
+                    className={inputCls} required>
+                    {EXPENSE_CATEGORIES.map(c => (
+                      <option key={c.value} value={c.value}>{lang === 'ar' ? c.labelAr : c.labelEn}</option>
                     ))}
                   </select>
-                </div>
+                </Field>
 
                 {/* Sub Category */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'الفئة الفرعية' : 'Sub Category'}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.subCategory}
-                    onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                    placeholder={lang === 'ar' ? 'مثال: كهرباء' : 'e.g., Electricity'}
-                  />
-                </div>
+                <Field label={lang === 'ar' ? 'الفئة الفرعية' : 'Sub Category'}>
+                  <input type="text" value={formData.subCategory}
+                    onChange={e => setF('subCategory', e.target.value)}
+                    placeholder={lang === 'ar' ? 'مثال: كهرباء' : 'e.g., Electricity'} className={inputCls} />
+                </Field>
 
                 {/* Payment Method */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.paymentMethod}
-                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                    required
-                  >
-                    {PAYMENT_METHODS.map(method => (
-                      <option key={method.value} value={method.value}>
-                        {lang === 'ar' ? method.labelAr : method.labelEn}
-                      </option>
+                <Field label={lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'} required>
+                  <select value={formData.paymentMethod} onChange={e => setF('paymentMethod', e.target.value)}
+                    className={inputCls} required>
+                    {PAYMENT_METHODS.map(m => (
+                      <option key={m.value} value={m.value}>{lang === 'ar' ? m.labelAr : m.labelEn}</option>
                     ))}
                   </select>
-                </div>
+                </Field>
 
                 {/* Reference No */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'رقم المرجع' : 'Reference No'}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.referenceNo}
-                    onChange={(e) => setFormData({ ...formData, referenceNo: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                <Field label={lang === 'ar' ? 'رقم المرجع' : 'Reference No'}>
+                  <input type="text" value={formData.referenceNo}
+                    onChange={e => setF('referenceNo', e.target.value)}
                     placeholder={lang === 'ar' ? 'رقم الفاتورة أو الإيصال' : 'Invoice or receipt number'}
-                  />
-                </div>
+                    className={inputCls} />
+                </Field>
 
-                {/* Vendor Name */}
+                {/* Vendor */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'اسم المورد/الجهة' : 'Vendor Name'}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.vendorName}
-                    onChange={(e) => setFormData({ ...formData, vendorName: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                    placeholder={lang === 'ar' ? 'مثال: شركة الكهرباء' : 'e.g., Electricity Company'}
-                  />
+                  <Field label={lang === 'ar' ? 'اسم المورد/الجهة' : 'Vendor Name'}>
+                    <input type="text" value={formData.vendorName}
+                      onChange={e => setF('vendorName', e.target.value)}
+                      placeholder={lang === 'ar' ? 'مثال: شركة الكهرباء' : 'e.g., Electricity Company'}
+                      className={inputCls} />
+                  </Field>
                 </div>
 
                 {/* Notes */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'ملاحظات' : 'Notes'}
-                  </label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows="3"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                    placeholder={lang === 'ar' ? 'أضف ملاحظات إضافية...' : 'Add additional notes...'}
-                  />
+                  <Field label={lang === 'ar' ? 'ملاحظات' : 'Notes'}>
+                    <textarea rows={3} value={formData.notes}
+                      onChange={e => setF('notes', e.target.value)}
+                      placeholder={lang === 'ar' ? 'أضف ملاحظات إضافية...' : 'Add additional notes...'}
+                      className={inputCls} />
+                  </Field>
                 </div>
               </div>
 
-              {/* Buttons */}
-              <div className="flex gap-4 mt-8">
-                <button
-                  type="submit"
+              {/* Modal actions */}
+              <div className="flex gap-3 mt-6">
+                <button type="button"
+                  onClick={() => { setShowModal(false); setEditingExpense(null); setFormData(emptyForm); }}
                   disabled={saving}
-                  className="flex-1 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {saving && (
-                    <div className="animate-spin inline-block w-5 h-5 border-2 border-current border-t-transparent text-white rounded-full"></div>
-                  )}
-                  {saving 
-                    ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') 
-                    : (lang === 'ar' ? 'حفظ' : 'Save')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingExpense(null);
-                    resetForm();
-                  }}
-                  disabled={saving}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
                 >
                   {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button type="submit" disabled={saving}
+                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                  {saving
+                    ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...')
+                    : (lang === 'ar' ? 'حفظ' : 'Save')}
                 </button>
               </div>
             </form>
@@ -773,16 +535,16 @@ export default function GeneralExpenses() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* ── Delete Confirm Modal ── */}
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-100">
-                <Trash2 className="w-6 h-6 text-red-600" />
+              <div className="w-11 h-11 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">
+                <h3 className="text-base font-semibold text-gray-900">
                   {lang === 'ar' ? 'تأكيد الحذف' : 'Confirm Delete'}
                 </h3>
                 <p className="text-sm text-gray-500">
@@ -790,26 +552,17 @@ export default function GeneralExpenses() {
                 </p>
               </div>
             </div>
-            
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <p className="text-sm text-gray-600 mb-1">{lang === 'ar' ? 'المصروف:' : 'Expense:'}</p>
-              <p className="font-semibold text-gray-900">{confirmDelete.title}</p>
-              <p className="text-lg font-bold text-emerald-600 mt-1">
-                {formatCurrency(confirmDelete.amount, lang)}
-              </p>
+            <div className="bg-gray-50 rounded-xl p-4 mb-4">
+              <p className="font-medium text-gray-900 text-sm">{confirmDelete.title}</p>
+              <p className="text-indigo-600 font-bold text-sm mt-1">{formatCurrency(confirmDelete.amount, lang)}</p>
             </div>
-
             <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmDelete(null)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-              >
+              <button onClick={() => setConfirmDelete(null)}
+                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
                 {lang === 'ar' ? 'إلغاء' : 'Cancel'}
               </button>
-              <button
-                onClick={confirmDeleteAction}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-              >
+              <button onClick={confirmDeleteAction}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold text-sm">
                 {lang === 'ar' ? 'حذف' : 'Delete'}
               </button>
             </div>

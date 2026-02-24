@@ -1,512 +1,403 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { DollarSign, ArrowLeft, AlertCircle, CheckCircle, CreditCard, Building2, Calendar, Tag } from 'lucide-react';
+import {
+  DollarSign, ArrowLeft, CreditCard, Building2,
+  Calendar, Tag, ChevronDown
+} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
 
+// ── Section wrapper ────────────────────────────────────────
+const Section = ({ icon: Icon, title, children }) => (
+  <div className="bg-white border border-gray-200 rounded-2xl p-6">
+    {title && (
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-5">
+        {Icon && <Icon className="w-4 h-4 text-gray-400" />}
+        {title}
+      </h3>
+    )}
+    {children}
+  </div>
+);
+
+// ── Field wrapper ──────────────────────────────────────────
+const Field = ({ label, required, error, children }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+    </label>
+    {children}
+    {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+  </div>
+);
+
+// ── Input ──────────────────────────────────────────────────
+const inputCls = (err) =>
+  `w-full px-4 py-2.5 border ${err ? 'border-red-400' : 'border-gray-200'} rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition`;
+
 const CreateSupplierPayment = () => {
-  const { lang, t } = useContext(LanguageContext);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { lang } = useContext(LanguageContext);
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  const [suppliers, setSuppliers] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [suppliers,              setSuppliers]              = useState([]);
+  const [submitting,             setSubmitting]             = useState(false);
+  const [loading,                setLoading]                = useState(true);
   const [selectedSupplierBalance, setSelectedSupplierBalance] = useState(0);
+  const [errors,                 setErrors]                 = useState({});
 
-  // ✅ Get supplierId from URL parameters
-  const searchParams = new URLSearchParams(location.search);
-  const preSelectedSupplierId = searchParams.get('supplierId');
+  const preSelectedSupplierId = new URLSearchParams(location.search).get('supplierId');
 
   const [formData, setFormData] = useState({
-    supplierId: '',
-    amount: '',
+    supplierId:    '',
+    amount:        '',
     discountAmount: '',
-    method: 'CASH',
-    chequeNo: '',
-    transferRef: '',
-    paymentDate: new Date().toISOString().split('T')[0],
-    notes: ''
+    method:        'CASH',
+    chequeNo:      '',
+    transferRef:   '',
+    paymentDate:   new Date().toISOString().split('T')[0],
+    notes:         '',
   });
 
-  const [errors, setErrors] = useState({});
-
-  // Calculate totals
-  const amount = Number(formData.amount) || 0;
+  const amount         = Number(formData.amount) || 0;
   const discountAmount = Number(formData.discountAmount) || 0;
-  const totalAmount = amount + discountAmount;
+  const totalAmount    = amount + discountAmount;
+  const balanceAfter   = selectedSupplierBalance - totalAmount;
+
+  const set = (key, val) => setFormData(p => ({ ...p, [key]: val }));
+
+  // ── Fetch ────────────────────────────────────────────────
+  useEffect(() => { fetchSuppliers(); }, []);
 
   useEffect(() => {
-    fetchSuppliers();
-  }, []);
-
-  // ✅ Set pre-selected supplier after suppliers are loaded
-  useEffect(() => {
-    if (preSelectedSupplierId && suppliers.length > 0 && !formData.supplierId) {
-      const supplierExists = suppliers.find(s => s._id === preSelectedSupplierId);
-      if (supplierExists) {
-        setFormData(prev => ({ ...prev, supplierId: preSelectedSupplierId }));
-      }
+    if (preSelectedSupplierId && suppliers.length && !formData.supplierId) {
+      if (suppliers.find(s => s._id === preSelectedSupplierId))
+        set('supplierId', preSelectedSupplierId);
     }
   }, [preSelectedSupplierId, suppliers]);
 
   useEffect(() => {
-    if (formData.supplierId) {
-      fetchSupplierBalance(formData.supplierId);
-    } else {
-      setSelectedSupplierBalance(0);
-    }
+    if (formData.supplierId) fetchSupplierBalance(formData.supplierId);
+    else setSelectedSupplierBalance(0);
   }, [formData.supplierId]);
 
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/suppliers');
-      const suppliersData = Array.isArray(response.data) ? response.data : (response.data.result || []);
-      setSuppliers(suppliersData.filter(s => s.isActive !== false));
-    } catch (error) {
-      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل تحميل الموردين' : 'Failed to load suppliers'));
+      const res = await axiosInstance.get('/suppliers');
+      const data = Array.isArray(res.data) ? res.data : (res.data.result || []);
+      setSuppliers(data.filter(s => s.isActive !== false));
+    } catch (err) {
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل تحميل الموردين' : 'Failed to load suppliers'));
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSupplierBalance = async (supplierId) => {
+  const fetchSupplierBalance = async (id) => {
     try {
-      const { data } = await axiosInstance.get(`/ledger/supplier/${supplierId}/balance`);
+      const { data } = await axiosInstance.get(`/ledger/supplier/${id}/balance`);
       setSelectedSupplierBalance(Number(data.result?.amountDue || 0));
     } catch {
       setSelectedSupplierBalance(0);
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.supplierId) {
-      newErrors.supplierId = lang === 'ar' ? 'اختر مورد' : 'Please select a supplier';
-    }
-
-    if (!formData.amount || amount <= 0) {
-      newErrors.amount = lang === 'ar' ? 'أدخل المبلغ' : 'Enter a valid amount';
-    }
-
-    if (discountAmount > 0 && discountAmount >= selectedSupplierBalance) {
-      newErrors.discountAmount = lang === 'ar'
-        ? 'الخصم لازم يكون أقل من الرصيد'
-        : 'Discount must be less than current balance';
-    }
-
-    if (totalAmount > selectedSupplierBalance) {
-      newErrors.amount = lang === 'ar'
-        ? 'المبلغ الإجمالي يتجاوز الرصيد الحالي'
-        : 'Total amount exceeds current balance';
-    }
-
-    if (formData.method === 'CHEQUE' && !formData.chequeNo) {
-      newErrors.chequeNo = lang === 'ar' ? 'أدخل رقم الشيك' : 'Enter cheque number';
-    }
-
-    if (formData.method === 'TRANSFER' && !formData.transferRef) {
-      newErrors.transferRef = lang === 'ar' ? 'أدخل رقم التحويل' : 'Enter transfer reference';
-    }
-
-    if (!formData.paymentDate) {
-      newErrors.paymentDate = lang === 'ar' ? 'حدد التاريخ' : 'Please select a date';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  // ── Validate ─────────────────────────────────────────────
+  const validate = () => {
+    const e = {};
+    if (!formData.supplierId) e.supplierId = lang === 'ar' ? 'اختر مورد' : 'Please select a supplier';
+    if (!formData.amount || amount <= 0) e.amount = lang === 'ar' ? 'أدخل المبلغ' : 'Enter a valid amount';
+    if (discountAmount > 0 && discountAmount >= selectedSupplierBalance)
+      e.discountAmount = lang === 'ar' ? 'الخصم لازم يكون أقل من الرصيد' : 'Discount must be less than balance';
+    if (totalAmount > selectedSupplierBalance)
+      e.amount = lang === 'ar' ? 'المبلغ الإجمالي يتجاوز الرصيد' : 'Total exceeds current balance';
+    if (formData.method === 'CHEQUE' && !formData.chequeNo)
+      e.chequeNo = lang === 'ar' ? 'أدخل رقم الشيك' : 'Enter cheque number';
+    if (formData.method === 'TRANSFER' && !formData.transferRef)
+      e.transferRef = lang === 'ar' ? 'أدخل رقم التحويل' : 'Enter transfer reference';
+    if (!formData.paymentDate) e.paymentDate = lang === 'ar' ? 'حدد التاريخ' : 'Select a date';
+    setErrors(e);
+    return !Object.keys(e).length;
   };
 
+  // ── Submit ───────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error(lang === 'ar' ? 'يرجى إصلاح الأخطاء' : 'Please fix errors');
-      return;
-    }
-
+    if (!validate()) { toast.error(lang === 'ar' ? 'يرجى إصلاح الأخطاء' : 'Please fix errors'); return; }
     try {
       setSubmitting(true);
-
       const payload = {
-        supplierId: formData.supplierId,
-        amount,
-        discountAmount: discountAmount || 0,
-        method: formData.method,
-        paymentDate: formData.paymentDate,
-        notes: formData.notes.trim()
+        supplierId: formData.supplierId, amount, discountAmount: discountAmount || 0,
+        method: formData.method, paymentDate: formData.paymentDate, notes: formData.notes.trim(),
       };
-
-      if (formData.method === 'CHEQUE') {
-        payload.chequeNo = formData.chequeNo.trim();
-      } else if (formData.method === 'TRANSFER') {
-        payload.transferRef = formData.transferRef.trim();
-      }
-
+      if (formData.method === 'CHEQUE')   payload.chequeNo    = formData.chequeNo.trim();
+      if (formData.method === 'TRANSFER') payload.transferRef = formData.transferRef.trim();
       await axiosInstance.post('/supplier/payments', payload);
-
       toast.success(lang === 'ar' ? 'تم إضافة الدفعة بنجاح!' : 'Payment added successfully!');
-
-      setTimeout(() => {
-        navigate('/finance/supplier-payments');
-      }, 1500);
-    } catch (error) {
-      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل إضافة الدفعة' : 'Failed to add payment'));
+      setTimeout(() => navigate('/finance/supplier-payments'), 1500);
+    } catch (err) {
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل إضافة الدفعة' : 'Failed to add payment'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getSelectedSupplier = () => {
-    return suppliers.find(s => s._id === formData.supplierId);
-  };
+  const fmt = (v) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
+    style: 'currency', currency: 'EGP', minimumFractionDigits: 0,
+  }).format(v);
 
-  const formatCurrency = (val) => {
-    return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
-      style: 'currency',
-      currency: 'EGP',
-      minimumFractionDigits: 0
-    }).format(val);
-  };
+  const selectedSupplier = suppliers.find(s => s._id === formData.supplierId);
 
-  if (loading) {
-    return <FullPageLoader text={lang === "ar" ? "جاري التحميل..." : "Loading..."} />;
-  }
-
-  const selectedSupplier = getSelectedSupplier();
+  if (loading) return <FullPageLoader text={lang === 'ar' ? 'جاري التحميل...' : 'Loading...'} />;
+  if (submitting) return <FullPageLoader text={lang === 'ar' ? 'جاري المعالجة...' : 'Processing...'} />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
-      {submitting && <FullPageLoader text={lang === "ar" ? "جاري المعالجة..." : "Processing..."} />}
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-3xl mx-auto">
 
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <DollarSign className="w-8 h-8 text-white" />
-                <div>
-                  <h1 className="text-2xl font-bold text-white">
-                    {lang === 'ar' ? 'دفعة مورد' : 'Supplier Payment'}
-                  </h1>
-                  <p className="text-green-100 mt-1">
-                    {lang === 'ar' ? 'تسجيل دفعة جديدة للمورد' : 'Create new supplier payment'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => navigate('/finance/supplier-payments')}
-                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                {lang === 'ar' ? 'رجوع' : 'Back'}
-              </button>
-            </div>
+        {/* ── Page Header ── */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {lang === 'ar' ? 'دفعة مورد' : 'Supplier Payment'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {lang === 'ar' ? 'تسجيل دفعة جديدة للمورد' : 'Create a new supplier payment'}
+            </p>
           </div>
+          <button
+            onClick={() => navigate('/finance/supplier-payments')}
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm bg-white"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {lang === 'ar' ? 'رجوع' : 'Back'}
+          </button>
+        </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            
-            {/* Supplier Selection */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Building2 className="w-5 h-5" />
-                {lang === 'ar' ? 'اختر المورد' : 'Select Supplier'}
-              </h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  {lang === 'ar' ? 'المورد' : 'Supplier'} <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.supplierId}
-                  onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                    errors.supplierId ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  disabled={submitting}
-                >
-                  <option value="">{lang === 'ar' ? 'اختر مورد' : 'Select a supplier'}</option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier._id} value={supplier._id}>
-                      {lang === 'ar' ? supplier.nameAr : supplier.nameEn} ({supplier.code})
-                    </option>
-                  ))}
-                </select>
-                {errors.supplierId && <p className="mt-1 text-sm text-red-500">{errors.supplierId}</p>}
-              </div>
+          {/* ── Supplier Selection ── */}
+          <Section icon={Building2} title={lang === 'ar' ? 'اختر المورد' : 'Select Supplier'}>
+            <Field label={lang === 'ar' ? 'المورد' : 'Supplier'} required error={errors.supplierId}>
+              <select
+                value={formData.supplierId}
+                onChange={e => set('supplierId', e.target.value)}
+                className={inputCls(errors.supplierId)}
+                disabled={submitting}
+              >
+                <option value="">{lang === 'ar' ? 'اختر مورد' : 'Select a supplier'}</option>
+                {suppliers.map(s => (
+                  <option key={s._id} value={s._id}>
+                    {lang === 'ar' ? s.nameAr : s.nameEn} ({s.code})
+                  </option>
+                ))}
+              </select>
+            </Field>
 
-              {/* Supplier Info Card */}
-              {selectedSupplier && (
-                <div className="mt-6 p-4 bg-white border-l-4 border-green-500 rounded">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {lang === 'ar' ? 'اسم المورد' : 'Supplier Name'}
-                      </p>
-                      <p className="text-lg font-semibold text-gray-900">
-                        {lang === 'ar' ? selectedSupplier.nameAr : selectedSupplier.nameEn}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {lang === 'ar' ? 'الكود' : 'Code'}
-                      </p>
-                      <p className="text-lg font-semibold text-gray-900">
-                        {selectedSupplier.code}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {lang === 'ar' ? 'المبلغ المستحق' : 'Amount Due'}
-                      </p>
-                      <p className={`text-lg font-semibold ${
-                        selectedSupplierBalance > 0 ? 'text-red-600' : 
-                        selectedSupplierBalance < 0 ? 'text-green-600' : 'text-gray-600'
-                      }`}>
-                        {formatCurrency(selectedSupplierBalance)}
-                      </p>
-                    </div>
-                  </div>
-                  {selectedSupplier.phone && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <p className="text-sm text-gray-600">
-                        {lang === 'ar' ? 'الهاتف:' : 'Phone:'} <span className="font-medium text-gray-900">{selectedSupplier.phone}</span>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Payment Amount Section */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                {lang === 'ar' ? 'تفاصيل الدفعة' : 'Payment Details'}
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Amount */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'المبلغ' : 'Amount'} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                      errors.amount ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="0.00"
-                    disabled={submitting}
-                  />
-                  {errors.amount && <p className="mt-1 text-sm text-red-500">{errors.amount}</p>}
-                </div>
-
-                {/* Discount */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                    <Tag className="w-4 h-4 text-green-600" />
-                    {lang === 'ar' ? 'الخصم من المورد' : 'Supplier Discount'}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.discountAmount}
-                    onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                      errors.discountAmount ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="0.00"
-                    disabled={submitting}
-                  />
-                  {errors.discountAmount && <p className="mt-1 text-sm text-red-500">{errors.discountAmount}</p>}
-                </div>
-              </div>
-
-              {/* Summary Box */}
-              {(amount > 0 || discountAmount > 0) && (
-                <div className="mt-6 bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>{lang === 'ar' ? 'الدفعة الفعلية' : 'Payment Amount'}</span>
-                    <span className="font-medium">{formatCurrency(amount)}</span>
-                  </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>{lang === 'ar' ? 'الخصم من المورد' : 'Supplier Discount'}</span>
-                      <span className="font-medium">+ {formatCurrency(discountAmount)}</span>
-                    </div>
-                  )}
-                  <div className="border-t pt-3 flex justify-between text-base font-bold text-gray-800">
-                    <span>{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
-                    <span>{formatCurrency(totalAmount)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 pt-1">
-                    <span>{lang === 'ar' ? 'الرصيد بعد الدفعة' : 'Balance After'}</span>
-                    <span className={`font-semibold ${totalAmount > selectedSupplierBalance ? 'text-red-500' : 'text-green-600'}`}>
-                      {formatCurrency(selectedSupplierBalance - totalAmount)}
+            {/* Supplier info card */}
+            {selectedSupplier && (
+              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-indigo-600 font-semibold text-sm">
+                      {(lang === 'ar' ? selectedSupplier.nameAr : selectedSupplier.nameEn)?.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                </div>
-              )}
-
-              {/* Quick Amount Buttons */}
-              {selectedSupplierBalance > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600 mb-2">
-                    {lang === 'ar' ? 'اختصارات سريعة:' : 'Quick Actions:'}
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, amount: selectedSupplierBalance.toString(), discountAmount: '' })}
-                      className="px-4 py-2 bg-green-100 text-green-700 rounded hover:bg-green-200 transition text-sm font-semibold"
-                    >
-                      {lang === 'ar' ? 'دفع المبلغ الكامل' : 'Pay Full Amount'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, amount: (selectedSupplierBalance / 2).toFixed(2), discountAmount: '' })}
-                      className="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition text-sm font-semibold"
-                    >
-                      {lang === 'ar' ? 'دفع النصف' : 'Pay Half'}
-                    </button>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">
+                      {lang === 'ar' ? selectedSupplier.nameAr : selectedSupplier.nameEn}
+                    </p>
+                    <p className="text-xs text-gray-400">{selectedSupplier.code}{selectedSupplier.phone ? ` · ${selectedSupplier.phone}` : ''}</p>
                   </div>
                 </div>
-              )}
+                <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                  <span className="text-xs text-gray-500">{lang === 'ar' ? 'المبلغ المستحق' : 'Amount Due'}</span>
+                  <span className={`font-bold text-sm ${
+                    selectedSupplierBalance > 0 ? 'text-red-600'
+                    : selectedSupplierBalance < 0 ? 'text-green-600'
+                    : 'text-gray-600'
+                  }`}>
+                    {fmt(selectedSupplierBalance)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </Section>
+
+          {/* ── Payment Details ── */}
+          <Section icon={CreditCard} title={lang === 'ar' ? 'تفاصيل الدفعة' : 'Payment Details'}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label={lang === 'ar' ? 'المبلغ' : 'Amount'} required error={errors.amount}>
+                <input
+                  type="number" step="0.01" placeholder="0.00"
+                  value={formData.amount}
+                  onChange={e => set('amount', e.target.value)}
+                  className={inputCls(errors.amount)}
+                  disabled={submitting}
+                />
+              </Field>
+
+              <Field
+                label={
+                  <span className="flex items-center gap-1">
+                    <Tag className="w-3.5 h-3.5 text-indigo-500" />
+                    {lang === 'ar' ? 'الخصم من المورد' : 'Supplier Discount'}
+                  </span>
+                }
+                error={errors.discountAmount}
+              >
+                <input
+                  type="number" step="0.01" min="0" placeholder="0.00"
+                  value={formData.discountAmount}
+                  onChange={e => set('discountAmount', e.target.value)}
+                  className={inputCls(errors.discountAmount)}
+                  disabled={submitting}
+                />
+              </Field>
             </div>
 
-            {/* Payment Date */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 inline mr-1" />
-                {lang === 'ar' ? 'تاريخ الدفعة' : 'Payment Date'} <span className="text-red-500">*</span>
-              </label>
+            {/* Summary */}
+            {(amount > 0 || discountAmount > 0) && (
+              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>{lang === 'ar' ? 'الدفعة الفعلية' : 'Payment Amount'}</span>
+                  <span className="font-medium">{fmt(amount)}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-indigo-600">
+                    <span>{lang === 'ar' ? 'الخصم' : 'Discount'}</span>
+                    <span className="font-medium">+ {fmt(discountAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-200">
+                  <span>{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
+                  <span>{fmt(totalAmount)}</span>
+                </div>
+                <div className="flex justify-between text-xs pt-1">
+                  <span className="text-gray-500">{lang === 'ar' ? 'الرصيد بعد الدفعة' : 'Balance After'}</span>
+                  <span className={`font-semibold ${balanceAfter < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                    {fmt(balanceAfter)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Quick actions */}
+            {selectedSupplierBalance > 0 && (
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, amount: selectedSupplierBalance.toString(), discountAmount: '' }))}
+                  className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition text-xs font-semibold"
+                >
+                  {lang === 'ar' ? 'دفع المبلغ الكامل' : 'Pay Full Amount'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, amount: (selectedSupplierBalance / 2).toFixed(2), discountAmount: '' }))}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition text-xs font-semibold"
+                >
+                  {lang === 'ar' ? 'دفع النصف' : 'Pay Half'}
+                </button>
+              </div>
+            )}
+          </Section>
+
+          {/* ── Date ── */}
+          <Section icon={Calendar} title={lang === 'ar' ? 'تاريخ الدفعة' : 'Payment Date'}>
+            <Field label={lang === 'ar' ? 'التاريخ' : 'Date'} required error={errors.paymentDate}>
               <input
                 type="date"
                 value={formData.paymentDate}
-                onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                  errors.paymentDate ? 'border-red-500' : 'border-gray-300'
-                }`}
+                onChange={e => set('paymentDate', e.target.value)}
+                className={inputCls(errors.paymentDate)}
                 disabled={submitting}
               />
-              {errors.paymentDate && <p className="mt-1 text-sm text-red-500">{errors.paymentDate}</p>}
-            </div>
+            </Field>
+          </Section>
 
-            {/* Payment Method Section */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'}
-              </h3>
+          {/* ── Payment Method ── */}
+          <Section icon={CreditCard} title={lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label={lang === 'ar' ? 'الطريقة' : 'Method'} required>
+                <select
+                  value={formData.method}
+                  onChange={e => setFormData(p => ({ ...p, method: e.target.value, chequeNo: '', transferRef: '' }))}
+                  className={inputCls(false)}
+                  disabled={submitting}
+                >
+                  <option value="CASH">{lang === 'ar' ? 'نقد' : 'Cash'}</option>
+                  <option value="CHEQUE">{lang === 'ar' ? 'شيك' : 'Cheque'}</option>
+                  <option value="TRANSFER">{lang === 'ar' ? 'تحويل بنكي' : 'Transfer'}</option>
+                </select>
+              </Field>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'الطريقة' : 'Method'} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.method}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      method: e.target.value,
-                      chequeNo: '',
-                      transferRef: ''
-                    })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+              {formData.method === 'CHEQUE' && (
+                <Field label={lang === 'ar' ? 'رقم الشيك' : 'Cheque Number'} required error={errors.chequeNo}>
+                  <input
+                    type="text"
+                    value={formData.chequeNo}
+                    onChange={e => set('chequeNo', e.target.value)}
+                    placeholder={lang === 'ar' ? 'أدخل رقم الشيك' : 'Enter cheque number'}
+                    className={inputCls(errors.chequeNo)}
                     disabled={submitting}
-                  >
-                    <option value="CASH">{lang === 'ar' ? 'نقد' : 'Cash'}</option>
-                    <option value="CHEQUE">{lang === 'ar' ? 'شيك' : 'Cheque'}</option>
-                    <option value="TRANSFER">{lang === 'ar' ? 'تحويل بنكي' : 'Transfer'}</option>
-                  </select>
-                </div>
+                  />
+                </Field>
+              )}
 
-                {formData.method === 'CHEQUE' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {lang === 'ar' ? 'رقم الشيك' : 'Cheque Number'} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.chequeNo}
-                      onChange={(e) => setFormData({ ...formData, chequeNo: e.target.value })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                        errors.chequeNo ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder={lang === 'ar' ? 'أدخل رقم الشيك' : 'Enter cheque number'}
-                      disabled={submitting}
-                    />
-                    {errors.chequeNo && <p className="mt-1 text-sm text-red-500">{errors.chequeNo}</p>}
-                  </div>
-                )}
-
-                {formData.method === 'TRANSFER' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {lang === 'ar' ? 'رقم التحويل' : 'Transfer Reference'} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.transferRef}
-                      onChange={(e) => setFormData({ ...formData, transferRef: e.target.value })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                        errors.transferRef ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder={lang === 'ar' ? 'أدخل رقم التحويل' : 'Enter transfer reference'}
-                      disabled={submitting}
-                    />
-                    {errors.transferRef && <p className="mt-1 text-sm text-red-500">{errors.transferRef}</p>}
-                  </div>
-                )}
-              </div>
+              {formData.method === 'TRANSFER' && (
+                <Field label={lang === 'ar' ? 'رقم التحويل' : 'Transfer Reference'} required error={errors.transferRef}>
+                  <input
+                    type="text"
+                    value={formData.transferRef}
+                    onChange={e => set('transferRef', e.target.value)}
+                    placeholder={lang === 'ar' ? 'أدخل رقم التحويل' : 'Enter transfer reference'}
+                    className={inputCls(errors.transferRef)}
+                    disabled={submitting}
+                  />
+                </Field>
+              )}
             </div>
+          </Section>
 
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'ملاحظات' : 'Notes'}
-              </label>
+          {/* ── Notes ── */}
+          <Section>
+            <Field label={lang === 'ar' ? 'ملاحظات' : 'Notes'}>
               <textarea
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                placeholder={lang === 'ar' ? 'أدخل ملاحظات إضافية' : 'Enter additional notes'}
-                rows={4}
+                onChange={e => set('notes', e.target.value)}
+                placeholder={lang === 'ar' ? 'أدخل ملاحظات إضافية...' : 'Add any additional notes...'}
+                rows={3}
+                className={inputCls(false)}
                 disabled={submitting}
               />
-            </div>
+            </Field>
+          </Section>
 
-            {/* Submit Buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => navigate('/finance/supplier-payments')}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-                disabled={submitting}
-              >
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-              </button>
-              <button
-                type="submit"
-                disabled={submitting || totalAmount > selectedSupplierBalance}
-                className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <DollarSign className="w-5 h-5" />
-                {lang === 'ar' ? 'تسجيل الدفعة' : 'Register Payment'}
-              </button>
-            </div>
-          </form>
-        </div>
+          {/* ── Actions ── */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => navigate('/finance/supplier-payments')}
+              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
+              disabled={submitting}
+            >
+              {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || totalAmount > selectedSupplierBalance}
+              className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <DollarSign className="w-4 h-4" />
+              {lang === 'ar' ? 'تسجيل الدفعة' : 'Register Payment'}
+            </button>
+          </div>
+
+        </form>
       </div>
     </div>
   );

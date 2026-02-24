@@ -12,6 +12,7 @@ import SupplierLedgerReport from '../Supplierledgerreport/Supplierledgerreport';
 import ClientLedgerReport from '../Clientledgerreport/Clientledgerreport';
 import ExpensesReport from '../Expensesreport/Expensesreport';
 import ProfitsReport from '../Profitsreport/Profitsreport';
+import ProjectSummaryReport from '../ProjectsSummary/ProjectsSummary';
 
 export default function ReportsPage() {
   const { lang } = useContext(LanguageContext);
@@ -24,15 +25,16 @@ export default function ReportsPage() {
   const renderActiveTab = () => {
     const commonProps = { isAr, refreshKey };
     switch (activeTab) {
-      case 'purchases':        return <PurchasesReport {...commonProps} />;
+      case 'purchases & returns':        return <PurchasesReport {...commonProps} />;
+      case 'projects':         return <ProjectSummaryReport {...commonProps} />;
+      case 'stockMovements':   return <StockMovementsReport {...commonProps} />;
       case 'supplierPayments': return <SupplierPaymentsReport {...commonProps} />;
       case 'clientPayments':   return <ClientPaymentsReport {...commonProps} />;
-      case 'stockMovements':   return <StockMovementsReport {...commonProps} />;
       case 'supplierLedger':   return <SupplierLedgerReport {...commonProps} />;
       case 'clientLedger':     return <ClientLedgerReport {...commonProps} />;
       case 'expenses':         return <ExpensesReport {...commonProps} />;
       case 'profits':          return <ProfitsReport {...commonProps} />;
-      default:                 return null;
+      default:                 return <PurchasesReport {...commonProps} />;
     }
   };
 

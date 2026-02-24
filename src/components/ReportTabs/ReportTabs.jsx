@@ -1,19 +1,21 @@
 import React from 'react';
 import {
   ShoppingCart, DollarSign, CreditCard, Package,
-  Warehouse, Receipt, TrendingDown, BarChart3
+  Warehouse, Receipt, TrendingDown, BarChart3,
+  Building
 } from 'lucide-react';
 
 const ReportTabs = ({ activeTab, setActiveTab, isAr }) => {
   const tabs = [
-    { id: 'purchases',        nameAr: 'المشتريات',      nameEn: 'Purchases',         icon: ShoppingCart },
-    { id: 'supplierPayments', nameAr: 'دفعات الموردين', nameEn: 'Supplier Payments', icon: DollarSign },
-    { id: 'clientPayments',   nameAr: 'دفعات العملاء',  nameEn: 'Client Payments',   icon: CreditCard },
+    { id: 'purchases & returns',        nameAr: 'المشتريات والمرتجعات',      nameEn: 'Purchases & Returns',         icon: ShoppingCart },
     { id: 'stockMovements',   nameAr: 'حركات المخزون',  nameEn: 'Stock Movements',   icon: Package },
-    { id: 'supplierLedger',   nameAr: 'دفتر الموردين',  nameEn: 'Supplier Ledger',   icon: Warehouse },
-    { id: 'clientLedger',     nameAr: 'دفتر العملاء',   nameEn: 'Client Ledger',     icon: Receipt },
+    {id: 'projects',          nameAr: 'المشاريع',       nameEn: 'Projects',          icon: Building},
     { id: 'expenses',         nameAr: 'المصاريف',       nameEn: 'Expenses',          icon: TrendingDown },
     { id: 'profits',          nameAr: 'الأرباح',        nameEn: 'Profits',           icon: BarChart3 },
+    { id: 'supplierPayments', nameAr: 'دفعات الموردين', nameEn: 'Supplier Payments', icon: DollarSign },
+    { id: 'clientPayments',   nameAr: 'دفعات العملاء',  nameEn: 'Client Payments',   icon: CreditCard },
+    { id: 'supplierLedger',   nameAr: 'دفتر الموردين',  nameEn: 'Supplier Ledger',   icon: Warehouse },
+    { id: 'clientLedger',     nameAr: 'دفتر العملاء',   nameEn: 'Client Ledger',     icon: Receipt },
   ];
 
   return (

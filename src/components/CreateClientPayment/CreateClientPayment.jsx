@@ -1,57 +1,81 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { DollarSign, ArrowLeft, AlertCircle, CheckCircle, CreditCard, Building2 } from 'lucide-react';
+import {
+  DollarSign, ArrowLeft, CreditCard, Building2, Calendar, Users
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
 
+// ── Section wrapper ───────────────────────────────────────
+const Section = ({ icon: Icon, title, children }) => (
+  <div className="bg-white border border-gray-200 rounded-2xl p-6">
+    {title && (
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-5">
+        {Icon && <Icon className="w-4 h-4 text-gray-400" />}
+        {title}
+      </h3>
+    )}
+    {children}
+  </div>
+);
+
+// ── Field wrapper ─────────────────────────────────────────
+const Field = ({ label, required, error, children }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+    </label>
+    {children}
+    {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+  </div>
+);
+
+const inputCls = (err) =>
+  `w-full px-4 py-2.5 border ${err ? 'border-red-400' : 'border-gray-200'} rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition`;
+
+// ── Main ──────────────────────────────────────────────────
 const CreateClientPayment = () => {
-  const { lang, t } = useContext(LanguageContext);
-  const navigate = useNavigate();
-  
-  const [clients, setClients] = useState([]);
-  const [projects, setProjects] = useState([]);
+  const { lang } = useContext(LanguageContext);
+  const navigate  = useNavigate();
+
+  const [clients,    setClients]    = useState([]);
+  const [projects,   setProjects]   = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
-  
+  const [loading,    setLoading]    = useState(true);
+  const [errors,     setErrors]     = useState({});
+
   const [formData, setFormData] = useState({
-    clientId: '',
-    projectId: '',
-    totalAmount: '',
-    contractPayment: '',
+    clientId:          '',
+    projectId:         '',
+    totalAmount:       '',
+    contractPayment:   '',
     additionalPayment: '',
-    method: 'CASH',
-    chequeNo: '',
-    transferRef: '',
-    paymentDate: new Date().toISOString().split('T')[0],
-    notes: ''
+    method:            'CASH',
+    chequeNo:          '',
+    transferRef:       '',
+    paymentDate:       new Date().toISOString().split('T')[0],
+    notes:             '',
   });
-  
-  const [errors, setErrors] = useState({});
-  
+
+  const set = (key, val) => setFormData(p => ({ ...p, [key]: val }));
+
+  useEffect(() => { fetchClients(); }, []);
+
   useEffect(() => {
-    fetchData();
-  }, []);
-  
-  // Fetch projects when client changes
-  useEffect(() => {
-    if (formData.clientId) {
-      fetchProjectsByClient(formData.clientId);
-    } else {
-      setProjects([]);
-      setFormData(prev => ({ ...prev, projectId: '' }));
-    }
+    if (formData.clientId) fetchProjectsByClient(formData.clientId);
+    else { setProjects([]); set('projectId', ''); }
   }, [formData.clientId]);
-  
-  const fetchData = async () => {
+
+  const fetchClients = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/clients');
-      const clientsData = Array.isArray(response.data) ? response.data : (response.data.result || []);
-      setClients(clientsData.filter(c => c.isActive !== false));
-    } catch (error) {
-      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل تحميل العملاء' : 'Failed to load clients'));
+      const res = await axiosInstance.get('/clients');
+      const data = Array.isArray(res.data) ? res.data : (res.data.result || []);
+      setClients(data.filter(c => c.isActive !== false));
+    } catch (err) {
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل تحميل العملاء' : 'Failed to load clients'));
     } finally {
       setLoading(false);
     }
@@ -59,467 +83,276 @@ const CreateClientPayment = () => {
 
   const fetchProjectsByClient = async (clientId) => {
     try {
-      const response = await axiosInstance.get(`/projects`);
-      const allProjects = Array.isArray(response.data) ? response.data : (response.data.result || []);
-      
-      // Filter projects by client and only active ones with remaining balance
-      const clientProjects = allProjects.filter(p => {
-        // Handle both string and object clientId formats
-        const projectClientId = typeof p.clientId === 'object' ? p.clientId._id || p.clientId.id : p.clientId;
-        return (
-          projectClientId === clientId && 
-          p.isActive !== false &&
-          (p.contractRemaining > 0 || p.contractRemaining === undefined)
-        );
-      });
-      
-      setProjects(clientProjects);
-    } catch (error) {
-      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل تحميل المشاريع' : 'Failed to load projects'));
+      const res = await axiosInstance.get('/projects');
+      const all = Array.isArray(res.data) ? res.data : (res.data.result || []);
+      setProjects(all.filter(p => {
+        const pid = typeof p.clientId === 'object' ? p.clientId._id || p.clientId.id : p.clientId;
+        return pid === clientId && p.isActive !== false && (p.contractRemaining > 0 || p.contractRemaining === undefined);
+      }));
+    } catch (err) {
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل تحميل المشاريع' : 'Failed to load projects'));
     }
   };
-  
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.clientId) {
-      newErrors.clientId = lang === 'ar' ? 'اختر عميل' : 'Please select a client';
-    }
-    
-    if (!formData.projectId) {
-      newErrors.projectId = lang === 'ar' ? 'اختر مشروع' : 'Please select a project';
-    }
 
-    if (!formData.totalAmount || parseFloat(formData.totalAmount) <= 0) {
-      newErrors.totalAmount = lang === 'ar' ? 'أدخل المبلغ الكلي' : 'Enter a valid total amount';
-    }
-
-    if (!formData.contractPayment || parseFloat(formData.contractPayment) < 0) {
-      newErrors.contractPayment = lang === 'ar' ? 'أدخل دفعة العقد' : 'Enter valid contract payment';
-    }
-
-    if (!formData.additionalPayment || parseFloat(formData.additionalPayment) < 0) {
-      newErrors.additionalPayment = lang === 'ar' ? 'أدخل الدفعة الإضافية' : 'Enter valid additional payment';
-    }
-    
+  const validate = () => {
+    const e = {};
+    if (!formData.clientId)  e.clientId  = lang === 'ar' ? 'اختر عميل' : 'Please select a client';
+    if (!formData.projectId) e.projectId = lang === 'ar' ? 'اختر مشروع' : 'Please select a project';
+    if (!formData.totalAmount || parseFloat(formData.totalAmount) <= 0)
+      e.totalAmount = lang === 'ar' ? 'أدخل المبلغ الكلي' : 'Enter a valid total amount';
+    if (!formData.contractPayment || parseFloat(formData.contractPayment) < 0)
+      e.contractPayment = lang === 'ar' ? 'أدخل دفعة العقد' : 'Enter valid contract payment';
+    if (!formData.additionalPayment || parseFloat(formData.additionalPayment) < 0)
+      e.additionalPayment = lang === 'ar' ? 'أدخل الدفعة الإضافية' : 'Enter valid additional payment';
     const total = parseFloat(formData.contractPayment || 0) + parseFloat(formData.additionalPayment || 0);
-    if (total !== parseFloat(formData.totalAmount || 0)) {
-      newErrors.totalAmount = lang === 'ar' ? 'مجموع الدفعات غير متطابق' : 'Total payments do not match';
-    }
-    
-    if (formData.method === 'CHEQUE' && !formData.chequeNo) {
-      newErrors.chequeNo = lang === 'ar' ? 'أدخل رقم الشيك' : 'Enter cheque number';
-    }
-    
-    if (formData.method === 'TRANSFER' && !formData.transferRef) {
-      newErrors.transferRef = lang === 'ar' ? 'أدخل رقم التحويل' : 'Enter transfer reference';
-    }
-    
-    if (!formData.paymentDate) {
-      newErrors.paymentDate = lang === 'ar' ? 'حدد التاريخ' : 'Please select a date';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (total !== parseFloat(formData.totalAmount || 0))
+      e.totalAmount = lang === 'ar' ? 'مجموع الدفعات غير متطابق' : 'Total payments do not match';
+    if (formData.method === 'CHEQUE' && !formData.chequeNo)
+      e.chequeNo = lang === 'ar' ? 'أدخل رقم الشيك' : 'Enter cheque number';
+    if (formData.method === 'TRANSFER' && !formData.transferRef)
+      e.transferRef = lang === 'ar' ? 'أدخل رقم التحويل' : 'Enter transfer reference';
+    if (!formData.paymentDate) e.paymentDate = lang === 'ar' ? 'حدد التاريخ' : 'Select a date';
+    setErrors(e);
+    return !Object.keys(e).length;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      toast.error(lang === 'ar' ? 'يرجى إصلاح الأخطاء' : 'Please fix errors');
-      return;
-    }
-    
+    if (!validate()) { toast.error(lang === 'ar' ? 'يرجى إصلاح الأخطاء' : 'Please fix errors'); return; }
     try {
       setSubmitting(true);
-      
       const payload = {
-        projectId: formData.projectId,
-        totalAmount: parseFloat(formData.totalAmount),
-        contractPayment: parseFloat(formData.contractPayment),
+        projectId:         formData.projectId,
+        totalAmount:       parseFloat(formData.totalAmount),
+        contractPayment:   parseFloat(formData.contractPayment),
         additionalPayment: parseFloat(formData.additionalPayment),
-        method: formData.method,
-        paymentDate: formData.paymentDate,
-        notes: formData.notes.trim()
+        method:            formData.method,
+        paymentDate:       formData.paymentDate,
+        notes:             formData.notes.trim(),
       };
-      
-      // Add method-specific fields
-      if (formData.method === 'CHEQUE') {
-        payload.chequeNo = formData.chequeNo.trim();
-      } else if (formData.method === 'TRANSFER') {
-        payload.transferRef = formData.transferRef.trim();
-      }
-      
-     const response = await axiosInstance.post('/projects/payments', payload);
-      const paymentId = response.data.result._id
-      
-
+      if (formData.method === 'CHEQUE')   payload.chequeNo    = formData.chequeNo.trim();
+      if (formData.method === 'TRANSFER') payload.transferRef = formData.transferRef.trim();
+      const res = await axiosInstance.post('/projects/payments', payload);
+      const paymentId = res.data.result._id;
       toast.success(lang === 'ar' ? 'تم إنشاء الدفعة بنجاح!' : 'Payment created successfully!');
-
-      setTimeout(() => {
-        navigate(`/finance/client-payments/${paymentId}`);
-      }, 1500);
-    } catch (error) {
-      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل إنشاء الدفعة' : 'Failed to create payment'));
+      setTimeout(() => navigate(`/finance/client-payments/${paymentId}`), 1500);
+    } catch (err) {
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل إنشاء الدفعة' : 'Failed to create payment'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getSelectedClient = () => {
-    return clients.find(c => c._id === formData.clientId);
-  };
+  const fmt = (v) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
+    style: 'currency', currency: 'EGP', minimumFractionDigits: 0,
+  }).format(v);
 
-  const getSelectedProject = () => {
-    return projects.find(p => p._id === formData.projectId);
-  };
+  const selectedProject    = projects.find(p => p._id === formData.projectId);
+  const totalFromFields    = parseFloat(formData.contractPayment || 0) + parseFloat(formData.additionalPayment || 0);
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
-      style: 'currency',
-      currency: 'EGP',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
-  if (loading) {
-    return <FullPageLoader text={lang === "ar" ? "جاري التحميل..." : "Loading..."} />;
-  }
-
-  const selectedClient = getSelectedClient();
-  const selectedProject = getSelectedProject();
-  const totalFromFields = parseFloat(formData.contractPayment || 0) + parseFloat(formData.additionalPayment || 0);
+  if (loading)    return <FullPageLoader text={lang === 'ar' ? 'جاري التحميل...' : 'Loading...'} />;
+  if (submitting) return <FullPageLoader text={lang === 'ar' ? 'جاري المعالجة...' : 'Processing...'} />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
-      {/* Toast */}
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-3xl mx-auto">
 
-      {submitting && <FullPageLoader text={lang === "ar" ? "جاري المعالجة..." : "Processing..."} />}
+        {/* ── Page Header ── */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {lang === 'ar' ? 'دفعة عميل' : 'Client Payment'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {lang === 'ar' ? 'تسجيل دفعة جديدة' : 'Create a new client payment'}
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/finance/client-payments')}
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm bg-white"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {lang === 'ar' ? 'رجوع' : 'Back'}
+          </button>
+        </div>
 
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CreditCard className="w-8 h-8 text-white" />
-                <div>
-                  <h1 className="text-2xl font-bold text-white">
-                    {lang === 'ar' ? 'دفعة عميل' : 'Client Payment'}
-                  </h1>
-                  <p className="text-blue-100 mt-1">
-                    {lang === 'ar' ? 'تسجيل دفعة جديدة' : 'Create new payment'}
-                  </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* ── Client & Project ── */}
+          <Section icon={Users} title={lang === 'ar' ? 'اختر العميل والمشروع' : 'Select Client & Project'}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label={lang === 'ar' ? 'العميل' : 'Client'} required error={errors.clientId}>
+                <select
+                  value={formData.clientId}
+                  onChange={e => set('clientId', e.target.value)}
+                  className={inputCls(errors.clientId)}
+                  disabled={submitting}
+                >
+                  <option value="">{lang === 'ar' ? 'اختر عميل' : 'Select a client'}</option>
+                  {clients.map(c => (
+                    <option key={c._id} value={c._id}>
+                      {lang === 'ar' ? c.nameAr : c.nameEn} ({c.code})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label={lang === 'ar' ? 'المشروع' : 'Project'} required error={errors.projectId}>
+                <select
+                  value={formData.projectId}
+                  onChange={e => set('projectId', e.target.value)}
+                  className={inputCls(errors.projectId)}
+                  disabled={!formData.clientId || submitting}
+                >
+                  <option value="">
+                    {!formData.clientId
+                      ? (lang === 'ar' ? 'اختر عميل أولاً' : 'Select client first')
+                      : (lang === 'ar' ? 'اختر مشروع' : 'Select a project')}
+                  </option>
+                  {projects.map(p => (
+                    <option key={p._id} value={p._id}>
+                      {lang === 'ar' ? p.nameAr : p.nameEn} ({p.code})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            {/* Project info card */}
+            {selectedProject && (
+              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="font-semibold text-gray-900 text-sm mb-3">
+                  {lang === 'ar' ? selectedProject.nameAr : selectedProject.nameEn}
+                  <span className="ml-2 text-xs font-normal text-gray-400">{selectedProject.code}</span>
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">{lang === 'ar' ? 'قيمة العقد' : 'Contract'}</p>
+                    <p className="font-semibold text-sm text-gray-900">{fmt(selectedProject.contractAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">{lang === 'ar' ? 'المدفوع' : 'Paid'}</p>
+                    <p className="font-semibold text-sm text-green-600">{fmt(selectedProject.totalPaid || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">{lang === 'ar' ? 'المتبقي' : 'Remaining'}</p>
+                    <p className="font-semibold text-sm text-red-600">{fmt(selectedProject.contractRemaining || 0)}</p>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={() => navigate('/finance/client-payments')}
-                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                {lang === 'ar' ? 'رجوع' : 'Back'}
-              </button>
+            )}
+          </Section>
+
+          {/* ── Payment Details ── */}
+          <Section icon={CreditCard} title={lang === 'ar' ? 'تفاصيل الدفعة' : 'Payment Details'}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Field label={lang === 'ar' ? 'دفعة العقد' : 'Contract Payment'} required error={errors.contractPayment}>
+                <input type="number" step="0.01" placeholder="0.00"
+                  value={formData.contractPayment}
+                  onChange={e => set('contractPayment', e.target.value)}
+                  className={inputCls(errors.contractPayment)} disabled={submitting} />
+              </Field>
+
+              <Field label={lang === 'ar' ? 'دفعة إضافية' : 'Additional Payment'} required error={errors.additionalPayment}>
+                <input type="number" step="0.01" placeholder="0.00"
+                  value={formData.additionalPayment}
+                  onChange={e => set('additionalPayment', e.target.value)}
+                  className={inputCls(errors.additionalPayment)} disabled={submitting} />
+              </Field>
+
+              <Field label={lang === 'ar' ? 'إجمالي الدفعة' : 'Total Amount'} required error={errors.totalAmount}>
+                <input type="number" step="0.01" placeholder="0.00"
+                  value={formData.totalAmount}
+                  onChange={e => set('totalAmount', e.target.value)}
+                  className={inputCls(errors.totalAmount)} disabled={submitting} />
+              </Field>
             </div>
+
+            {totalFromFields > 0 && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => set('totalAmount', totalFromFields.toString())}
+                  className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition text-xs font-semibold"
+                >
+                  {lang === 'ar' ? `حساب المجموع: ${fmt(totalFromFields)}` : `Auto-fill Total: ${fmt(totalFromFields)}`}
+                </button>
+              </div>
+            )}
+          </Section>
+
+          {/* ── Payment Method ── */}
+          <Section icon={CreditCard} title={lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label={lang === 'ar' ? 'الطريقة' : 'Method'} required>
+                <select
+                  value={formData.method}
+                  onChange={e => setFormData(p => ({ ...p, method: e.target.value, chequeNo: '', transferRef: '' }))}
+                  className={inputCls(false)} disabled={submitting}
+                >
+                  <option value="CASH">{lang === 'ar' ? 'نقد' : 'Cash'}</option>
+                  <option value="CHEQUE">{lang === 'ar' ? 'شيك' : 'Cheque'}</option>
+                  <option value="TRANSFER">{lang === 'ar' ? 'تحويل بنكي' : 'Transfer'}</option>
+                </select>
+              </Field>
+
+              {formData.method === 'CHEQUE' && (
+                <Field label={lang === 'ar' ? 'رقم الشيك' : 'Cheque Number'} required error={errors.chequeNo}>
+                  <input type="text" placeholder={lang === 'ar' ? 'أدخل رقم الشيك' : 'Enter cheque number'}
+                    value={formData.chequeNo} onChange={e => set('chequeNo', e.target.value)}
+                    className={inputCls(errors.chequeNo)} disabled={submitting} />
+                </Field>
+              )}
+
+              {formData.method === 'TRANSFER' && (
+                <Field label={lang === 'ar' ? 'رقم التحويل' : 'Transfer Reference'} required error={errors.transferRef}>
+                  <input type="text" placeholder={lang === 'ar' ? 'أدخل رقم التحويل' : 'Enter transfer reference'}
+                    value={formData.transferRef} onChange={e => set('transferRef', e.target.value)}
+                    className={inputCls(errors.transferRef)} disabled={submitting} />
+                </Field>
+              )}
+            </div>
+          </Section>
+
+          {/* ── Date ── */}
+          <Section icon={Calendar} title={lang === 'ar' ? 'تاريخ الدفعة' : 'Payment Date'}>
+            <Field label={lang === 'ar' ? 'التاريخ' : 'Date'} required error={errors.paymentDate}>
+              <input type="date" value={formData.paymentDate}
+                onChange={e => set('paymentDate', e.target.value)}
+                className={inputCls(errors.paymentDate)} disabled={submitting} />
+            </Field>
+          </Section>
+
+          {/* ── Notes ── */}
+          <Section>
+            <Field label={lang === 'ar' ? 'ملاحظات' : 'Notes'}>
+              <textarea rows={3} placeholder={lang === 'ar' ? 'أدخل ملاحظات...' : 'Enter notes...'}
+                value={formData.notes} onChange={e => set('notes', e.target.value)}
+                className={inputCls(false)} disabled={submitting} />
+            </Field>
+          </Section>
+
+          {/* ── Actions ── */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => navigate('/finance/client-payments')}
+              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
+              disabled={submitting}
+            >
+              {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <DollarSign className="w-4 h-4" />
+              {lang === 'ar' ? 'تسجيل الدفعة' : 'Register Payment'}
+            </button>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            
-            {/* Client Selection */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {lang === 'ar' ? 'اختر العميل والمشروع' : 'Select Client & Project'}
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Client Dropdown */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'العميل' : 'Client'} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.clientId}
-                    onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                      errors.clientId ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    disabled={submitting}
-                  >
-                    <option value="">{lang === 'ar' ? 'اختر عميل' : 'Select a client'}</option>
-                    {clients.map((client) => (
-                      <option key={client._id} value={client._id}>
-                        {lang === 'ar' ? client.nameAr : client.nameEn} ({client.code})
-                      </option>
-                    ))}
-                  </select>
-                  {errors.clientId && <p className="mt-1 text-sm text-red-500">{errors.clientId}</p>}
-                </div>
-
-                {/* Project Dropdown */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'المشروع' : 'Project'} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.projectId}
-                    onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                      errors.projectId ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    disabled={!formData.clientId || submitting}
-                  >
-                    <option value="">
-                      {!formData.clientId 
-                        ? (lang === 'ar' ? 'اختر عميل أولاً' : 'Select client first')
-                        : (lang === 'ar' ? 'اختر مشروع' : 'Select a project')
-                      }
-                    </option>
-                    {projects.map((project) => (
-                      <option key={project._id} value={project._id}>
-                        {lang === 'ar' ? project.nameAr : project.nameEn} ({project.code})
-                      </option>
-                    ))}
-                  </select>
-                  {errors.projectId && <p className="mt-1 text-sm text-red-500">{errors.projectId}</p>}
-                </div>
-              </div>
-
-              {/* Project Info Card */}
-              {selectedProject && (
-                <div className="mt-6 p-4 bg-white border-l-4 border-blue-500 rounded">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {lang === 'ar' ? 'قيمة العقد' : 'Contract Amount'}
-                      </p>
-                      <p className="text-lg font-semibold text-gray-900">
-                        {formatCurrency(selectedProject.contractAmount)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {lang === 'ar' ? 'المدفوع' : 'Total Paid'}
-                      </p>
-                      <p className="text-lg font-semibold text-green-600">
-                        {formatCurrency(selectedProject.totalPaid || 0)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {lang === 'ar' ? 'المتبقي' : 'Remaining'}
-                      </p>
-                      <p className="text-lg font-semibold text-red-600">
-                        {formatCurrency(selectedProject.contractRemaining || 0)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Payment Amount Section */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {lang === 'ar' ? 'تفاصيل الدفعة' : 'Payment Details'}
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                {/* Contract Payment */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'دفعة العقد' : 'Contract Payment'} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.contractPayment}
-                    onChange={(e) => setFormData({ ...formData, contractPayment: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                      errors.contractPayment ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="0.00"
-                    disabled={submitting}
-                  />
-                  {errors.contractPayment && <p className="mt-1 text-sm text-red-500">{errors.contractPayment}</p>}
-                </div>
-
-                {/* Additional Payment */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'دفعة إضافية' : 'Additional Payment'} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.additionalPayment}
-                    onChange={(e) => setFormData({ ...formData, additionalPayment: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                      errors.additionalPayment ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="0.00"
-                    disabled={submitting}
-                  />
-                  {errors.additionalPayment && <p className="mt-1 text-sm text-red-500">{errors.additionalPayment}</p>}
-                </div>
-
-                {/* Total Amount */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'إجمالي الدفعة' : 'Total Amount'} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.totalAmount}
-                    onChange={(e) => setFormData({ ...formData, totalAmount: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                      errors.totalAmount ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="0.00"
-                    disabled={submitting}
-                  />
-                  {errors.totalAmount && <p className="mt-1 text-sm text-red-500">{errors.totalAmount}</p>}
-                </div>
-              </div>
-
-              {/* Auto-calculate total */}
-              {totalFromFields > 0 && (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, totalAmount: totalFromFields.toString() })}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm font-semibold"
-                  >
-                    {lang === 'ar' ? 'حساب المجموع' : 'Calculate Total'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Payment Method Section */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'}
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Payment Method */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {lang === 'ar' ? 'الطريقة' : 'Method'} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.method}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      method: e.target.value,
-                      chequeNo: '',
-                      transferRef: ''
-                    })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    disabled={submitting}
-                  >
-                    <option value="CASH">{lang === 'ar' ? 'نقد' : 'Cash'}</option>
-                    <option value="CHEQUE">{lang === 'ar' ? 'شيك' : 'Cheque'}</option>
-                    <option value="TRANSFER">{lang === 'ar' ? 'تحويل بنكي' : 'Transfer'}</option>
-                  </select>
-                </div>
-
-                {/* Method-specific field */}
-                {formData.method === 'CHEQUE' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {lang === 'ar' ? 'رقم الشيك' : 'Cheque Number'} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.chequeNo}
-                      onChange={(e) => setFormData({ ...formData, chequeNo: e.target.value })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                        errors.chequeNo ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder={lang === 'ar' ? 'أدخل رقم الشيك' : 'Enter cheque number'}
-                      disabled={submitting}
-                    />
-                    {errors.chequeNo && <p className="mt-1 text-sm text-red-500">{errors.chequeNo}</p>}
-                  </div>
-                )}
-
-                {formData.method === 'TRANSFER' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {lang === 'ar' ? 'رقم التحويل' : 'Transfer Reference'} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.transferRef}
-                      onChange={(e) => setFormData({ ...formData, transferRef: e.target.value })}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                        errors.transferRef ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder={lang === 'ar' ? 'أدخل رقم التحويل' : 'Enter transfer reference'}
-                      disabled={submitting}
-                    />
-                    {errors.transferRef && <p className="mt-1 text-sm text-red-500">{errors.transferRef}</p>}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Payment Date */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'تاريخ الدفعة' : 'Payment Date'} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={formData.paymentDate}
-                onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                  errors.paymentDate ? 'border-red-500' : 'border-gray-300'
-                }`}
-                disabled={submitting}
-              />
-              {errors.paymentDate && <p className="mt-1 text-sm text-red-500">{errors.paymentDate}</p>}
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {lang === 'ar' ? 'ملاحظات' : 'Notes'}
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder={lang === 'ar' ? 'أدخل ملاحظات' : 'Enter notes'}
-                rows={4}
-                disabled={submitting}
-              />
-            </div>
-
-            {/* Submit Buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => navigate('/finance/client-payments')}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-                disabled={submitting}
-              >
-                {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <DollarSign className="w-5 h-5" />
-                {lang === 'ar' ? 'تسجيل الدفعة' : 'Register Payment'}
-              </button>
-            </div>
-          </form>
-        </div>
+        </form>
       </div>
     </div>
   );

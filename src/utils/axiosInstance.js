@@ -13,15 +13,17 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    try {
-      const stored = localStorage.getItem("lang");
-      const lang = stored || "ar";
-      if (config.params) {
-        config.params.lang = config.params.lang || lang;
-      } else {
-        config.params = { lang };
-      }
-    } catch {}
+    if (!config.skipLang) {
+      try {
+        const stored = localStorage.getItem("lang");
+        const lang = stored || "ar";
+        if (config.params) {
+          config.params.lang = config.params.lang || lang;
+        } else {
+          config.params = { lang };
+        }
+      } catch {}
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -41,8 +43,6 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-
- 
 export function getErrorMessage(error, fallback = "Something went wrong") {
   const data = error?.response?.data;
   if (!data) return fallback;
