@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useContext, useRef } from 'react';
+import { useState, useEffect, useMemo, useContext, useRef, useCallback } from 'react';
 import {
   Package, Search, Plus, Edit, Trash2, CheckCircle,
   ChevronUp, ChevronDown, MoreHorizontal, X, Download, AlertTriangle
@@ -10,7 +10,8 @@ import { getErrorMessage } from '../../utils/errorHandler';
 import { LanguageContext } from '../../context/LanguageContext';
 import * as XLSX from 'xlsx';
 
-const MAIN_CATEGORIES = [
+// Fallback hardcoded categories (used if API fails)
+const FALLBACK_CATEGORIES = [
   { value: 'Construction-Materials', labelEn: 'Construction Materials', labelAr: 'مواد البناء'  },
   { value: 'Tools-Equipment',        labelEn: 'Tools & Equipment',       labelAr: 'أدوات ومعدات' },
   { value: 'Electrical',             labelEn: 'Electrical',              labelAr: 'كهرباء'       },
@@ -43,7 +44,7 @@ const StatusBadge = ({ isActive, lang }) => {
 };
 
 // ── Three-dots menu ────────────────────────────────────────
-const ActionsMenu = ({ material, lang, onEdit, onDelete }) => {
+const ActionsMenu = ({ material, lang, onEdit, onDelete, onActivate }) => {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const ref = useRef();
@@ -56,49 +57,37 @@ const ActionsMenu = ({ material, lang, onEdit, onDelete }) => {
   }, []);
 
   const handleOpen = () => {
-  if (!open && btnRef.current) {
-    const rect = btnRef.current.getBoundingClientRect();
-    const menuHeight = 80; 
-    const spaceBelow = window.innerHeight - rect.bottom;
-    
-    const top = spaceBelow < menuHeight
-      ? rect.top - menuHeight - 4 
-      : rect.bottom + 4;        
-
-    setMenuPos({
-      top,
-      left: rect.right - 160,
-    });
-  }
-  setOpen(o => !o);
-};
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const menuHeight = material.isActive === false ? 120 : 80;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow < menuHeight ? rect.top - menuHeight - 4 : rect.bottom + 4;
+      setMenuPos({ top, left: rect.right - 160 });
+    }
+    setOpen(o => !o);
+  };
 
   return (
     <div className="relative" ref={ref}>
-      <button
-        ref={btnRef}
-        onClick={handleOpen}
-        className="p-1.5 rounded-md hover:bg-gray-100 transition text-gray-500"
-      >
+      <button ref={btnRef} onClick={handleOpen} className="p-1.5 rounded-md hover:bg-gray-100 transition text-gray-500">
         <MoreHorizontal className="w-5 h-5" />
       </button>
 
       {open && (
-        <div
-          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
-          className="w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1"
-        >
-          <button
-            onClick={() => { setOpen(false); onEdit(material); }}
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-          >
+        <div style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }} className="w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1">
+          <button onClick={() => { setOpen(false); onEdit(material); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
             <Edit className="w-4 h-4" />
             {lang === 'ar' ? 'تعديل' : 'Edit'}
           </button>
-          <button
-            onClick={() => { setOpen(false); onDelete(material); }}
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
-          >
+
+          {material.isActive === false && (
+            <button onClick={() => { setOpen(false); onActivate(material); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-green-600 hover:bg-green-50 transition">
+              <CheckCircle className="w-4 h-4" />
+              {lang === 'ar' ? 'تفعيل' : 'Activate'}
+            </button>
+          )}
+
+          <button onClick={() => { setOpen(false); onDelete(material); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
             <Trash2 className="w-4 h-4" />
             {lang === 'ar' ? 'حذف' : 'Delete'}
           </button>
@@ -109,40 +98,105 @@ const ActionsMenu = ({ material, lang, onEdit, onDelete }) => {
 };
 
 // ── Add/Edit Modal ─────────────────────────────────────────
-const MaterialModal = ({ lang, mode, material: editMaterial, units, onClose, onSaved }) => {
+const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, onClose, onSaved }) => {
   const [form, setForm] = useState({
     nameAr:             editMaterial?.nameAr             || '',
     nameEn:             editMaterial?.nameEn             || '',
     code:               editMaterial?.code               || '',
-    mainCategory:       editMaterial?.mainCategory       || 'Construction-Materials',
+    mainCategory:       editMaterial?.mainCategory       || (categories[0]?.value || 'Construction-Materials'),
     subCategory:        editMaterial?.subCategory        || '',
     baseUnit:           editMaterial?.baseUnit?._id || editMaterial?.baseUnit || '',
-    minLevelStock:      editMaterial?.minStockLevel      || 0,
+    // ✅ ظبطنا الاسم ليطابق الـ Schema
+    minStockLevel:      editMaterial?.minStockLevel      || 0,
     lastPurchasedPrice: editMaterial?.lastPurchasePrice  || 0,
     lastPurchasedDate:  editMaterial?.lastPurchaseDate
       ? new Date(editMaterial.lastPurchaseDate).toISOString().split('T')[0] : '',
     description:        editMaterial?.description        || '',
+    // ✅ الـ defaultPurchaseUnit و defaultIssueUnit
+    defaultPurchaseUnit: editMaterial?.defaultPurchaseUnit?._id || editMaterial?.defaultPurchaseUnit || '',
+    defaultIssueUnit:    editMaterial?.defaultIssueUnit?._id    || editMaterial?.defaultIssueUnit    || '',
+    // ✅ alternativeUnits
+    alternativeUnits:   editMaterial?.alternativeUnits?.map(u => ({
+      unitId:            u.unitId?._id || u.unitId || '',
+      conversionFactor:  u.conversionFactor || 1,
+      isDefaultPurchase: u.isDefaultPurchase || false,
+      isDefaultIssue:    u.isDefaultIssue    || false,
+      allowOverride:     u.allowOverride     || false,
+    })) || [],
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // الوحدات المتاحة لـ alternativeUnits (غير الـ baseUnit)
+  const altUnitOptions = units.filter(u => u._id !== form.baseUnit && u.isActive !== false);
+
+  const handleAddAltUnit = () => {
+    setForm(f => ({
+      ...f,
+      alternativeUnits: [
+        ...f.alternativeUnits,
+        { unitId: '', conversionFactor: 1, isDefaultPurchase: false, isDefaultIssue: false, allowOverride: false }
+      ]
+    }));
+  };
+
+  const handleRemoveAltUnit = (idx) => {
+    setForm(f => ({ ...f, alternativeUnits: f.alternativeUnits.filter((_, i) => i !== idx) }));
+  };
+
+  const handleAltUnitChange = (idx, field, value) => {
+    const updated = [...form.alternativeUnits];
+    updated[idx] = { ...updated[idx], [field]: value };
+
+    // لو شيّلنا isDefaultPurchase عن وحدة، نخليه true على الأولى بس
+    if (field === 'isDefaultPurchase' && value === true) {
+      updated.forEach((u, i) => { if (i !== idx) u.isDefaultPurchase = false; });
+    }
+    if (field === 'isDefaultIssue' && value === true) {
+      updated.forEach((u, i) => { if (i !== idx) u.isDefaultIssue = false; });
+    }
+    setForm(f => ({ ...f, alternativeUnits: updated }));
+  };
+
+  // وحدات مسموح بيها للـ defaultPurchaseUnit/defaultIssueUnit (base + alternatives)
+  const allowedUnitIds = [
+    form.baseUnit,
+    ...form.alternativeUnits.map(u => u.unitId).filter(Boolean)
+  ];
+  const allowedUnits = units.filter(u => allowedUnitIds.includes(u._id));
 
   const handleSubmit = async () => {
     if (!form.nameAr.trim() || !form.nameEn.trim()) { toast.error(lang === 'ar' ? 'اسم المادة مطلوب' : 'Material name is required'); return; }
     if (!form.code.trim())   { toast.error(lang === 'ar' ? 'الكود مطلوب' : 'Code is required'); return; }
     if (!form.baseUnit)      { toast.error(lang === 'ar' ? 'الوحدة الأساسية مطلوبة' : 'Base unit is required'); return; }
 
+    // Validate alternativeUnits
+    for (const [i, alt] of form.alternativeUnits.entries()) {
+      if (!alt.unitId) { toast.error(lang === 'ar' ? `اختر وحدة في السطر ${i + 1}` : `Select unit in row ${i + 1}`); return; }
+      if (!alt.conversionFactor || alt.conversionFactor <= 0) { toast.error(lang === 'ar' ? `معامل التحويل غلط في السطر ${i + 1}` : `Invalid conversion factor in row ${i + 1}`); return; }
+    }
+
     try {
       setSubmitting(true);
       const payload = {
-        nameAr:            form.nameAr.trim(),
-        nameEn:            form.nameEn.trim(),
-        code:              form.code.trim().toUpperCase(),
-        mainCategory:      form.mainCategory,
-        subCategory:       form.subCategory.trim() || '',
-        baseUnit:          form.baseUnit,
-        minLevelStock:     Number(form.minLevelStock) || 0,
-        lastPurchasedPrice: Number(form.lastPurchasedPrice) || undefined,
-        lastPurchasedDate: form.lastPurchasedDate || undefined,
-        description:       form.description.trim() || '',
+     nameAr:             form.nameAr.trim(),
+  nameEn:             form.nameEn.trim(),
+  code:               form.code.trim().toUpperCase(),
+  mainCategory:       form.mainCategory,
+  subCategory:        form.subCategory.trim() || undefined,   // ✅ undefined مش ''
+  baseUnit:           form.baseUnit,
+  minLevelStock:      Number(form.minStockLevel) || 0,        // ✅ صح الاسم
+  lastPurchasedPrice: Number(form.lastPurchasedPrice) || undefined,
+  lastPurchasedDate:  form.lastPurchasedDate || undefined,
+  description:        form.description.trim() || undefined,
+  defaultPurchaseUnit: form.defaultPurchaseUnit || undefined,
+  defaultIssueUnit:    form.defaultIssueUnit    || undefined,
+  alternativeUnits:   form.alternativeUnits.map(u => ({
+    unitId:            u.unitId,
+    conversionFactor:  Number(u.conversionFactor),
+    isDefaultPurchase: u.isDefaultPurchase,
+    isDefaultIssue:    u.isDefaultIssue,
+    allowOverride:     u.allowOverride,
+        })),
       };
       Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
 
@@ -161,7 +215,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, onClose, onS
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
             {mode === 'add' ? (lang === 'ar' ? 'إضافة مادة جديدة' : 'Add New Material') : (lang === 'ar' ? 'تعديل المادة' : 'Edit Material')}
@@ -170,6 +224,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, onClose, onS
         </div>
 
         <div className="space-y-4">
+          {/* Names */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)'} <span className="text-red-500">*</span></label>
@@ -181,6 +236,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, onClose, onS
             </div>
           </div>
 
+          {/* Code + Category */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الكود' : 'Code'} <span className="text-red-500">*</span></label>
@@ -189,29 +245,137 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, onClose, onS
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الفئة الرئيسية' : 'Main Category'} <span className="text-red-500">*</span></label>
               <select value={form.mainCategory} onChange={e => setForm(f => ({ ...f, mainCategory: e.target.value }))} disabled={mode === 'edit'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 disabled:opacity-60">
-                {MAIN_CATEGORIES.map(c => <option key={c.value} value={c.value}>{lang === 'ar' ? c.labelAr : c.labelEn}</option>)}
+                {categories.map(c => <option key={c.value} value={c.value}>{lang === 'ar' ? (c.labelAr || c.label) : (c.labelEn || c.label)}</option>)}
               </select>
             </div>
           </div>
 
+          {/* Sub Category + Base Unit */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الفئة الفرعية' : 'Sub Category'}</label>
               <input type="text" dir={lang === 'ar' ? 'rtl' : 'ltr'} value={form.subCategory} onChange={e => setForm(f => ({ ...f, subCategory: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الوحدة الأساسية' : 'Base Unit'} <span className="text-red-500">*</span></label>
-              <select value={form.baseUnit} onChange={e => setForm(f => ({ ...f, baseUnit: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50">
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'وحدة التخزين (Base)' : 'Storage Unit (Base)'} <span className="text-red-500">*</span></label>
+              <select value={form.baseUnit} onChange={e => setForm(f => ({ ...f, baseUnit: e.target.value, alternativeUnits: [], defaultPurchaseUnit: '', defaultIssueUnit: '' }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50">
                 <option value="">{lang === 'ar' ? 'اختر الوحدة' : 'Select Unit'}</option>
-                {units.map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn}</option>)}
+                {units.filter(u => u.isActive !== false).map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn} ({u.symbol})</option>)}
               </select>
             </div>
           </div>
 
+          {/* ✅ Alternative Units Section */}
+          <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <div>
+                <p className="text-sm font-medium text-gray-700">{lang === 'ar' ? 'وحدات بديلة' : 'Alternative Units'}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{lang === 'ar' ? 'وحدات الشراء والصرف المسموحة بخلاف الـ base' : 'Allowed purchase/issue units besides base'}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddAltUnit}
+                disabled={!form.baseUnit}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {lang === 'ar' ? 'إضافة' : 'Add'}
+              </button>
+            </div>
+
+            {form.alternativeUnits.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-4">
+                {lang === 'ar' ? 'لا توجد وحدات بديلة — الشراء والصرف سيكون بالـ base unit فقط' : 'No alternative units — purchase & issue will use base unit only'}
+              </p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {form.alternativeUnits.map((alt, idx) => (
+                  <div key={idx} className="p-3 space-y-2">
+                    <div className="grid grid-cols-3 gap-2 items-end">
+                      {/* Unit Select */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{lang === 'ar' ? 'الوحدة' : 'Unit'} <span className="text-red-400">*</span></label>
+                        <select
+                          value={alt.unitId}
+                          onChange={e => handleAltUnitChange(idx, 'unitId', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                          <option value="">{lang === 'ar' ? 'اختر' : 'Select'}</option>
+                          {altUnitOptions.map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn} ({u.symbol})</option>)}
+                        </select>
+                      </div>
+
+                      {/* Conversion Factor */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          {lang === 'ar' ? 'معامل التحويل' : 'Conversion Factor'} <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="number" step="0.000001" min="0.000001"
+                          value={alt.conversionFactor}
+                          onChange={e => handleAltUnitChange(idx, 'conversionFactor', parseFloat(e.target.value) || 0)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {lang === 'ar' ? '1 وحدة بديلة = X وحدة أساسية' : '1 alt unit = X base units'}
+                        </p>
+                      </div>
+
+                      {/* Delete */}
+                      <div className="flex justify-end pb-1">
+                        <button type="button" onClick={() => handleRemoveAltUnit(idx)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Checkboxes */}
+                    <div className="flex flex-wrap items-center gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={alt.isDefaultPurchase} onChange={e => handleAltUnitChange(idx, 'isDefaultPurchase', e.target.checked)} className="w-4 h-4 text-indigo-600 border-gray-300 rounded" />
+                        <span className="text-xs text-gray-600">{lang === 'ar' ? 'افتراضي للشراء' : 'Default Purchase'}</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={alt.isDefaultIssue} onChange={e => handleAltUnitChange(idx, 'isDefaultIssue', e.target.checked)} className="w-4 h-4 text-indigo-600 border-gray-300 rounded" />
+                        <span className="text-xs text-gray-600">{lang === 'ar' ? 'افتراضي للصرف' : 'Default Issue'}</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={alt.allowOverride} onChange={e => handleAltUnitChange(idx, 'allowOverride', e.target.checked)} className="w-4 h-4 text-amber-500 border-gray-300 rounded" />
+                        <span className="text-xs text-gray-600">{lang === 'ar' ? 'السماح بتعديل معامل التحويل' : 'Allow override conversion'}</span>
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ✅ Default Units */}
+          {allowedUnits.length > 0 && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'وحدة الشراء الافتراضية' : 'Default Purchase Unit'}</label>
+                <select value={form.defaultPurchaseUnit} onChange={e => setForm(f => ({ ...f, defaultPurchaseUnit: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-gray-50">
+                  <option value="">{lang === 'ar' ? 'نفس الـ base' : 'Same as base'}</option>
+                  {allowedUnits.map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn} ({u.symbol})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'وحدة الصرف الافتراضية' : 'Default Issue Unit'}</label>
+                <select value={form.defaultIssueUnit} onChange={e => setForm(f => ({ ...f, defaultIssueUnit: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-gray-50">
+                  <option value="">{lang === 'ar' ? 'نفس الـ base' : 'Same as base'}</option>
+                  {allowedUnits.map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn} ({u.symbol})</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Stock + Price */}
           <div className="grid grid-cols-2 gap-4">
             <div>
+              {/* ✅ ظبطنا الاسم */}
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الحد الأدنى للمخزون' : 'Min Stock Level'}</label>
-              <input type="number" min="0" value={form.minLevelStock} onChange={e => setForm(f => ({ ...f, minLevelStock: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+              <input type="number" min="0" value={form.minStockLevel} onChange={e => setForm(f => ({ ...f, minStockLevel: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'آخر سعر شراء' : 'Last Purchase Price'}</label>
@@ -274,12 +438,17 @@ const ConfirmModal = ({ material, lang, onConfirm, onClose }) => (
 
 // ── Main Component ─────────────────────────────────────────
 export default function Supplies() {
-  const { lang, t } = useContext(LanguageContext);
+  const { lang } = useContext(LanguageContext);
 
   const [materials,     setMaterials]     = useState([]);
   const [units,         setUnits]         = useState([]);
+  const [categories,    setCategories]    = useState(FALLBACK_CATEGORIES);
   const [loading,       setLoading]       = useState(false);
+
   const [searchTerm,    setSearchTerm]    = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searching,     setSearching]     = useState(false);
+
   const [filterCat,     setFilterCat]     = useState('all');
   const [filterStatus,  setFilterStatus]  = useState('ALL');
   const [sortField,     setSortField]     = useState('nameEn');
@@ -288,15 +457,35 @@ export default function Supplies() {
   const [editTarget,    setEditTarget]    = useState(null);
   const [deleteModal,   setDeleteModal]   = useState({ show: false, material: null });
 
-  useEffect(() => { fetchMaterials(); fetchUnits(); }, []);
+  useEffect(() => {
+    fetchMaterials();
+    fetchUnits();
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    if (!searchTerm.trim()) { setSearchResults(null); return; }
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await axiosInstance.get(`/materials/search?q=${encodeURIComponent(searchTerm.trim())}`);
+        setSearchResults(data.result || data || []);
+      } catch {
+        toast.error(lang === 'ar' ? 'فشل البحث' : 'Search failed');
+        setSearchResults([]);
+      } finally { setSearching(false); }
+    }, 400);
+    return () => { clearTimeout(timer); setSearching(false); };
+  }, [searchTerm]);
 
   const fetchMaterials = async () => {
     try {
       setLoading(true);
       const { data } = await axiosInstance.get('/materials');
       setMaterials(data.result || data || []);
-    } catch { toast.error(lang === 'ar' ? 'فشل تحميل المواد' : 'Failed to load materials'); }
-    finally { setLoading(false); }
+    } catch {
+      toast.error(lang === 'ar' ? 'فشل تحميل المواد' : 'Failed to load materials');
+    } finally { setLoading(false); }
   };
 
   const fetchUnits = async () => {
@@ -304,6 +493,16 @@ export default function Supplies() {
       const { data } = await axiosInstance.get('/units');
       setUnits(data.result || data || []);
     } catch { setUnits([]); }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data } = await axiosInstance.get('/materials/main-categories');
+      const result = data.result || data || [];
+      if (result.length > 0) {
+        setCategories(result.map(c => ({ value: c.value, label: c.label, labelEn: c.labelEn || c.label, labelAr: c.labelAr || c.label })));
+      }
+    } catch {}
   };
 
   const handleDelete = async () => {
@@ -317,6 +516,16 @@ export default function Supplies() {
     }
   };
 
+  const handleActivate = async (material) => {
+    try {
+      await axiosInstance.patch(`/materials/${material._id}/activate`);
+      toast.success(lang === 'ar' ? 'تم تفعيل المادة بنجاح' : 'Material activated successfully');
+      fetchMaterials();
+    } catch (err) {
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل تفعيل المادة' : 'Failed to activate material'));
+    }
+  };
+
   const handleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('asc'); }
@@ -324,12 +533,16 @@ export default function Supplies() {
 
   const getUnitName = (unitId) => {
     if (!unitId) return '-';
-    const unit = units.find(u => u._id === unitId);
+    const id = unitId?._id || unitId;
+    const unit = units.find(u => u._id === id);
     return unit ? (lang === 'ar' ? unit.nameAr : unit.nameEn) : '-';
   };
 
-  const getCategoryLabel = (val) =>
-    MAIN_CATEGORIES.find(c => c.value === val)?.[lang === 'ar' ? 'labelAr' : 'labelEn'] || val;
+  const getCategoryLabel = (val) => {
+    const cat = categories.find(c => c.value === val);
+    if (!cat) return val;
+    return lang === 'ar' ? (cat.labelAr || cat.label) : (cat.labelEn || cat.label);
+  };
 
   const handleExport = () => {
     try {
@@ -352,100 +565,70 @@ export default function Supplies() {
     } catch { toast.error(lang === 'ar' ? 'فشل التصدير' : 'Export failed'); }
   };
 
-  // Filter + Sort
   const displayed = useMemo(() => {
-    return materials
+    const source = searchResults !== null ? searchResults : materials;
+    return source
       .filter(m => {
-        const q = searchTerm.toLowerCase();
-        const matchSearch = !q || m.nameEn?.toLowerCase().includes(q) || m.nameAr?.includes(q) || m.code?.toLowerCase().includes(q) || m.subCategory?.toLowerCase().includes(q);
         const matchCat    = filterCat === 'all' || m.mainCategory === filterCat;
-        const matchStatus = filterStatus === 'ALL' || (filterStatus === 'ACTIVE' && m.isActive !== false) || (filterStatus === 'INACTIVE' && m.isActive === false);
-        return matchSearch && matchCat && matchStatus;
+        const matchStatus = filterStatus === 'ALL'
+          || (filterStatus === 'ACTIVE'   && m.isActive !== false)
+          || (filterStatus === 'INACTIVE' && m.isActive === false);
+        return matchCat && matchStatus;
       })
       .sort((a, b) => {
-        let va = a[sortField] ?? '';
-        let vb = b[sortField] ?? '';
+        let va = a[sortField] ?? ''; let vb = b[sortField] ?? '';
         if (typeof va === 'string') va = va.toLowerCase();
         if (typeof vb === 'string') vb = vb.toLowerCase();
         return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
       });
-  }, [materials, searchTerm, filterCat, filterStatus, sortField, sortDir]);
+  }, [materials, searchResults, filterCat, filterStatus, sortField, sortDir]);
+
+  const handleClearFilters = () => { setSearchTerm(''); setSearchResults(null); setFilterCat('all'); setFilterStatus('ALL'); };
+  const isFiltering = searchTerm || filterCat !== 'all' || filterStatus !== 'ALL';
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
 
-        {/* ── Page Header ── */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {lang === 'ar' ? 'المستلزمات والمواد' : 'Supplies & Materials'}
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {lang === 'ar' ? 'عرض وإدارة المواد المستخدمة في المشاريع' : 'View and manage materials used in projects.'}
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">{lang === 'ar' ? 'المستلزمات والمواد' : 'Supplies & Materials'}</h1>
+            <p className="text-sm text-gray-500 mt-1">{lang === 'ar' ? 'عرض وإدارة المواد المستخدمة في المشاريع' : 'View and manage materials used in projects.'}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
-            >
-              <Download className="w-4 h-4" />
-              {lang === 'ar' ? 'تصدير' : 'Export'}
+            <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm">
+              <Download className="w-4 h-4" />{lang === 'ar' ? 'تصدير' : 'Export'}
             </button>
-            <button
-              onClick={() => setAddModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              {lang === 'ar' ? 'إضافة مادة' : 'Add Material'}
+            <button onClick={() => setAddModal(true)} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm">
+              <Plus className="w-4 h-4" />{lang === 'ar' ? 'إضافة مادة' : 'Add Material'}
             </button>
           </div>
         </div>
 
-        {/* ── Filters ── */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder={lang === 'ar' ? 'بحث عن مادة...' : 'Search materials...'}
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-            />
+            {searching ? (
+              <div className="absolute left-3 top-1/2 -translate-y-1/2"><div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
+            ) : (
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            )}
+            <input type="text" placeholder={lang === 'ar' ? 'بحث عن مادة...' : 'Search materials...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" />
           </div>
 
-          <select
-            value={filterCat}
-            onChange={e => setFilterCat(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-          >
+          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
             <option value="all">{lang === 'ar' ? 'كل الفئات' : 'All Categories'}</option>
-            {MAIN_CATEGORIES.map(c => <option key={c.value} value={c.value}>{lang === 'ar' ? c.labelAr : c.labelEn}</option>)}
+            {categories.map(c => <option key={c.value} value={c.value}>{lang === 'ar' ? (c.labelAr || c.label) : (c.labelEn || c.label)}</option>)}
           </select>
 
-          <select
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-          >
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
             <option value="ALL">{lang === 'ar' ? 'كل الحالات' : 'All Status'}</option>
             <option value="ACTIVE">{lang === 'ar' ? 'نشط' : 'Active'}</option>
             <option value="INACTIVE">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</option>
           </select>
 
-          {(searchTerm || filterCat !== 'all' || filterStatus !== 'ALL') && (
-            <button
-              onClick={() => { setSearchTerm(''); setFilterCat('all'); setFilterStatus('ALL'); }}
-              className="text-sm text-indigo-600 hover:underline"
-            >
-              {lang === 'ar' ? 'مسح الفلاتر' : 'Clear'}
-            </button>
-          )}
+          {isFiltering && <button onClick={handleClearFilters} className="text-sm text-indigo-600 hover:underline">{lang === 'ar' ? 'مسح الفلاتر' : 'Clear'}</button>}
         </div>
 
-        {/* ── Table ── */}
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
           {loading ? (
             <div className="p-16 text-center">
@@ -461,13 +644,13 @@ export default function Supplies() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <SortHeader label={lang === 'ar' ? 'المادة'       : 'Material'}      field={lang === 'ar' ? 'nameAr' : 'nameEn'} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'الكود'         : 'Code'}          field="code"             sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'الفئة'         : 'Category'}      field="mainCategory"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'الوحدة'        : 'Unit'}          field="baseUnit"         sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'المخزون'       : 'Stock'}         field="currentStock"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'آخر سعر'       : 'Last Price'}    field="lastPurchasePrice" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'الحالة'        : 'Status'}        field="isActive"         sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'المادة'    : 'Material'}     field={lang === 'ar' ? 'nameAr' : 'nameEn'} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الكود'     : 'Code'}         field="code"              sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الفئة'     : 'Category'}     field="mainCategory"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الوحدة'    : 'Unit'}         field="baseUnit"          sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'المخزون'   : 'Stock'}        field="currentStock"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'آخر سعر'   : 'Last Price'}   field="lastPurchasePrice"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الحالة'    : 'Status'}       field="isActive"          sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -476,66 +659,30 @@ export default function Supplies() {
                   const isLowStock = (material.currentStock || 0) < (material.minStockLevel || 0);
                   return (
                     <tr key={material._id} className="hover:bg-gray-50/60 transition">
-                      {/* Avatar + Name */}
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
                             <Package className="w-4 h-4 text-indigo-600" />
                           </div>
                           <div>
-                            <span className="font-medium text-gray-900 text-sm block">
-                              {lang === 'ar' ? material.nameAr : material.nameEn}
-                            </span>
-                            {material.subCategory && (
-                              <span className="text-xs text-gray-400">{material.subCategory}</span>
-                            )}
+                            <span className="font-medium text-gray-900 text-sm block">{lang === 'ar' ? material.nameAr : material.nameEn}</span>
+                            {material.subCategory && <span className="text-xs text-gray-400">{material.subCategory}</span>}
                           </div>
                         </div>
                       </td>
-
-                      {/* Code */}
-                      <td className="px-4 py-3.5">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{material.code}</span>
-                      </td>
-
-                      {/* Category */}
-                      <td className="px-4 py-3.5">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                          {getCategoryLabel(material.mainCategory)}
-                        </span>
-                      </td>
-
-                      {/* Unit */}
-                      <td className="px-4 py-3.5 text-sm text-gray-500">
-                        {getUnitName(material.baseUnit?._id || material.baseUnit)}
-                      </td>
-
-                      {/* Stock */}
+                      <td className="px-4 py-3.5"><span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{material.code}</span></td>
+                      <td className="px-4 py-3.5"><span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{getCategoryLabel(material.mainCategory)}</span></td>
+                      <td className="px-4 py-3.5 text-sm text-gray-500">{getUnitName(material.baseUnit?._id || material.baseUnit)}</td>
                       <td className="px-4 py-3.5">
                         <span className={`inline-flex items-center gap-1 text-sm font-semibold ${isLowStock ? 'text-red-600' : 'text-gray-700'}`}>
                           {isLowStock && <AlertTriangle className="w-3.5 h-3.5" />}
                           {material.currentStock || 0}
                         </span>
                       </td>
-
-                      {/* Last Price */}
-                      <td className="px-4 py-3.5 text-sm text-gray-700 font-medium">
-                        {material.lastPurchasePrice ? formatCurrency(material.lastPurchasePrice, lang) : '-'}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3.5">
-                        <StatusBadge isActive={material.isActive} lang={lang} />
-                      </td>
-
-                      {/* Actions */}
+                      <td className="px-4 py-3.5 text-sm text-gray-700 font-medium">{material.lastPurchasePrice ? formatCurrency(material.lastPurchasePrice, lang) : '-'}</td>
+                      <td className="px-4 py-3.5"><StatusBadge isActive={material.isActive} lang={lang} /></td>
                       <td className="px-4 py-3.5 text-right">
-                        <ActionsMenu
-                          material={material}
-                          lang={lang}
-                          onEdit={m => setEditTarget(m)}
-                          onDelete={m => setDeleteModal({ show: true, material: m })}
-                        />
+                        <ActionsMenu material={material} lang={lang} onEdit={m => setEditTarget(m)} onDelete={m => setDeleteModal({ show: true, material: m })} onActivate={handleActivate} />
                       </td>
                     </tr>
                   );
@@ -546,22 +693,9 @@ export default function Supplies() {
         </div>
       </div>
 
-      {/* ── Modals ── */}
-      {addModal && (
-        <MaterialModal lang={lang} mode="add" units={units}
-          onClose={() => setAddModal(false)}
-          onSaved={fetchMaterials} />
-      )}
-      {editTarget && (
-        <MaterialModal lang={lang} mode="edit" material={editTarget} units={units}
-          onClose={() => setEditTarget(null)}
-          onSaved={fetchMaterials} />
-      )}
-      {deleteModal.show && (
-        <ConfirmModal material={deleteModal.material} lang={lang}
-          onConfirm={handleDelete}
-          onClose={() => setDeleteModal({ show: false, material: null })} />
-      )}
+      {addModal && <MaterialModal lang={lang} mode="add" units={units} categories={categories} onClose={() => setAddModal(false)} onSaved={fetchMaterials} />}
+      {editTarget && <MaterialModal lang={lang} mode="edit" material={editTarget} units={units} categories={categories} onClose={() => setEditTarget(null)} onSaved={fetchMaterials} />}
+      {deleteModal.show && <ConfirmModal material={deleteModal.material} lang={lang} onConfirm={handleDelete} onClose={() => setDeleteModal({ show: false, material: null })} />}
     </div>
   );
 }

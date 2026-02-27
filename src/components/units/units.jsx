@@ -1,7 +1,8 @@
 import { useState, useEffect, useContext, useRef } from "react";
 import {
   Package, Search, Plus, Edit, Trash2, CheckCircle,
-  ChevronUp, ChevronDown, MoreHorizontal, X, Download
+  ChevronUp, ChevronDown, MoreHorizontal, X, Download,
+  ArrowLeftRight
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { getErrorMessage } from "../../utils/errorHandler";
@@ -81,13 +82,9 @@ const ActionsMenu = ({ unit, lang, onEdit, onDelete, onActivate }) => {
   const handleOpen = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      const menuHeight = 80; // زرارين
+      const menuHeight = unit.isActive === false ? 80 : 80;
       const spaceBelow = window.innerHeight - rect.bottom;
-
-      const top = spaceBelow < menuHeight
-        ? rect.top - menuHeight - 4
-        : rect.bottom + 4;
-
+      const top = spaceBelow < menuHeight ? rect.top - menuHeight - 4 : rect.bottom + 4;
       setMenuPos({ top, left: rect.right - 160 });
     }
     setOpen(o => !o);
@@ -95,42 +92,26 @@ const ActionsMenu = ({ unit, lang, onEdit, onDelete, onActivate }) => {
 
   return (
     <div className="relative" ref={ref}>
-      <button
-        ref={btnRef}
-        onClick={handleOpen}
-        className="p-1.5 rounded-md hover:bg-gray-100 transition text-gray-500"
-      >
+      <button ref={btnRef} onClick={handleOpen} className="p-1.5 rounded-md hover:bg-gray-100 transition text-gray-500">
         <MoreHorizontal className="w-5 h-5" />
       </button>
 
       {open && (
-        <div
-          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }}
-          className="w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1"
-        >
-          <button
-            onClick={() => { setOpen(false); onEdit(unit); }}
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-          >
+        <div style={{ position: "fixed", top: menuPos.top, left: menuPos.left }} className="w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1">
+          <button onClick={() => { setOpen(false); onEdit(unit); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
             <Edit className="w-4 h-4" />
             {lang === "ar" ? "تعديل" : "Edit"}
           </button>
 
           {unit.isActive === false && (
-            <button
-              onClick={() => { setOpen(false); onActivate(unit); }}
-              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-            >
+            <button onClick={() => { setOpen(false); onActivate(unit); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-green-600 hover:bg-green-50 transition">
               <CheckCircle className="w-4 h-4" />
               {lang === "ar" ? "تفعيل" : "Activate"}
             </button>
           )}
 
           {unit.isActive !== false && (
-            <button
-              onClick={() => { setOpen(false); onDelete(unit); }}
-              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
-            >
+            <button onClick={() => { setOpen(false); onDelete(unit); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
               <Trash2 className="w-4 h-4" />
               {lang === "ar" ? "حذف" : "Delete"}
             </button>
@@ -144,15 +125,15 @@ const ActionsMenu = ({ unit, lang, onEdit, onDelete, onActivate }) => {
 // ── Add/Edit Modal ─────────────────────────────────────────
 const UnitModal = ({ lang, mode, unit: editUnit, baseUnits, units, onClose, onSaved }) => {
   const [form, setForm] = useState({
-    nameAr: editUnit?.nameAr || "",
-    nameEn: editUnit?.nameEn || "",
-    code: editUnit?.code || "",
-    symbol: editUnit?.symbol || "",
-    category: editUnit?.category || "",
-    isBase: editUnit?.isBase || false,
-    baseUnitId: editUnit?.baseUnitId?._id || editUnit?.baseUnitId || "",
+    nameAr:           editUnit?.nameAr || "",
+    nameEn:           editUnit?.nameEn || "",
+    code:             editUnit?.code || "",
+    symbol:           editUnit?.symbol || "",
+    category:         editUnit?.category || "",
+    isBase:           editUnit?.isBase || false,
+    baseUnitId:       editUnit?.baseUnitId?._id || editUnit?.baseUnitId || "",
     conversionFactor: editUnit?.conversionFactor || 1,
-    description: editUnit?.description || "",
+    description:      editUnit?.description || "",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -184,8 +165,8 @@ const UnitModal = ({ lang, mode, unit: editUnit, baseUnits, units, onClose, onSa
       const payload = { nameAr: form.nameAr, nameEn: form.nameEn, code: form.code, symbol: form.symbol, category: form.category, isBase: form.isBase, description: form.description };
       if (!form.isBase) { payload.baseUnitId = form.baseUnitId; payload.conversionFactor = Number(form.conversionFactor) || 1; }
 
-      if (mode === "add") await axiosInstance.post(`/units?lang=${lang}`, payload);
-      else await axiosInstance.put(`/units/${editUnit._id}?lang=${lang}`, payload);
+      if (mode === "add") await axiosInstance.post(`/units`, payload);
+      else await axiosInstance.put(`/units/${editUnit._id}`, payload);
 
       toast.success(lang === "ar" ? "تم الحفظ بنجاح" : "Saved successfully");
       onSaved();
@@ -281,6 +262,195 @@ const UnitModal = ({ lang, mode, unit: editUnit, baseUnits, units, onClose, onSa
   );
 };
 
+// ── Convert Units Modal ✅ جديد ────────────────────────────
+const ConvertModal = ({ lang, units, onClose }) => {
+  const [form, setForm] = useState({ quantity: 1, fromUnitId: "", toUnitId: "" });
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const activeUnits = units.filter(u => u.isActive !== false);
+  const fromUnit = activeUnits.find(u => u._id === form.fromUnitId);
+
+  const compatibleToUnits = form.fromUnitId
+    ? activeUnits.filter(u => fromUnit && u.category === fromUnit.category && u._id !== form.fromUnitId)
+    : activeUnits;
+
+  // عكس الوحدتين
+  const handleSwap = () => {
+    setForm(f => ({ ...f, fromUnitId: f.toUnitId, toUnitId: f.fromUnitId }));
+    setResult(null);
+  };
+
+  const handleConvert = async () => {
+    if (!form.fromUnitId || !form.toUnitId) {
+      toast.error(lang === "ar" ? "يرجى اختيار الوحدتين" : "Please select both units");
+      return;
+    }
+    if (!form.quantity || Number(form.quantity) <= 0) {
+      toast.error(lang === "ar" ? "الكمية يجب أن تكون أكبر من صفر" : "Quantity must be greater than zero");
+      return;
+    }
+    try {
+      setLoading(true);
+      setResult(null);
+      const { data } = await axiosInstance.post("/units/convert", {
+        quantity:   Number(form.quantity),
+        fromUnitId: form.fromUnitId,
+        toUnitId:   form.toUnitId,
+      });
+      setResult(data.result || data);
+    } catch (err) {
+      toast.error(getErrorMessage(err, lang === "ar" ? "فشل التحويل" : "Conversion failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center">
+              <ArrowLeftRight className="w-4 h-4 text-indigo-600" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {lang === "ar" ? "تحويل الوحدات" : "Convert Units"}
+            </h2>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Quantity */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {lang === "ar" ? "الكمية" : "Quantity"} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              step="0.0001"
+              min="0.0001"
+              value={form.quantity}
+              onChange={e => { setForm(f => ({ ...f, quantity: e.target.value })); setResult(null); }}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50"
+            />
+          </div>
+
+          {/* From + Swap + To في صف واحد */}
+          <div className="flex items-end gap-2">
+
+            {/* من وحدة */}
+            <div className="flex-1 min-w-0">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === "ar" ? "من" : "From"} <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={form.fromUnitId}
+                onChange={e => { setForm(f => ({ ...f, fromUnitId: e.target.value, toUnitId: "" })); setResult(null); }}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50"
+              >
+                <option value="">{lang === "ar" ? "اختر" : "Select"}</option>
+                {activeUnits.map(u => (
+                  <option key={u._id} value={u._id}>
+                    {lang === "ar" ? u.nameAr : u.nameEn} ({u.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* زرار العكس */}
+            <button
+              type="button"
+              onClick={handleSwap}
+              disabled={!form.fromUnitId || !form.toUnitId}
+              title={lang === "ar" ? "عكس الوحدتين" : "Swap units"}
+              className="flex-shrink-0 mb-0.5 p-2.5 rounded-xl border border-gray-200 bg-white hover:bg-indigo-50 hover:border-indigo-300 transition text-gray-400 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ArrowLeftRight className="w-4 h-4" />
+            </button>
+
+            {/* إلى وحدة */}
+            <div className="flex-1 min-w-0">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === "ar" ? "إلى" : "To"} <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={form.toUnitId}
+                onChange={e => { setForm(f => ({ ...f, toUnitId: e.target.value })); setResult(null); }}
+                disabled={!form.fromUnitId}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 disabled:opacity-50"
+              >
+                <option value="">{lang === "ar" ? "اختر" : "Select"}</option>
+                {compatibleToUnits.map(u => (
+                  <option key={u._id} value={u._id}>
+                    {lang === "ar" ? u.nameAr : u.nameEn} ({u.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* تنبيه لو مفيش وحدات متوافقة */}
+          {form.fromUnitId && compatibleToUnits.length === 0 && (
+            <p className="text-xs text-amber-600">
+              {lang === "ar" ? "لا توجد وحدات متوافقة في نفس الفئة" : "No compatible units in the same category"}
+            </p>
+          )}
+
+          {/* نتيجة التحويل */}
+          {result && (
+            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+              <p className="text-xs font-medium text-indigo-400 mb-3">
+                {lang === "ar" ? "نتيجة التحويل" : "Conversion Result"}
+              </p>
+
+              {/* السطر الرئيسي: الكمية = الناتج */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold text-gray-800">{result.originalQuantity}</span>
+                  <span className="text-sm font-semibold text-indigo-500">{result.originalUnit?.symbol}</span>
+                </div>
+                <span className="text-gray-300 text-xl">=</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold text-indigo-700">{result.convertedQuantity}</span>
+                  <span className="text-sm font-semibold text-indigo-500">{result.convertedUnit?.symbol}</span>
+                </div>
+              </div>
+
+              {/* الأسماء الكاملة بالعربي */}
+              <p className="text-xs text-gray-400 mt-2">
+                {result.originalUnit?.nameAr}
+                <span className="mx-1.5">←</span>
+                {result.convertedUnit?.nameAr}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+            {lang === "ar" ? "إغلاق" : "Close"}
+          </button>
+          <button
+            onClick={handleConvert}
+            disabled={loading || !form.fromUnitId || !form.toUnitId}
+            className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50"
+          >
+            {loading
+              ? (lang === "ar" ? "جاري التحويل..." : "Converting...")
+              : (lang === "ar" ? "تحويل" : "Convert")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Confirm Modal ──────────────────────────────────────────
 const ConfirmModal = ({ type, unit, lang, onConfirm, onClose }) => {
   const isDelete = type === "delete";
@@ -296,7 +466,9 @@ const ConfirmModal = ({ type, unit, lang, onConfirm, onClose }) => {
               {isDelete ? (lang === "ar" ? "تأكيد الحذف" : "Confirm Delete") : (lang === "ar" ? "تأكيد التفعيل" : "Confirm Activation")}
             </h3>
             <p className="text-sm text-gray-500">
-              {isDelete ? (lang === "ar" ? "هل أنت متأكد من حذف هذه الوحدة؟" : "Are you sure you want to delete this unit?") : (lang === "ar" ? "هل أنت متأكد من تفعيل هذه الوحدة؟" : "Are you sure you want to activate this unit?")}
+              {isDelete
+                ? (lang === "ar" ? "هل أنت متأكد من حذف هذه الوحدة؟" : "Are you sure you want to delete this unit?")
+                : (lang === "ar" ? "هل أنت متأكد من تفعيل هذه الوحدة؟" : "Are you sure you want to activate this unit?")}
             </p>
           </div>
         </div>
@@ -321,25 +493,55 @@ const ConfirmModal = ({ type, unit, lang, onConfirm, onClose }) => {
 export default function Units() {
   const { lang } = useContext(LanguageContext);
 
-  const [units,         setUnits]         = useState([]);
-  const [baseUnits,     setBaseUnits]     = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [searchTerm,    setSearchTerm]    = useState("");
-  const [filterCat,     setFilterCat]     = useState("all");
-  const [filterStatus,  setFilterStatus]  = useState("ALL");
-  const [sortField,     setSortField]     = useState("nameEn");
-  const [sortDir,       setSortDir]       = useState("asc");
-  const [addModal,      setAddModal]      = useState(false);
-  const [editTarget,    setEditTarget]    = useState(null);
-  const [deleteModal,   setDeleteModal]   = useState({ show: false, unit: null });
-  const [activateModal, setActivateModal] = useState({ show: false, unit: null });
+  const [units,          setUnits]          = useState([]);
+  const [baseUnits,      setBaseUnits]      = useState([]);
+  const [loading,        setLoading]        = useState(true);
 
-  useEffect(() => { fetchUnits(); fetchBaseUnits(); }, [filterCat, lang]);
+  // ✅ Server-side search state
+  const [searchTerm,     setSearchTerm]     = useState("");
+  const [searchResults,  setSearchResults]  = useState(null); // null = مش بيسيرش
+  const [searching,      setSearching]      = useState(false);
+
+  const [filterCat,      setFilterCat]      = useState("all");
+  const [filterStatus,   setFilterStatus]   = useState("ALL");
+  const [sortField,      setSortField]      = useState("nameEn");
+  const [sortDir,        setSortDir]        = useState("asc");
+  const [addModal,       setAddModal]       = useState(false);
+  const [editTarget,     setEditTarget]     = useState(null);
+  const [convertModal,   setConvertModal]   = useState(false); // ✅ جديد
+  const [deleteModal,    setDeleteModal]    = useState({ show: false, unit: null });
+  const [activateModal,  setActivateModal]  = useState({ show: false, unit: null });
+
+  useEffect(() => { fetchUnits(); fetchBaseUnits(); }, [filterCat]);
+
+  // ✅ Debounced server-side search
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await axiosInstance.get(`/units/search?q=${encodeURIComponent(searchTerm.trim())}`);
+        setSearchResults(data.result || data || []);
+      } catch {
+        toast.error(lang === "ar" ? "فشل البحث" : "Search failed");
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+
+    return () => { clearTimeout(timer); setSearching(false); };
+  }, [searchTerm]);
 
   const fetchUnits = async () => {
     try {
       setLoading(true);
-      const url = filterCat === "all" ? `/units?lang=${lang}` : `/units?category=${filterCat}&lang=${lang}`;
+      // ✅ استخدم الـ category query parameter الموجود في الباك
+      const url = filterCat === "all" ? `/units` : `/units?category=${filterCat}`;
       const res = await axiosInstance.get(url);
       setUnits(res.data.result || []);
     } catch {
@@ -351,6 +553,7 @@ export default function Units() {
 
   const fetchBaseUnits = async () => {
     try {
+      // ✅ GET /units/base
       const res = await axiosInstance.get("/units/base");
       setBaseUnits(res.data.result || []);
     } catch {}
@@ -358,7 +561,7 @@ export default function Units() {
 
   const handleDelete = async () => {
     try {
-      await axiosInstance.delete(`/units/${deleteModal.unit._id}?lang=${lang}`);
+      await axiosInstance.delete(`/units/${deleteModal.unit._id}`);
       toast.success(lang === "ar" ? "تم حذف الوحدة بنجاح" : "Unit deleted");
       setDeleteModal({ show: false, unit: null });
       fetchUnits(); fetchBaseUnits();
@@ -369,7 +572,8 @@ export default function Units() {
 
   const handleActivate = async () => {
     try {
-      await axiosInstance.patch(`/units/${activateModal.unit._id}/activate?lang=${lang}`);
+      // ✅ PATCH /units/:id/activate
+      await axiosInstance.patch(`/units/${activateModal.unit._id}/activate`);
       toast.success(lang === "ar" ? "تم تفعيل الوحدة بنجاح" : "Unit activated");
       setActivateModal({ show: false, unit: null });
       fetchUnits();
@@ -410,13 +614,13 @@ export default function Units() {
     }
   };
 
-  // Filter + Sort
-  const displayed = units
+  // ✅ Filter + Sort - بيشتغل على server search results أو كل الوحدات
+  const displayed = (searchResults !== null ? searchResults : units)
     .filter(u => {
-      const q = searchTerm.toLowerCase();
-      const matchSearch = !q || u.nameAr?.toLowerCase().includes(q) || u.nameEn?.toLowerCase().includes(q) || u.code?.toLowerCase().includes(q) || u.symbol?.toLowerCase().includes(q);
-      const matchStatus = filterStatus === "ALL" || (filterStatus === "ACTIVE" && u.isActive !== false) || (filterStatus === "INACTIVE" && u.isActive === false);
-      return matchSearch && matchStatus;
+      const matchStatus = filterStatus === "ALL"
+        || (filterStatus === "ACTIVE"   && u.isActive !== false)
+        || (filterStatus === "INACTIVE" && u.isActive === false);
+      return matchStatus;
     })
     .sort((a, b) => {
       let va = a[sortField] ?? "";
@@ -425,6 +629,15 @@ export default function Units() {
       if (typeof vb === "string") vb = vb.toLowerCase();
       return sortDir === "asc" ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
     });
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setSearchResults(null);
+    setFilterCat("all");
+    setFilterStatus("ALL");
+  };
+
+  const isFiltering = searchTerm || filterCat !== "all" || filterStatus !== "ALL";
 
   if (loading && units.length === 0)
     return <FullPageLoader text={lang === "ar" ? "جاري تحميل الوحدات..." : "Loading units..."} />;
@@ -444,6 +657,14 @@ export default function Units() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* ✅ زرار Convert Units جديد */}
+            <button
+              onClick={() => setConvertModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
+            >
+              <ArrowLeftRight className="w-4 h-4" />
+              {lang === "ar" ? "تحويل" : "Convert"}
+            </button>
             <button
               onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
@@ -463,8 +684,15 @@ export default function Units() {
 
         {/* ── Filters ── */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
+          {/* ✅ Server-side search مع spinner */}
           <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            {searching ? (
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            )}
             <input
               type="text"
               placeholder={lang === "ar" ? "بحث في الوحدات..." : "Search units..."}
@@ -493,11 +721,8 @@ export default function Units() {
             <option value="INACTIVE">{lang === "ar" ? "محذوف" : "Inactive"}</option>
           </select>
 
-          {(searchTerm || filterCat !== "all" || filterStatus !== "ALL") && (
-            <button
-              onClick={() => { setSearchTerm(""); setFilterCat("all"); setFilterStatus("ALL"); }}
-              className="text-sm text-indigo-600 hover:underline"
-            >
+          {isFiltering && (
+            <button onClick={handleClearFilters} className="text-sm text-indigo-600 hover:underline">
               {lang === "ar" ? "مسح الفلاتر" : "Clear"}
             </button>
           )}
@@ -516,39 +741,30 @@ export default function Units() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <SortHeader label={lang === "ar" ? "الوحدة" : "Unit"}             field={lang === "ar" ? "nameAr" : "nameEn"} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === "ar" ? "الكود" : "Code"}              field="code"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === "ar" ? "الرمز" : "Symbol"}            field="symbol"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === "ar" ? "الفئة" : "Category"}          field="category" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === "ar" ? "النوع" : "Type"}              field="isBase"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === "ar" ? "الحالة" : "Status"}           field="isActive" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "الوحدة" : "Unit"}   field={lang === "ar" ? "nameAr" : "nameEn"} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "الكود" : "Code"}     field="code"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "الرمز" : "Symbol"}   field="symbol"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "الفئة" : "Category"} field="category" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "النوع" : "Type"}     field="isBase"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === "ar" ? "الحالة" : "Status"}  field="isActive" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {displayed.map(unit => (
                   <tr key={unit._id} className="hover:bg-gray-50/60 transition">
-                    {/* Avatar + Name */}
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-indigo-600 font-semibold text-sm">
-                            {unit.symbol?.charAt(0).toUpperCase()}
-                          </span>
+                          <span className="text-indigo-600 font-semibold text-sm">{unit.symbol?.charAt(0).toUpperCase()}</span>
                         </div>
                         <div>
-                          <span className="font-medium text-gray-900 text-sm block">
-                            {lang === "ar" ? unit.nameAr : unit.nameEn}
-                          </span>
-                          {unit.description && (
-                            <span className="text-xs text-gray-400 truncate max-w-[180px] block">{unit.description}</span>
-                          )}
+                          <span className="font-medium text-gray-900 text-sm block">{lang === "ar" ? unit.nameAr : unit.nameEn}</span>
+                          {unit.description && <span className="text-xs text-gray-400 truncate max-w-[180px] block">{unit.description}</span>}
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{unit.code}</span>
-                    </td>
+                    <td className="px-4 py-3.5"><span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">{unit.code}</span></td>
                     <td className="px-4 py-3.5 text-sm text-gray-500 font-medium">{unit.symbol}</td>
                     <td className="px-4 py-3.5"><CategoryBadge category={unit.category} lang={lang} /></td>
                     <td className="px-4 py-3.5"><TypeBadge isBase={unit.isBase} lang={lang} /></td>
@@ -580,6 +796,10 @@ export default function Units() {
         <UnitModal lang={lang} mode="edit" unit={editTarget} baseUnits={baseUnits} units={units}
           onClose={() => setEditTarget(null)}
           onSaved={() => { fetchUnits(); fetchBaseUnits(); }} />
+      )}
+      {/* ✅ Convert Modal جديد */}
+      {convertModal && (
+        <ConvertModal lang={lang} units={units} onClose={() => setConvertModal(false)} />
       )}
       {deleteModal.show && (
         <ConfirmModal type="delete" unit={deleteModal.unit} lang={lang}

@@ -52,6 +52,8 @@ import GeneralExpenses from "./components/General-Expenses/General-Expenses";
 import ExpenseDetails from './components/General-ExpensesDetails/General-ExpensesDetails';
 import ProjectSubcontractorWork from "./components/SubContractorWorks/SubContractorWorks";
 import SupplierRefundDetails from "./components/SupplierRefundDetails/SupplierRefundDetails";
+import AssetInvoiceForm from "./components/AssetInvoiceForm/AssetInvoiceForm";
+import AssetDetails from "./components/AssetDetails/AssetDetails";
 
 function App() {
  const router = createHashRouter([
@@ -80,6 +82,8 @@ function App() {
       { path: "suppliers", element: <Suppliers /> },
       { path: "materials", element: <Supplies /> },
       { path: "assets", element: <Assets /> },
+      { path: "assets/:id",               element: <AssetDetails /> },
+{ path: "assets/invoice/create",    element: <AssetInvoiceForm /> },
       { path: "units", element: <Units /> },
       { path: "adjustments", element: <StockAdjustment /> },
 

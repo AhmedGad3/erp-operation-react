@@ -12,18 +12,19 @@ import ColumnFiltersPanel from '../CloumnFiltersPanel/CloumnFiltersPanel';
 
 export default function ExpensesReport({ isAr, refreshKey }) {
   const [rawSupplierPayments, setRawSupplierPayments] = useState([]);
-  const [rawRefunds, setRawRefunds] = useState([]);
-  const [rawMaterialIssues, setRawMaterialIssues] = useState([]);
-  const [rawGeneralExpenses, setRawGeneralExpenses] = useState([]);
-  const [rawProjects, setRawProjects] = useState([]);
-  const [materials, setMaterials] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [rawRefunds,          setRawRefunds]          = useState([]);
+  const [rawMaterialIssues,   setRawMaterialIssues]   = useState([]);
+  const [rawGeneralExpenses,  setRawGeneralExpenses]  = useState([]);
+  const [rawProjects,         setRawProjects]         = useState([]);
+  const [rawAssetInvoices,    setRawAssetInvoices]    = useState([]);   // ← جديد
+  const [materials,           setMaterials]           = useState([]);
+  const [loading,             setLoading]             = useState(true);
+  const [error,               setError]               = useState(null);
 
-  const [dateFrom, setDateFrom] = useState('2024-01-01');
-  const [dateTo, setDateTo] = useState('2026-12-31');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [columnFilters, setColumnFilters] = useState({});
+  const [dateFrom,          setDateFrom]          = useState('2024-01-01');
+  const [dateTo,            setDateTo]            = useState('2026-12-31');
+  const [searchTerm,        setSearchTerm]        = useState('');
+  const [columnFilters,     setColumnFilters]     = useState({});
   const [showColumnFilters, setShowColumnFilters] = useState(false);
 
   const fetchData = async () => {
@@ -37,6 +38,7 @@ export default function ExpensesReport({ isAr, refreshKey }) {
         resGeneralExpenses,
         resProjects,
         resMaterials,
+        resAssetInvoices,         // ← جديد
       ] = await Promise.all([
         axiosInstance.get('/supplier/payments'),
         axiosInstance.get('/supplier/payments/refunds'),
@@ -44,14 +46,16 @@ export default function ExpensesReport({ isAr, refreshKey }) {
         axiosInstance.get('/general-expenses'),
         axiosInstance.get('/projects'),
         axiosInstance.get('/materials'),
+        axiosInstance.get('/asset-invoices'),  // ← جديد
       ]);
 
-      setRawSupplierPayments(resPayments.data?.result || []);
-      setRawRefunds(resRefunds.data?.result || []);
-      setRawMaterialIssues(resMaterialIssues.data?.result || []);
-      setRawGeneralExpenses(resGeneralExpenses.data?.result || resGeneralExpenses.data || []);
-      setRawProjects(resProjects.data?.result || []);
-      setMaterials(resMaterials.data?.result || []);
+      setRawSupplierPayments(resPayments.data?.result       || []);
+      setRawRefunds(         resRefunds.data?.result        || []);
+      setRawMaterialIssues(  resMaterialIssues.data?.result || []);
+      setRawGeneralExpenses( resGeneralExpenses.data?.result || resGeneralExpenses.data || []);
+      setRawProjects(        resProjects.data?.result       || []);
+      setMaterials(          resMaterials.data?.result      || []);
+      setRawAssetInvoices(   resAssetInvoices.data?.result  || resAssetInvoices.data || []);  // ← جديد
     } catch (e) {
       setError(e.message || 'خطأ في جلب البيانات');
     } finally {
@@ -59,9 +63,7 @@ export default function ExpensesReport({ isAr, refreshKey }) {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [refreshKey]);
+  useEffect(() => { fetchData(); }, [refreshKey]);
 
   const getMaterialName = (id) => {
     const mat = materials.find(m => m._id === id);
@@ -71,23 +73,22 @@ export default function ExpensesReport({ isAr, refreshKey }) {
 
   const methodLabel = (raw) => {
     const labels = {
-      CASH:     { ar: 'نقد',          en: 'Cash' },
-      CHEQUE:   { ar: 'شيك',          en: 'Cheque' },
-      CHECK:    { ar: 'شيك',          en: 'Check' },
-      TRANSFER: { ar: 'تحويل بنكي',   en: 'Bank Transfer' },
+      CASH:     { ar: 'نقد',         en: 'Cash'          },
+      CHEQUE:   { ar: 'شيك',         en: 'Cheque'        },
+      CHECK:    { ar: 'شيك',         en: 'Check'         },
+      TRANSFER: { ar: 'تحويل بنكي',  en: 'Bank Transfer' },
     };
     return labels[raw]?.[isAr ? 'ar' : 'en'] ?? raw ?? '—';
   };
 
-  // ترجمة mainCategory للمصاريف العامة
   const categoryLabel = (raw) => {
     const labels = {
-      UTILITIES:   { ar: 'مرافق',        en: 'Utilities' },
-      RENT:        { ar: 'إيجار',         en: 'Rent' },
-      SALARIES:    { ar: 'رواتب',         en: 'Salaries' },
-      MAINTENANCE: { ar: 'صيانة',         en: 'Maintenance' },
-      TRANSPORT:   { ar: 'مواصلات',       en: 'Transport' },
-      OTHER:       { ar: 'أخرى',          en: 'Other' },
+      UTILITIES:   { ar: 'مرافق',   en: 'Utilities'   },
+      RENT:        { ar: 'إيجار',   en: 'Rent'        },
+      SALARIES:    { ar: 'رواتب',   en: 'Salaries'    },
+      MAINTENANCE: { ar: 'صيانة',   en: 'Maintenance' },
+      TRANSPORT:   { ar: 'مواصلات', en: 'Transport'   },
+      OTHER:       { ar: 'أخرى',    en: 'Other'       },
     };
     return labels[raw]?.[isAr ? 'ar' : 'en'] ?? raw ?? '—';
   };
@@ -182,10 +183,10 @@ export default function ExpensesReport({ isAr, refreshKey }) {
     // 5️⃣ تكاليف العمالة للمشاريع
     rawProjects.forEach(proj => {
       if (proj.laborCosts > 0) {
-        const projName = isAr ? proj.nameAr : proj.nameEn;
-        const workers       = proj.laborDetails?.numberOfWorkers || 0;
-        const monthlyCost   = proj.laborDetails?.monthlyCost     || 0;
-        const durationMonths= proj.laborDetails?.durationMonths  || 0;
+        const projName       = isAr ? proj.nameAr : proj.nameEn;
+        const workers        = proj.laborDetails?.numberOfWorkers || 0;
+        const monthlyCost    = proj.laborDetails?.monthlyCost     || 0;
+        const durationMonths = proj.laborDetails?.durationMonths  || 0;
         expenses.push({
           id: `EXP-LABOR-${proj._id}`,
           date: fmtDate(proj.startDate),
@@ -201,8 +202,8 @@ export default function ExpensesReport({ isAr, refreshKey }) {
           amountRaw: proj.laborCosts,
           createdBy: proj.createdBy?.name || proj.createdBy?.username || '—',
           notes: [
-            workers       ? `${workers} ${isAr ? 'عامل' : 'workers'}` : null,
-            durationMonths? `${durationMonths} ${isAr ? 'شهر' : 'months'}` : null,
+            workers        ? `${workers} ${isAr ? 'عامل' : 'workers'}` : null,
+            durationMonths ? `${durationMonths} ${isAr ? 'شهر' : 'months'}` : null,
             proj.laborDetails?.notes || null,
           ].filter(Boolean).join(' | ') || '—',
         });
@@ -278,41 +279,65 @@ export default function ExpensesReport({ isAr, refreshKey }) {
       }
     });
 
+    // 9️⃣ فواتير شراء الأصول
+    rawAssetInvoices.forEach(inv => {
+      const assetName = isAr ? inv.asset?.nameAr : inv.asset?.nameEn;
+      const assetType = isAr ? inv.asset?.assetTypeAr : inv.asset?.assetTypeEn;
+      expenses.push({
+        id: `EXP-ASSET-${inv._id}`,
+        date: fmtDate(inv.invoiceDate),
+        expenseNo: `${isAr ? 'أصل' : 'AST'}-${inv.invoiceNo}`,
+        type: isAr ? 'شراء أصول' : 'Asset Purchase',
+        category: isAr ? 'أصول وممتلكات' : 'Assets & Equipment',
+        description: assetName || inv.asset?.code || '—',
+        quantity: '—',
+        unitPrice: assetType || '—',
+        reference: `${isAr ? 'فاتورة أصل' : 'Asset Inv.'} #${inv.invoiceNo} | ${inv.asset?.code || '—'}`,
+        supplier: inv.vendorName || '—',
+        amount: fmt(inv.amount),
+        amountRaw: inv.amount,
+        createdBy: inv.createdBy?.name || inv.createdBy?.username || '—',
+        notes: `${isAr ? 'طريقة الدفع' : 'Method'}: ${methodLabel(inv.paymentMethod)}${inv.referenceNo ? ` | ${isAr ? 'مرجع' : 'Ref'}: ${inv.referenceNo}` : ''}${inv.notes ? ` | ${inv.notes}` : ''}`,
+      });
+    });
+
     return expenses.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  }, [rawSupplierPayments, rawRefunds, rawMaterialIssues, rawGeneralExpenses, rawProjects, isAr, materials]);
+  }, [rawSupplierPayments, rawRefunds, rawMaterialIssues, rawGeneralExpenses, rawProjects, rawAssetInvoices, isAr, materials]);
 
   const columns = [
-    { key: 'date',        labelAr: 'التاريخ',        labelEn: 'Date' },
-    { key: 'expenseNo',   labelAr: 'رقم المصروف',    labelEn: 'Exp. #' },
-    { key: 'type',        labelAr: 'النوع',           labelEn: 'Type' },
-    { key: 'category',    labelAr: 'التصنيف',         labelEn: 'Category' },
-    { key: 'description', labelAr: 'الوصف',           labelEn: 'Description' },
-    { key: 'quantity',    labelAr: 'الكمية',           labelEn: 'Qty' },
+    { key: 'date',        labelAr: 'التاريخ',        labelEn: 'Date'          },
+    { key: 'expenseNo',   labelAr: 'رقم المصروف',    labelEn: 'Exp. #'        },
+    { key: 'type',        labelAr: 'النوع',           labelEn: 'Type'          },
+    { key: 'category',    labelAr: 'التصنيف',         labelEn: 'Category'      },
+    { key: 'description', labelAr: 'الوصف',           labelEn: 'Description'   },
+    { key: 'quantity',    labelAr: 'الكمية',           labelEn: 'Qty'           },
     { key: 'unitPrice',   labelAr: 'السعر/التفاصيل',  labelEn: 'Price/Details' },
-    { key: 'reference',   labelAr: 'المرجع',           labelEn: 'Reference' },
-    { key: 'supplier',    labelAr: 'المورد/الجهة',     labelEn: 'Vendor' },
-    { key: 'amount',      labelAr: 'المبلغ',           labelEn: 'Amount' },
-    { key: 'createdBy',   labelAr: 'أنشئ بواسطة',     labelEn: 'Created By' },
-    { key: 'notes',       labelAr: 'ملاحظات',          labelEn: 'Notes' },
+    { key: 'reference',   labelAr: 'المرجع',           labelEn: 'Reference'     },
+    { key: 'supplier',    labelAr: 'المورد/الجهة',     labelEn: 'Vendor'        },
+    { key: 'amount',      labelAr: 'المبلغ',           labelEn: 'Amount'        },
+    { key: 'createdBy',   labelAr: 'أنشئ بواسطة',     labelEn: 'Created By'    },
+    { key: 'notes',       labelAr: 'ملاحظات',          labelEn: 'Notes'         },
   ];
 
   const statistics = useMemo(() => {
-    const totalExpenses       = expenseRows.reduce((s, e) => s + (e.amountRaw || 0), 0);
-    const supplierPayments    = expenseRows.filter(e => e.type === (isAr ? 'دفعات الموردين'         : 'Supplier Payment')).reduce((s, e) => s + (e.amountRaw || 0), 0);
-    const generalExpenses     = expenseRows.filter(e => e.type === (isAr ? 'مصاريف عامة'            : 'General Expense')).reduce((s, e) => s + (e.amountRaw || 0), 0);
-    const laborExpenses       = expenseRows.filter(e => e.type === (isAr ? 'تكاليف عمالة'           : 'Labor Costs')).reduce((s, e) => s + (e.amountRaw || 0), 0);
-    const equipmentExpenses   = expenseRows.filter(e => e.type === (isAr ? 'تكاليف معدات'           : 'Equipment Costs')).reduce((s, e) => s + (e.amountRaw || 0), 0);
-    const subcontractorCosts  = expenseRows.filter(e => e.type === (isAr ? 'مقاولو الباطن'          : 'Subcontractor Costs')).reduce((s, e) => s + (e.amountRaw || 0), 0);
-    const materialIssues      = expenseRows.filter(e => e.type === (isAr ? 'صرف مواد للمشروع'       : 'Material Issue')).reduce((s, e) => s + (e.amountRaw || 0), 0);
+    const totalExpenses      = expenseRows.reduce((s, e) => s + (e.amountRaw || 0), 0);
+    const supplierPayments   = expenseRows.filter(e => e.type === (isAr ? 'دفعات الموردين'      : 'Supplier Payment'   )).reduce((s, e) => s + (e.amountRaw || 0), 0);
+    const generalExpenses    = expenseRows.filter(e => e.type === (isAr ? 'مصاريف عامة'         : 'General Expense'    )).reduce((s, e) => s + (e.amountRaw || 0), 0);
+    const laborExpenses      = expenseRows.filter(e => e.type === (isAr ? 'تكاليف عمالة'        : 'Labor Costs'        )).reduce((s, e) => s + (e.amountRaw || 0), 0);
+    const equipmentExpenses  = expenseRows.filter(e => e.type === (isAr ? 'تكاليف معدات'        : 'Equipment Costs'    )).reduce((s, e) => s + (e.amountRaw || 0), 0);
+    const subcontractorCosts = expenseRows.filter(e => e.type === (isAr ? 'مقاولو الباطن'       : 'Subcontractor Costs')).reduce((s, e) => s + (e.amountRaw || 0), 0);
+    const materialIssues     = expenseRows.filter(e => e.type === (isAr ? 'صرف مواد للمشروع'    : 'Material Issue'     )).reduce((s, e) => s + (e.amountRaw || 0), 0);
+    const assetPurchases     = expenseRows.filter(e => e.type === (isAr ? 'شراء أصول'           : 'Asset Purchase'     )).reduce((s, e) => s + (e.amountRaw || 0), 0); // ← جديد
 
     return [
-      { label: isAr ? 'إجمالي المصاريف'      : 'Total Expenses',       value: fmt(totalExpenses),      color: 'red',    icon: TrendingDown },
-      { label: isAr ? 'دفعات الموردين'        : 'Supplier Payments',    value: fmt(supplierPayments),   color: 'orange', icon: Users },
-      { label: isAr ? 'المصاريف العامة'       : 'General Expenses',     value: fmt(generalExpenses),    color: 'blue',   icon: Receipt },
-      { label: isAr ? 'تكاليف العمالة'        : 'Labor Costs',          value: fmt(laborExpenses),      color: 'green',  icon: HardHat },
-      { label: isAr ? 'تكاليف المعدات'        : 'Equipment Costs',      value: fmt(equipmentExpenses),  color: 'purple', icon: Wrench },
-      { label: isAr ? 'مقاولو الباطن'         : 'Subcontractors',       value: fmt(subcontractorCosts), color: 'yellow', icon: Users },
-      { label: isAr ? 'مواد المشاريع'         : 'Project Materials',    value: fmt(materialIssues),     color: 'indigo', icon: Package },
+      { label: isAr ? 'إجمالي المصاريف'  : 'Total Expenses',    value: fmt(totalExpenses),      color: 'red',    icon: TrendingDown },
+      { label: isAr ? 'دفعات الموردين'   : 'Supplier Payments', value: fmt(supplierPayments),   color: 'orange', icon: Users        },
+      { label: isAr ? 'المصاريف العامة'  : 'General Expenses',  value: fmt(generalExpenses),    color: 'blue',   icon: Receipt      },
+      { label: isAr ? 'تكاليف العمالة'   : 'Labor Costs',       value: fmt(laborExpenses),      color: 'green',  icon: HardHat      },
+      { label: isAr ? 'تكاليف المعدات'   : 'Equipment Costs',   value: fmt(equipmentExpenses),  color: 'purple', icon: Wrench       },
+      { label: isAr ? 'مقاولو الباطن'    : 'Subcontractors',    value: fmt(subcontractorCosts), color: 'yellow', icon: Users        },
+      { label: isAr ? 'مواد المشاريع'    : 'Project Materials', value: fmt(materialIssues),     color: 'indigo', icon: Package      },
+      { label: isAr ? 'شراء الأصول'      : 'Asset Purchases',   value: fmt(assetPurchases),     color: 'teal',   icon: Wrench       }, // ← جديد
     ];
   }, [expenseRows, isAr]);
 
@@ -383,9 +408,9 @@ export default function ExpensesReport({ isAr, refreshKey }) {
       >
         <StatisticsCards statistics={statistics} />
         <FiltersBar
-          dateFrom={dateFrom} setDateFrom={setDateFrom}
-          dateTo={dateTo}     setDateTo={setDateTo}
-          searchTerm={searchTerm} setSearchTerm={setSearchTerm}
+          dateFrom={dateFrom}       setDateFrom={setDateFrom}
+          dateTo={dateTo}           setDateTo={setDateTo}
+          searchTerm={searchTerm}   setSearchTerm={setSearchTerm}
           showColumnFilters={showColumnFilters} setShowColumnFilters={setShowColumnFilters}
           activeFilterCount={activeFilterCount}
           columnFilters={columnFilters} setColumnFilters={setColumnFilters}

@@ -3,7 +3,7 @@ import {
   ShoppingCart, Search, Plus, Eye, Download,
   ChevronUp, ChevronDown, FileText, Calendar,
   Clock, Package, X, Trash2, DollarSign,
-  TrendingUp, Printer
+  TrendingUp, Printer, Info
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/errorHandler";
@@ -35,6 +35,41 @@ const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
   </th>
 );
 
+// ── Helper: الوحدات المتاحة لمادة محددة ───────────────────
+function getAvailableUnits(material, units) {
+  if (!material) return [];
+  const baseId = material.baseUnit?._id?.toString() || material.baseUnit?.toString();
+  const altIds  = (material.alternativeUnits || []).map(u =>
+    u.unitId?._id?.toString() || u.unitId?.toString()
+  );
+  const allIds  = [baseId, ...altIds].filter(Boolean);
+  return units.filter(u => allIds.includes(u._id?.toString()));
+}
+
+// ── Helper: معامل التحويل الافتراضي لوحدة في مادة ─────────
+function getDefaultCF(material, unitId) {
+  if (!material || !unitId) return 1;
+  const baseId = material.baseUnit?._id?.toString() || material.baseUnit?.toString();
+  if (unitId === baseId) return 1;
+  const alt = (material.alternativeUnits || []).find(u => {
+    const id = u.unitId?._id?.toString() || u.unitId?.toString();
+    return id === unitId;
+  });
+  return alt?.conversionFactor ?? 1;
+}
+
+// ── Helper: هل الوحدة تسمح بـ override؟ ───────────────────
+function isOverrideAllowed(material, unitId) {
+  if (!material || !unitId) return false;
+  const baseId = material.baseUnit?._id?.toString() || material.baseUnit?.toString();
+  if (unitId === baseId) return false;
+  const alt = (material.alternativeUnits || []).find(u => {
+    const id = u.unitId?._id?.toString() || u.unitId?.toString();
+    return id === unitId;
+  });
+  return alt?.allowOverride === true;
+}
+
 // ── Main Component ─────────────────────────────────────────
 export default function PurchaseOrders() {
   const { lang, t } = useContext(LanguageContext);
@@ -58,7 +93,8 @@ export default function PurchaseOrders() {
     invoiceDate: new Date().toISOString().split("T")[0],
     supplierInvoiceNo: "",
     creditDays: 30,
-    items: [{ materialId: "", unitId: "", quantity: 1, unitPrice: 0 }],
+    // ✅ ضفنا conversionFactor في كل item
+    items: [{ materialId: "", unitId: "", quantity: 1, unitPrice: 0, conversionFactor: "" }],
     notes: ""
   });
 
@@ -92,7 +128,7 @@ export default function PurchaseOrders() {
   const resetForm = () => setFormData({
     supplierId: "", invoiceDate: new Date().toISOString().split("T")[0],
     supplierInvoiceNo: "", creditDays: 30,
-    items: [{ materialId: "", unitId: "", quantity: 1, unitPrice: 0 }], notes: ""
+    items: [{ materialId: "", unitId: "", quantity: 1, unitPrice: 0, conversionFactor: "" }], notes: ""
   });
 
   const handleSubmit = async (e) => {
@@ -107,7 +143,20 @@ export default function PurchaseOrders() {
         supplierInvoiceNo: formData.supplierInvoiceNo,
         creditDays: parseInt(formData.creditDays),
         items: formData.items.filter(i => i.materialId && i.quantity > 0)
-          .map(i => ({ materialId: i.materialId, quantity: parseFloat(i.quantity), unitPrice: parseFloat(i.unitPrice), unitId: i.unitId })),
+          .map(i => {
+            const item = {
+              materialId: i.materialId,
+              quantity:   parseFloat(i.quantity),
+              unitPrice:  parseFloat(i.unitPrice),
+              unitId:     i.unitId
+            };
+            // ✅ بنبعت conversionFactor بس لو allowOverride وفيه قيمة
+            const mat = materials.find(m => m._id === i.materialId);
+            if (isOverrideAllowed(mat, i.unitId) && i.conversionFactor !== "") {
+              item.conversionFactor = parseFloat(i.conversionFactor);
+            }
+            return item;
+          }),
         notes: formData.notes || ""
       };
       if (editingPurchase) {
@@ -194,17 +243,11 @@ export default function PurchaseOrders() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
-            >
+            <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm">
               <Download className="w-4 h-4" />
               {t?.export || (lang === "ar" ? "تصدير" : "Export")}
             </button>
-            <button
-              onClick={() => { setEditingPurchase(null); resetForm(); setShowModal(true); }}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
-            >
+            <button onClick={() => { setEditingPurchase(null); resetForm(); setShowModal(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm">
               <Plus className="w-4 h-4" />
               {t?.addPurchaseOrder || (lang === "ar" ? "إضافة أمر شراء" : "Add Purchase Order")}
             </button>
@@ -231,19 +274,9 @@ export default function PurchaseOrders() {
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder={lang === "ar" ? "بحث برقم الفاتورة أو المورد..." : "Search by invoice or supplier..."}
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-            />
+            <input type="text" placeholder={lang === "ar" ? "بحث برقم الفاتورة أو المورد..." : "Search by invoice or supplier..."} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" />
           </div>
-          <select
-            value={filterSupplier}
-            onChange={e => setFilterSupplier(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-          >
+          <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)} className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
             <option value="all">{t?.allSuppliers || (lang === "ar" ? "كل الموردين" : "All Suppliers")}</option>
             {suppliers.map(s => <option key={s._id} value={s._id}>{lang === "ar" ? s.nameAr : s.nameEn}</option>)}
           </select>
@@ -341,7 +374,7 @@ export default function PurchaseOrders() {
           onClose={() => setDetailsTarget(null)}
           t={t} lang={lang}
           calculateTotal={calculateTotal}
-          units={units}  // ← الإضافة المهمة
+          units={units}
         />
       )}
     </div>
@@ -352,11 +385,31 @@ export default function PurchaseOrders() {
 // PURCHASE MODAL
 // ═══════════════════════════════════════════
 function PurchaseModal({ formData, setFormData, suppliers, materials, units, onClose, onSubmit, saving, editing, t, lang }) {
-  const handleAddItem    = () => setFormData({ ...formData, items: [...formData.items, { materialId: "", unitId: "", quantity: 1, unitPrice: 0 }] });
+  const handleAddItem    = () => setFormData({ ...formData, items: [...formData.items, { materialId: "", unitId: "", quantity: 1, unitPrice: 0, conversionFactor: "" }] });
   const handleRemoveItem = (i) => setFormData({ ...formData, items: formData.items.filter((_, idx) => idx !== i) });
-  const handleItemChange = (i, field, value) => { const items = [...formData.items]; items[i][field] = value; setFormData({ ...formData, items }); };
   const calculateTotal   = () => formData.items.reduce((s, i) => s + (parseFloat(i.quantity || 0) * parseFloat(i.unitPrice || 0)), 0);
   const getMaterialName  = (id) => { const m = materials.find(m => m._id === id); return m ? (lang === "ar" ? m.nameAr : m.nameEn) : ""; };
+
+  const handleItemChange = (idx, field, value) => {
+    const items = [...formData.items];
+
+    if (field === "materialId") {
+      const mat = materials.find(m => m._id === value);
+      // ✅ لو فيه defaultPurchaseUnit استخدمه، غير كده الـ base
+      const defaultUnitId = mat?.defaultPurchaseUnit?._id?.toString()
+        || mat?.defaultPurchaseUnit?.toString()
+        || mat?.baseUnit?._id?.toString()
+        || mat?.baseUnit?.toString()
+        || "";
+      items[idx] = { ...items[idx], materialId: value, unitId: defaultUnitId, conversionFactor: "" };
+    } else if (field === "unitId") {
+      // ✅ لما يغير الوحدة نمسح الـ conversionFactor عشان يبدأ بالافتراضي
+      items[idx] = { ...items[idx], unitId: value, conversionFactor: "" };
+    } else {
+      items[idx] = { ...items[idx], [field]: value };
+    }
+    setFormData({ ...formData, items });
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -368,8 +421,11 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onC
           </h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition"><X size={20} /></button>
         </div>
+
         <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
           <div className="p-6 space-y-5">
+
+            {/* Basic Info */}
             <div className="bg-gray-50 rounded-2xl p-5 space-y-4">
               <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                 <FileText size={16} className="text-indigo-500" />
@@ -398,6 +454,7 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onC
               </div>
             </div>
 
+            {/* Items */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -408,45 +465,128 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onC
                   <Plus size={14} />{lang === "ar" ? "إضافة مادة" : "Add Item"}
                 </button>
               </div>
-              {formData.items.map((item, index) => (
-                <div key={index} className="bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-200 transition">
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                    <div className="md:col-span-5">
-                      <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "المادة" : "Material"}</label>
-                      <select value={item.materialId} onChange={e => { const materialId = e.target.value; const material = materials.find(m => m._id === materialId); const newItems = [...formData.items]; newItems[index] = { ...newItems[index], materialId, unitId: material?.baseUnit || "" }; setFormData({ ...formData, items: newItems }); }} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50" dir={lang === "ar" ? "rtl" : "ltr"}>
-                        <option value="">{lang === "ar" ? "اختر المادة" : "Select Material"}</option>
-                        {materials.map(m => <option key={m._id} value={m._id}>{lang === "ar" ? m.nameAr : m.nameEn}</option>)}
-                      </select>
+
+              {formData.items.map((item, index) => {
+                const selectedMaterial  = materials.find(m => m._id === item.materialId);
+                const availableUnits    = getAvailableUnits(selectedMaterial, units);
+                const baseUnitId        = selectedMaterial?.baseUnit?._id?.toString() || selectedMaterial?.baseUnit?.toString();
+                const canOverride       = isOverrideAllowed(selectedMaterial, item.unitId);
+                const defaultCF         = getDefaultCF(selectedMaterial, item.unitId);
+                const isAltUnit         = item.unitId && baseUnitId && item.unitId !== baseUnitId;
+
+                // حساب الكمية بالـ base unit للعرض
+                const qty = parseFloat(item.quantity) || 0;
+                const cf  = item.conversionFactor !== "" ? parseFloat(item.conversionFactor) : defaultCF;
+                const qtyInBase = isAltUnit && qty > 0 ? qty * cf : null;
+
+                return (
+                  <div key={index} className="bg-white border border-gray-200 rounded-2xl p-4 hover:border-indigo-200 transition space-y-3">
+                    {/* Main row */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                      {/* Material */}
+                      <div className="md:col-span-4">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "المادة" : "Material"}</label>
+                        <select
+                          value={item.materialId}
+                          onChange={e => handleItemChange(index, "materialId", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50"
+                          dir={lang === "ar" ? "rtl" : "ltr"}
+                        >
+                          <option value="">{lang === "ar" ? "اختر المادة" : "Select Material"}</option>
+                          {materials.map(m => <option key={m._id} value={m._id}>{lang === "ar" ? m.nameAr : m.nameEn}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Unit — ✅ مفلترة على الوحدات المتاحة للمادة */}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الوحدة" : "Unit"}</label>
+                        <select
+                          value={item.unitId}
+                          onChange={e => handleItemChange(index, "unitId", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 disabled:opacity-50"
+                          disabled={!item.materialId}
+                        >
+                          <option value="">{lang === "ar" ? "اختر الوحدة" : "Select Unit"}</option>
+                          {availableUnits.map(u => (
+                            <option key={u._id} value={u._id}>
+                              {lang === "ar" ? u.nameAr : u.nameEn}
+                              {u._id?.toString() === baseUnitId ? (lang === "ar" ? " (أساسية)" : " (base)") : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Quantity */}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الكمية" : "Quantity"}</label>
+                        <Input type="number" value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} min="0.01" step="0.01" className="text-sm rounded-xl border-gray-200" dir={lang === "ar" ? "rtl" : "ltr"} />
+                      </div>
+
+                      {/* Unit Price */}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "سعر الوحدة" : "Unit Price"}</label>
+                        <Input type="number" value={item.unitPrice} onChange={e => handleItemChange(index, "unitPrice", e.target.value)} min="0" step="0.01" className="text-sm rounded-xl border-gray-200" dir={lang === "ar" ? "rtl" : "ltr"} />
+                      </div>
+
+                      {/* Delete */}
+                      <div className="md:col-span-2 flex justify-end items-end gap-2">
+                        {qtyInBase != null && (
+                          <div className="flex-1 bg-blue-50 border border-blue-100 rounded-xl px-2 py-1.5 text-center">
+                            <p className="text-xs text-blue-400">{lang === "ar" ? "بالأساسية" : "In base"}</p>
+                            <p className="text-xs font-bold text-blue-700">{qtyInBase.toLocaleString(undefined, { maximumFractionDigits: 4 })}</p>
+                          </div>
+                        )}
+                        {formData.items.length > 1 && (
+                          <button type="button" onClick={() => handleRemoveItem(index)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition flex-shrink-0"><Trash2 size={16} /></button>
+                        )}
+                      </div>
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الوحدة" : "Unit"}</label>
-                      <select value={item.unitId} onChange={e => handleItemChange(index, "unitId", e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 disabled:opacity-50" disabled={!item.materialId}>
-                        <option value="">{lang === "ar" ? "اختر الوحدة" : "Select Unit"}</option>
-                        {item.materialId && (() => { const material = materials.find(m => m._id === item.materialId); if (!material) return null; const avail = []; if (material.baseUnit) { const u = units.find(u => u._id === material.baseUnit); if (u) avail.push(u); } (material.alternativeUnits || []).forEach(id => { const u = units.find(u => u._id === id); if (u) avail.push(u); }); return avail.map(u => <option key={u._id} value={u._id}>{lang === "ar" ? u.nameAr : u.nameEn}</option>); })()}
-                      </select>
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الكمية" : "Quantity"}</label>
-                      <Input type="number" value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} min="0.01" step="0.01" className="text-sm rounded-xl border-gray-200" dir={lang === "ar" ? "rtl" : "ltr"} />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "سعر الوحدة" : "Unit Price"}</label>
-                      <Input type="number" value={item.unitPrice} onChange={e => handleItemChange(index, "unitPrice", e.target.value)} min="0" step="0.01" className="text-sm rounded-xl border-gray-200" dir={lang === "ar" ? "rtl" : "ltr"} />
-                    </div>
-                    <div className="md:col-span-1 flex justify-end">
-                      {formData.items.length > 1 && (
-                        <button type="button" onClick={() => handleRemoveItem(index)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition"><Trash2 size={16} /></button>
-                      )}
-                    </div>
+
+                    {/* ✅ Conversion Factor row — يظهر بس لو وحدة بديلة */}
+                    {isAltUnit && (
+                      <div className="pt-2 border-t border-gray-100 flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs font-medium text-gray-600">
+                            {lang === "ar" ? "معامل التحويل:" : "Conv. Factor:"}
+                            {canOverride && <span className="ml-1 text-amber-500">({lang === "ar" ? "قابل للتعديل" : "editable"})</span>}
+                          </label>
+                          <input
+                            type="number"
+                            step="0.000001"
+                            min="0.000001"
+                            value={item.conversionFactor !== "" ? item.conversionFactor : defaultCF}
+                            onChange={e => { if (canOverride) handleItemChange(index, "conversionFactor", e.target.value); }}
+                            readOnly={!canOverride}
+                            className={`w-32 px-3 py-1.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 ${
+                              canOverride
+                                ? "border-amber-300 bg-amber-50 cursor-text"
+                                : "border-gray-200 bg-gray-100 cursor-not-allowed text-gray-500"
+                            }`}
+                          />
+                          <span className="text-xs text-gray-400">
+                            {lang === "ar" ? "= 1 وحدة مختارة → base" : "= 1 selected unit → base"}
+                          </span>
+                        </div>
+                        {!canOverride && (
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <Info size={12} />
+                            {lang === "ar" ? "معامل ثابت" : "Fixed factor"}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Subtotal */}
+                    {item.materialId && (
+                      <div className="pt-2 border-t border-gray-100 flex justify-between items-center text-sm">
+                        <span className="text-gray-500">{getMaterialName(item.materialId)}</span>
+                        <span className="font-semibold text-gray-900">{lang === "ar" ? "المجموع:" : "Subtotal:"} {formatCurrency((item.quantity || 0) * (item.unitPrice || 0), lang)}</span>
+                      </div>
+                    )}
                   </div>
-                  {item.materialId && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-sm">
-                      <span className="text-gray-500">{getMaterialName(item.materialId)}</span>
-                      <span className="font-semibold text-gray-900">{lang === "ar" ? "المجموع:" : "Subtotal:"} {formatCurrency((item.quantity || 0) * (item.unitPrice || 0), lang)}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
+
               <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-semibold text-gray-700">{lang === "ar" ? "الإجمالي الكلي:" : "Grand Total:"}</span>
@@ -455,12 +595,14 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onC
               </div>
             </div>
 
+            {/* Notes */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "ملاحظات" : "Notes"}</label>
               <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={3} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 resize-none" placeholder={lang === "ar" ? "أضف ملاحظات إضافية..." : "Add additional notes..."} dir={lang === "ar" ? "rtl" : "ltr"} />
             </div>
           </div>
         </div>
+
         <div className="px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-100">
           <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
             {lang === "ar" ? "إلغاء" : "Cancel"}
@@ -475,7 +617,7 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onC
 }
 
 // ═══════════════════════════════════════════
-// PURCHASE DETAILS MODAL
+// PURCHASE DETAILS MODAL — unchanged
 // ═══════════════════════════════════════════
 function PurchaseDetailsModal({ purchase, onClose, calculateTotal, units = [] }) {
   const { lang } = useContext(LanguageContext);
@@ -497,19 +639,15 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal, units = [] })
     return m ? (isAr ? m.nameAr : m.nameEn) : tr("غير معروف", "Unknown");
   };
 
-  // ── الإصلاح: بحث في units array ──
   const getMaterialUnit = (item) => {
-    // لو unitId هو object متاح (populated من الـ backend)
     if (item.unitId && typeof item.unitId === "object") {
       return isAr ? item.unitId.nameAr : item.unitId.nameEn;
     }
-    // ابحث في الـ units array بالـ string id
     const unitId = typeof item.unitId === "string" ? item.unitId : null;
     if (unitId) {
       const unit = units.find(u => u._id === unitId);
       if (unit) return isAr ? unit.nameAr : unit.nameEn;
     }
-    // fallback: ابحث عن الـ baseUnit من الـ material
     const materialId = typeof item.materialId === "string" ? item.materialId : item.materialId?._id;
     const material = materials.find(m => m._id === materialId);
     if (material?.baseUnit) {
