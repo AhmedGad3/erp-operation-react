@@ -602,7 +602,7 @@ export default function Units() {
   const isFiltering = searchTerm || filterCat !== "all" || filterStatus !== "ALL";
 
   if (loading && units.length === 0)
-    return <FullPageLoader text={"Loading units..."} />;
+    return <FullPageLoader text={lang === 'ar' ? 'جاري تحميل الوحدات...' : 'Loading units ...'} />;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
