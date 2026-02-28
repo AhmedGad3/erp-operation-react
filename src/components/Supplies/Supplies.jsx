@@ -13,15 +13,15 @@ import AdminActionModal from '../modals/AdminActionModal';
 
 // Fallback hardcoded categories (used if API fails)
 const FALLBACK_CATEGORIES = [
-  { value: 'Construction-Materials', labelEn: 'Construction Materials', labelAr: 'Ù…ÙˆØ§Ø¯ Ø§Ù„Ø¨Ù†Ø§Ø¡'  },
-  { value: 'Tools-Equipment',        labelEn: 'Tools & Equipment',       labelAr: 'Ø£Ø¯ÙˆØ§Øª ÙˆÙ…Ø¹Ø¯Ø§Øª' },
-  { value: 'Electrical',             labelEn: 'Electrical',              labelAr: 'ÙƒÙ‡Ø±Ø¨Ø§Ø¡'       },
-  { value: 'Plumbing',               labelEn: 'Plumbing',                labelAr: 'Ø³Ø¨Ø§ÙƒØ©'        },
-  { value: 'Finishing',              labelEn: 'Finishing',               labelAr: 'ØªØ´Ø·ÙŠØ¨Ø§Øª'      },
-  { value: 'Other',                  labelEn: 'Other',                   labelAr: 'Ø£Ø®Ø±Ù‰'         },
+  { value: 'Construction-Materials', labelEn: 'Construction Materials', labelAr: '\u0645\u0648\u0627\u062f \u0627\u0644\u0628\u0646\u0627\u0621'  },
+  { value: 'Tools-Equipment',        labelEn: 'Tools & Equipment',       labelAr: '\u0623\u062f\u0648\u0627\u062a \u0648\u0645\u0639\u062f\u0627\u062a' },
+  { value: 'Electrical',             labelEn: 'Electrical',              labelAr: '\u0643\u0647\u0631\u0628\u0627\u0621'       },
+  { value: 'Plumbing',               labelEn: 'Plumbing',                labelAr: '\u0633\u0628\u0627\u0643\u0629'        },
+  { value: 'Finishing',              labelEn: 'Finishing',               labelAr: '\u062a\u0634\u0637\u064a\u0628\u0627\u062a'      },
+  { value: 'Other',                  labelEn: 'Other',                   labelAr: '\u0623\u062e\u0631\u0649'         },
 ];
 
-// â”€â”€ Sortable column header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Sortable column header 
 const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
   <th
     className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer select-none"
@@ -37,14 +37,14 @@ const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
   </th>
 );
 
-// â”€â”€ Status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Status badge 
 const StatusBadge = ({ isActive, lang }) => {
   if (isActive === false)
-    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? 'ØºÙŠØ± Ù†Ø´Ø·' : 'Inactive'}</span>;
-  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? 'Ù†Ø´Ø·' : 'Active'}</span>;
+    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? '\u063a\u064a\u0631 \u0646\u0634\u0637' : 'Inactive'}</span>;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? '\u0646\u0634\u0637' : 'Active'}</span>;
 };
 
-// â”€â”€ Three-dots menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Three-dots menu 
 const ActionsMenu = ({ material, lang, onEdit, onDelete, onActivate }) => {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -78,19 +78,19 @@ const ActionsMenu = ({ material, lang, onEdit, onDelete, onActivate }) => {
         <div style={{ position: 'fixed', top: menuPos.top, left: menuPos.left }} className="w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1">
           <button onClick={() => { setOpen(false); onEdit(material); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
             <Edit className="w-4 h-4" />
-            {lang === 'ar' ? 'ØªØ¹Ø¯ÙŠÙ„' : 'Edit'}
+            {lang === 'ar' ? '\u062a\u0639\u062f\u064a\u0644' : 'Edit'}
           </button>
 
           {material.isActive === false && (
             <button onClick={() => { setOpen(false); onActivate(material); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-green-600 hover:bg-green-50 transition">
               <CheckCircle className="w-4 h-4" />
-              {lang === 'ar' ? 'ØªÙØ¹ÙŠÙ„' : 'Activate'}
+              {lang === 'ar' ? '\u062a\u0641\u0639\u064a\u0644' : 'Activate'}
             </button>
           )}
 
           <button onClick={() => { setOpen(false); onDelete(material); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
             <Trash2 className="w-4 h-4" />
-            {lang === 'ar' ? 'Ø­Ø°Ù' : 'Delete'}
+            {lang === 'ar' ? '\u062d\u0630\u0641' : 'Delete'}
           </button>
         </div>
       )}
@@ -98,7 +98,7 @@ const ActionsMenu = ({ material, lang, onEdit, onDelete, onActivate }) => {
   );
 };
 
-// â”€â”€ Add/Edit Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Add/Edit Modal 
 const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, onClose, onSaved }) => {
   const [form, setForm] = useState({
     nameAr:             editMaterial?.nameAr             || '',
@@ -107,16 +107,16 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
     mainCategory:       editMaterial?.mainCategory       || (categories[0]?.value || 'Construction-Materials'),
     subCategory:        editMaterial?.subCategory        || '',
     baseUnit:           editMaterial?.baseUnit?._id || editMaterial?.baseUnit || '',
-    // âœ… Ø¸Ø¨Ø·Ù†Ø§ Ø§Ù„Ø§Ø³Ù… Ù„ÙŠØ·Ø§Ø¨Ù‚ Ø§Ù„Ù€ Schema
+    // S& ¸¨· § §§³& `·§¨ §¬ Schema
     minStockLevel:      editMaterial?.minStockLevel      || 0,
     lastPurchasedPrice: editMaterial?.lastPurchasePrice  || 0,
     lastPurchasedDate:  editMaterial?.lastPurchaseDate
       ? new Date(editMaterial.lastPurchaseDate).toISOString().split('T')[0] : '',
     description:        editMaterial?.description        || '',
-    // âœ… Ø§Ù„Ù€ defaultPurchaseUnit Ùˆ defaultIssueUnit
+    // S& §¬ defaultPurchaseUnit  defaultIssueUnit
     defaultPurchaseUnit: editMaterial?.defaultPurchaseUnit?._id || editMaterial?.defaultPurchaseUnit || '',
     defaultIssueUnit:    editMaterial?.defaultIssueUnit?._id    || editMaterial?.defaultIssueUnit    || '',
-    // âœ… alternativeUnits
+    // S& alternativeUnits
     alternativeUnits:   editMaterial?.alternativeUnits?.map(u => ({
       unitId:            u.unitId?._id || u.unitId || '',
       conversionFactor:  u.conversionFactor || 1,
@@ -127,7 +127,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
   });
   const [submitting, setSubmitting] = useState(false);
 
-  // Ø§Ù„ÙˆØ­Ø¯Ø§Øª Ø§Ù„Ù…ØªØ§Ø­Ø© Ù„Ù€ alternativeUnits (ØºÙŠØ± Ø§Ù„Ù€ baseUnit)
+  // §­¯§ª §&ª§­© ¬ alternativeUnits (º`± §¬ baseUnit)
   const altUnitOptions = units.filter(u => u._id !== form.baseUnit && u.isActive !== false);
 
   const handleAddAltUnit = () => {
@@ -148,7 +148,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
     const updated = [...form.alternativeUnits];
     updated[idx] = { ...updated[idx], [field]: value };
 
-    // Ù„Ùˆ Ø´ÙŠÙ‘Ù„Ù†Ø§ isDefaultPurchase Ø¹Ù† ÙˆØ­Ø¯Ø©ØŒ Ù†Ø®Ù„ÙŠÙ‡ true Ø¹Ù„Ù‰ Ø§Ù„Ø£ÙˆÙ„Ù‰ Ø¨Ø³
+    //  ´` § isDefaultPurchase ¹  ­¯©R  ®`! true ¹0 §£0 ¨³
     if (field === 'isDefaultPurchase' && value === true) {
       updated.forEach((u, i) => { if (i !== idx) u.isDefaultPurchase = false; });
     }
@@ -158,7 +158,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
     setForm(f => ({ ...f, alternativeUnits: updated }));
   };
 
-  // ÙˆØ­Ø¯Ø§Øª Ù…Ø³Ù…ÙˆØ­ Ø¨ÙŠÙ‡Ø§ Ù„Ù„Ù€ defaultPurchaseUnit/defaultIssueUnit (base + alternatives)
+  // ­¯§ª &³&­ ¨`!§ ¬ defaultPurchaseUnit/defaultIssueUnit (base + alternatives)
   const allowedUnitIds = [
     form.baseUnit,
     ...form.alternativeUnits.map(u => u.unitId).filter(Boolean)
@@ -166,14 +166,21 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
   const allowedUnits = units.filter(u => allowedUnitIds.includes(u._id));
 
   const handleSubmit = async () => {
-    if (!form.nameAr.trim() || !form.nameEn.trim()) { toast.error(lang === 'ar' ? 'Ø§Ø³Ù… Ø§Ù„Ù…Ø§Ø¯Ø© Ù…Ø·Ù„ÙˆØ¨' : 'Material name is required'); return; }
-    if (!form.code.trim())   { toast.error(lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨' : 'Code is required'); return; }
-    if (!form.baseUnit)      { toast.error(lang === 'ar' ? 'Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ù…Ø·Ù„ÙˆØ¨Ø©' : 'Base unit is required'); return; }
+    if (!form.nameAr.trim() || !form.nameEn.trim()) { toast.error((lang === 'ar' ? '\u0627\u0633\u0645 \u0627\u0644\u0645\u0627\u062f\u0629 \u0645\u0637\u0644\u0648\u0628' : 'Material name is required')); return; }
+    if (!form.code.trim())   { toast.error((lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f \u0645\u0637\u0644\u0648\u0628' : 'Code is required')); return; }
+    if (!form.baseUnit)      { toast.error((lang === 'ar' ? '\u0627\u0644\u0648\u062d\u062f\u0629 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629 \u0645\u0637\u0644\u0648\u0628\u0629' : 'Base unit is required')); return; }
 
     // Validate alternativeUnits
+    // Validate alternativeUnits
     for (const [i, alt] of form.alternativeUnits.entries()) {
-      if (!alt.unitId) { toast.error(lang === 'ar' ? `Ø§Ø®ØªØ± ÙˆØ­Ø¯Ø© ÙÙŠ Ø§Ù„Ø³Ø·Ø± ${i + 1}` : `Select unit in row ${i + 1}`); return; }
-      if (!alt.conversionFactor || alt.conversionFactor <= 0) { toast.error(lang === 'ar' ? `Ù…Ø¹Ø§Ù…Ù„ Ø§Ù„ØªØ­ÙˆÙŠÙ„ ØºÙ„Ø· ÙÙŠ Ø§Ù„Ø³Ø·Ø± ${i + 1}` : `Invalid conversion factor in row ${i + 1}`); return; }
+      if (!alt.unitId) {
+        toast.error(`Select unit in row ${i + 1}`);
+        return;
+      }
+      if (!alt.conversionFactor || alt.conversionFactor <= 0) {
+        toast.error(`Invalid conversion factor in row ${i + 1}`);
+        return;
+      }
     }
 
     try {
@@ -183,9 +190,9 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
   nameEn:             form.nameEn.trim(),
   code:               form.code.trim().toUpperCase(),
   mainCategory:       form.mainCategory,
-  subCategory:        form.subCategory.trim() || undefined,   // âœ… undefined Ù…Ø´ ''
+  subCategory:        form.subCategory.trim() || undefined,   // S& undefined &´ ''
   baseUnit:           form.baseUnit,
-  minLevelStock:      Number(form.minStockLevel) || 0,        // âœ… ØµØ­ Ø§Ù„Ø§Ø³Ù…
+  minLevelStock:      Number(form.minStockLevel) || 0,        // S& µ­ §§³&
   lastPurchasedPrice: Number(form.lastPurchasedPrice) || undefined,
   lastPurchasedDate:  form.lastPurchasedDate || undefined,
   description:        form.description.trim() || undefined,
@@ -204,11 +211,11 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
       if (mode === 'add') await axiosInstance.post('/materials', payload);
       else await axiosInstance.put(`/materials/${editMaterial._id}`, payload);
 
-      toast.success(lang === 'ar' ? 'ØªÙ… Ø§Ù„Ø­ÙØ¸ Ø¨Ù†Ø¬Ø§Ø­' : 'Saved successfully');
+      toast.success((lang === 'ar' ? '\u062a\u0645 \u0627\u0644\u062d\u0641\u0638 \u0628\u0646\u062c\u0627\u062d' : 'Saved successfully'));
       onSaved();
       onClose();
     } catch (err) {
-      toast.error(getErrorMessage(err, lang === 'ar' ? 'ÙØ´Ù„ Ø­ÙØ¸ Ø§Ù„Ù…Ø§Ø¯Ø©' : 'Failed to save material'));
+      toast.error(getErrorMessage(err, 'Failed to save material'));
     } finally {
       setSubmitting(false);
     }
@@ -219,7 +226,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
-            {mode === 'add' ? (lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ù…Ø§Ø¯Ø© Ø¬Ø¯ÙŠØ¯Ø©' : 'Add New Material') : (lang === 'ar' ? 'ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù…Ø§Ø¯Ø©' : 'Edit Material')}
+            {mode === 'add' ? ((lang === 'ar' ? '\u0625\u0636\u0627\u0641\u0629 \u0645\u0627\u062f\u0629 \u062c\u062f\u064a\u062f\u0629' : 'Add New Material')) : ((lang === 'ar' ? '\u062a\u0639\u062f\u064a\u0644 \u0627\u0644\u0645\u0627\u062f\u0629' : 'Edit Material'))}
           </h2>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 text-gray-400"><X className="w-5 h-5" /></button>
         </div>
@@ -228,11 +235,11 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
           {/* Names */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©' : 'Name (Arabic)'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629' : 'Name (Arabic)'} <span className="text-red-500">*</span></label>
               <input type="text" dir="rtl" value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©' : 'Name (English)'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629' : 'Name (English)'} <span className="text-red-500">*</span></label>
               <input type="text" dir="ltr" value={form.nameEn} onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
           </div>
@@ -240,11 +247,11 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
           {/* Code + Category */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code'} <span className="text-red-500">*</span></label>
               <input type="text" placeholder="STEEL-14MM" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙØ¦Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©' : 'Main Category'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0641\u0626\u0629 \u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629' : 'Main Category'} <span className="text-red-500">*</span></label>
               <select value={form.mainCategory} onChange={e => setForm(f => ({ ...f, mainCategory: e.target.value }))} disabled={mode === 'edit'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 disabled:opacity-60">
                 {categories.map(c => <option key={c.value} value={c.value}>{lang === 'ar' ? (c.labelAr || c.label) : (c.labelEn || c.label)}</option>)}
               </select>
@@ -254,24 +261,24 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
           {/* Sub Category + Base Unit */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙØ¦Ø© Ø§Ù„ÙØ±Ø¹ÙŠØ©' : 'Sub Category'}</label>
-              <input type="text" dir={lang === 'ar' ? 'rtl' : 'ltr'} value={form.subCategory} onChange={e => setForm(f => ({ ...f, subCategory: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0641\u0626\u0629 \u0627\u0644\u0641\u0631\u0639\u064a\u0629' : 'Sub Category'}</label>
+              <input type="text" dir={'ltr'} value={form.subCategory} onChange={e => setForm(f => ({ ...f, subCategory: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'ÙˆØ­Ø¯Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† (Base)' : 'Storage Unit (Base)'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0648\u062d\u062f\u0629 \u0627\u0644\u062a\u062e\u0632\u064a\u0646 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629' : 'Storage Unit (Base)'} <span className="text-red-500">*</span></label>
               <select value={form.baseUnit} onChange={e => setForm(f => ({ ...f, baseUnit: e.target.value, alternativeUnits: [], defaultPurchaseUnit: '', defaultIssueUnit: '' }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50">
-                <option value="">{lang === 'ar' ? 'Ø§Ø®ØªØ± Ø§Ù„ÙˆØ­Ø¯Ø©' : 'Select Unit'}</option>
+                <option value="">{lang === 'ar' ? '\u0627\u062e\u062a\u0631 \u0627\u0644\u0648\u062d\u062f\u0629' : 'Select Unit'}</option>
                 {units.filter(u => u.isActive !== false).map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn} ({u.symbol})</option>)}
               </select>
             </div>
           </div>
 
-          {/* âœ… Alternative Units Section */}
+          {/* S& Alternative Units Section */}
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
               <div>
-                <p className="text-sm font-medium text-gray-700">{lang === 'ar' ? 'ÙˆØ­Ø¯Ø§Øª Ø¨Ø¯ÙŠÙ„Ø©' : 'Alternative Units'}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{lang === 'ar' ? 'ÙˆØ­Ø¯Ø§Øª Ø§Ù„Ø´Ø±Ø§Ø¡ ÙˆØ§Ù„ØµØ±Ù Ø§Ù„Ù…Ø³Ù…ÙˆØ­Ø© Ø¨Ø®Ù„Ø§Ù Ø§Ù„Ù€ base' : 'Allowed purchase/issue units besides base'}</p>
+                <p className="text-sm font-medium text-gray-700">{lang === 'ar' ? '\u0648\u062d\u062f\u0627\u062a \u0628\u062f\u064a\u0644\u0629' : 'Alternative Units'}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{lang === 'ar' ? '\u0648\u062d\u062f\u0627\u062a \u0627\u0644\u0634\u0631\u0627\u0621/\u0627\u0644\u0635\u0631\u0641 \u0627\u0644\u0645\u062a\u0627\u062d\u0629 \u0628\u062e\u0644\u0627\u0641 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629' : 'Allowed purchase/issue units besides base'}</p>
               </div>
               <button
                 type="button"
@@ -280,13 +287,13 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Plus className="w-3.5 h-3.5" />
-                {lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ©' : 'Add'}
+                {lang === 'ar' ? '\u0625\u0636\u0627\u0641\u0629' : 'Add'}
               </button>
             </div>
 
             {form.alternativeUnits.length === 0 ? (
               <p className="text-xs text-gray-400 text-center py-4">
-                {lang === 'ar' ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ ÙˆØ­Ø¯Ø§Øª Ø¨Ø¯ÙŠÙ„Ø© â€” Ø§Ù„Ø´Ø±Ø§Ø¡ ÙˆØ§Ù„ØµØ±Ù Ø³ÙŠÙƒÙˆÙ† Ø¨Ø§Ù„Ù€ base unit ÙÙ‚Ø·' : 'No alternative units â€” purchase & issue will use base unit only'}
+                {lang === 'ar' ? '\u0644\u0627 \u062a\u0648\u062c\u062f \u0648\u062d\u062f\u0627\u062a \u0628\u062f\u064a\u0644\u0629\u060c \u0633\u064a\u062a\u0645 \u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0627\u0644\u0648\u062d\u062f\u0629 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629 \u0641\u0642\u0637' : 'No alternative units  purchase & issue will use base unit only'}
               </p>
             ) : (
               <div className="divide-y divide-gray-100">
@@ -295,13 +302,13 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
                     <div className="grid grid-cols-3 gap-2 items-end">
                       {/* Unit Select */}
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙˆØ­Ø¯Ø©' : 'Unit'} <span className="text-red-400">*</span></label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{lang === 'ar' ? '\u0627\u0644\u0648\u062d\u062f\u0629' : 'Unit'} <span className="text-red-400">*</span></label>
                         <select
                           value={alt.unitId}
                           onChange={e => handleAltUnitChange(idx, 'unitId', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         >
-                          <option value="">{lang === 'ar' ? 'Ø§Ø®ØªØ±' : 'Select'}</option>
+                          <option value="">{lang === 'ar' ? '\u0627\u062e\u062a\u0631' : 'Select'}</option>
                           {altUnitOptions.map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn} ({u.symbol})</option>)}
                         </select>
                       </div>
@@ -309,7 +316,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
                       {/* Conversion Factor */}
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          {lang === 'ar' ? 'Ù…Ø¹Ø§Ù…Ù„ Ø§Ù„ØªØ­ÙˆÙŠÙ„' : 'Conversion Factor'} <span className="text-red-400">*</span>
+                          {lang === 'ar' ? '\u0645\u0639\u0627\u0645\u0644 \u0627\u0644\u062a\u062d\u0648\u064a\u0644' : 'Conversion Factor'} <span className="text-red-400">*</span>
                         </label>
                         <input
                           type="number" step="0.000001" min="0.000001"
@@ -318,7 +325,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500"
                         />
                         <p className="text-xs text-gray-400 mt-0.5">
-                          {lang === 'ar' ? '1 ÙˆØ­Ø¯Ø© Ø¨Ø¯ÙŠÙ„Ø© = X ÙˆØ­Ø¯Ø© Ø£Ø³Ø§Ø³ÙŠØ©' : '1 alt unit = X base units'}
+                          {'1 alt unit = X base units'}
                         </p>
                       </div>
 
@@ -334,15 +341,15 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
                     <div className="flex flex-wrap items-center gap-4">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={alt.isDefaultPurchase} onChange={e => handleAltUnitChange(idx, 'isDefaultPurchase', e.target.checked)} className="w-4 h-4 text-indigo-600 border-gray-300 rounded" />
-                        <span className="text-xs text-gray-600">{lang === 'ar' ? 'Ø§ÙØªØ±Ø§Ø¶ÙŠ Ù„Ù„Ø´Ø±Ø§Ø¡' : 'Default Purchase'}</span>
+                        <span className="text-xs text-gray-600">{lang === 'ar' ? '\u0627\u0641\u062a\u0631\u0627\u0636\u064a \u0644\u0644\u0634\u0631\u0627\u0621' : 'Default Purchase'}</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={alt.isDefaultIssue} onChange={e => handleAltUnitChange(idx, 'isDefaultIssue', e.target.checked)} className="w-4 h-4 text-indigo-600 border-gray-300 rounded" />
-                        <span className="text-xs text-gray-600">{lang === 'ar' ? 'Ø§ÙØªØ±Ø§Ø¶ÙŠ Ù„Ù„ØµØ±Ù' : 'Default Issue'}</span>
+                        <span className="text-xs text-gray-600">{lang === 'ar' ? '\u0627\u0641\u062a\u0631\u0627\u0636\u064a \u0644\u0644\u0635\u0631\u0641' : 'Default Issue'}</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={alt.allowOverride} onChange={e => handleAltUnitChange(idx, 'allowOverride', e.target.checked)} className="w-4 h-4 text-amber-500 border-gray-300 rounded" />
-                        <span className="text-xs text-gray-600">{lang === 'ar' ? 'Ø§Ù„Ø³Ù…Ø§Ø­ Ø¨ØªØ¹Ø¯ÙŠÙ„ Ù…Ø¹Ø§Ù…Ù„ Ø§Ù„ØªØ­ÙˆÙŠÙ„' : 'Allow override conversion'}</span>
+                        <span className="text-xs text-gray-600">{lang === 'ar' ? '\u0627\u0644\u0633\u0645\u0627\u062d \u0628\u062a\u0639\u062f\u064a\u0644 \u0645\u0639\u0627\u0645\u0644 \u0627\u0644\u062a\u062d\u0648\u064a\u0644' : 'Allow override conversion'}</span>
                       </label>
                     </div>
                   </div>
@@ -351,20 +358,20 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
             )}
           </div>
 
-          {/* âœ… Default Units */}
+          {/* S& Default Units */}
           {allowedUnits.length > 0 && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'ÙˆØ­Ø¯Ø© Ø§Ù„Ø´Ø±Ø§Ø¡ Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ©' : 'Default Purchase Unit'}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0648\u062d\u062f\u0629 \u0627\u0644\u0634\u0631\u0627\u0621 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a\u0629' : 'Default Purchase Unit'}</label>
                 <select value={form.defaultPurchaseUnit} onChange={e => setForm(f => ({ ...f, defaultPurchaseUnit: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-gray-50">
-                  <option value="">{lang === 'ar' ? 'Ù†ÙØ³ Ø§Ù„Ù€ base' : 'Same as base'}</option>
+                  <option value="">{lang === 'ar' ? '\u0646\u0641\u0633 \u0627\u0644\u0648\u062d\u062f\u0629 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629' : 'Same as base'}</option>
                   {allowedUnits.map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn} ({u.symbol})</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'ÙˆØ­Ø¯Ø© Ø§Ù„ØµØ±Ù Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ©' : 'Default Issue Unit'}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0648\u062d\u062f\u0629 \u0627\u0644\u0635\u0631\u0641 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a\u0629' : 'Default Issue Unit'}</label>
                 <select value={form.defaultIssueUnit} onChange={e => setForm(f => ({ ...f, defaultIssueUnit: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-gray-50">
-                  <option value="">{lang === 'ar' ? 'Ù†ÙØ³ Ø§Ù„Ù€ base' : 'Same as base'}</option>
+                  <option value="">{lang === 'ar' ? '\u0646\u0641\u0633 \u0627\u0644\u0648\u062d\u062f\u0629 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629' : 'Same as base'}</option>
                   {allowedUnits.map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn} ({u.symbol})</option>)}
                 </select>
               </div>
@@ -374,33 +381,33 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
           {/* Stock + Price */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              {/* âœ… Ø¸Ø¨Ø·Ù†Ø§ Ø§Ù„Ø§Ø³Ù… */}
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ø¯Ù†Ù‰ Ù„Ù„Ù…Ø®Ø²ÙˆÙ†' : 'Min Stock Level'}</label>
+              {/* S& ¸¨· § §§³& */}
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u062d\u062f \u0627\u0644\u0623\u062f\u0646\u0649 \u0644\u0644\u0645\u062e\u0632\u0648\u0646' : 'Min Stock Level'}</label>
               <input type="number" min="0" value={form.minStockLevel} onChange={e => setForm(f => ({ ...f, minStockLevel: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø¢Ø®Ø± Ø³Ø¹Ø± Ø´Ø±Ø§Ø¡' : 'Last Purchase Price'}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0622\u062e\u0631 \u0633\u0639\u0631 \u0634\u0631\u0627\u0621' : 'Last Purchase Price'}</label>
               <input type="number" min="0" step="0.01" value={form.lastPurchasedPrice} onChange={e => setForm(f => ({ ...f, lastPurchasedPrice: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø¢Ø®Ø± Ø´Ø±Ø§Ø¡' : 'Last Purchase Date'}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u062a\u0627\u0631\u064a\u062e \u0622\u062e\u0631 \u0634\u0631\u0627\u0621' : 'Last Purchase Date'}</label>
             <input type="date" value={form.lastPurchasedDate} onChange={e => setForm(f => ({ ...f, lastPurchasedDate: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙˆØµÙ' : 'Description'}</label>
-            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows="2" dir={lang === 'ar' ? 'rtl' : 'ltr'} placeholder={lang === 'ar' ? 'Ø£Ø¶Ù ÙˆØµÙØ§Ù‹ Ù„Ù„Ù…Ø§Ø¯Ø©...' : 'Add material description...'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0648\u0635\u0641' : 'Description'}</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows="2" dir={'ltr'} placeholder={lang === 'ar' ? '\u0623\u0636\u0641 \u0648\u0635\u0641\u064b\u0627 \u0644\u0644\u0645\u0627\u062f\u0629...' : 'Add material description...'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none" />
           </div>
         </div>
 
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
-            {lang === 'ar' ? 'Ø¥Ù„ØºØ§Ø¡' : 'Cancel'}
+            {lang === 'ar' ? '\u0625\u0644\u063a\u0627\u0621' : 'Cancel'}
           </button>
           <button onClick={handleSubmit} disabled={submitting} className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50">
-            {submitting ? (lang === 'ar' ? 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸...' : 'Saving...') : (lang === 'ar' ? 'Ø­ÙØ¸' : 'Save')}
+            {submitting ? ((lang === 'ar' ? '\u062c\u0627\u0631\u064a \u0627\u0644\u062d\u0641\u0638...' : 'Saving...')) : ((lang === 'ar' ? '\u062d\u0641\u0638' : 'Save'))}
           </button>
         </div>
       </div>
@@ -408,7 +415,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
   );
 };
 
-// â”€â”€ Confirm Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Confirm Modal 
 export default function Supplies() {
   const { lang } = useContext(LanguageContext);
 
@@ -443,7 +450,7 @@ export default function Supplies() {
         const { data } = await axiosInstance.get(`/materials/search?q=${encodeURIComponent(searchTerm.trim())}`);
         setSearchResults(data.result || data || []);
       } catch {
-        toast.error(lang === 'ar' ? 'ÙØ´Ù„ Ø§Ù„Ø¨Ø­Ø«' : 'Search failed');
+        toast.error((lang === 'ar' ? '\u0641\u0634\u0644 \u0627\u0644\u0628\u062d\u062b' : 'Search failed'));
         setSearchResults([]);
       } finally { setSearching(false); }
     }, 400);
@@ -456,7 +463,7 @@ export default function Supplies() {
       const { data } = await axiosInstance.get('/materials');
       setMaterials(data.result || data || []);
     } catch {
-      toast.error(lang === 'ar' ? 'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…ÙˆØ§Ø¯' : 'Failed to load materials');
+      toast.error((lang === 'ar' ? '\u0641\u0634\u0644 \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0645\u0648\u0627\u062f' : 'Failed to load materials'));
     } finally { setLoading(false); }
   };
 
@@ -480,7 +487,7 @@ export default function Supplies() {
   const handleDelete = async () => {
     try {
       await axiosInstance.delete(`/materials/${deleteModal.material._id}`);
-      toast.success(lang === 'ar' ? 'ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ø§Ø¯Ø© Ø¨Ù†Ø¬Ø§Ø­' : 'Material deleted');
+      toast.success((lang === 'ar' ? '\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0645\u0627\u062f\u0629' : 'Material deleted'));
       setDeleteModal({ show: false, material: null });
       fetchMaterials();
     } catch (err) {
@@ -491,10 +498,10 @@ export default function Supplies() {
   const handleActivate = async (material) => {
     try {
       await axiosInstance.patch(`/materials/${material._id}/activate`);
-      toast.success(lang === 'ar' ? 'ØªÙ… ØªÙØ¹ÙŠÙ„ Ø§Ù„Ù…Ø§Ø¯Ø© Ø¨Ù†Ø¬Ø§Ø­' : 'Material activated successfully');
+      toast.success((lang === 'ar' ? '\u062a\u0645 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0645\u0627\u062f\u0629 \u0628\u0646\u062c\u0627\u062d' : 'Material activated successfully'));
       fetchMaterials();
     } catch (err) {
-      toast.error(getErrorMessage(err, lang === 'ar' ? 'ÙØ´Ù„ ØªÙØ¹ÙŠÙ„ Ø§Ù„Ù…Ø§Ø¯Ø©' : 'Failed to activate material'));
+      toast.error(getErrorMessage(err, (lang === 'ar' ? '\u0641\u0634\u0644 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0645\u0627\u062f\u0629' : 'Failed to activate material')));
     }
   };
 
@@ -519,22 +526,22 @@ export default function Supplies() {
   const handleExport = () => {
     try {
       const data = displayed.map(m => ({
-        [lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code']: m.code,
-        [lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©' : 'Name (Arabic)']: m.nameAr,
-        [lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©' : 'Name (English)']: m.nameEn,
-        [lang === 'ar' ? 'Ø§Ù„ÙØ¦Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©' : 'Main Category']: getCategoryLabel(m.mainCategory),
-        [lang === 'ar' ? 'Ø§Ù„ÙØ¦Ø© Ø§Ù„ÙØ±Ø¹ÙŠØ©' : 'Sub Category']: m.subCategory || '-',
-        [lang === 'ar' ? 'Ø§Ù„ÙˆØ­Ø¯Ø©' : 'Unit']: getUnitName(m.baseUnit?._id || m.baseUnit),
-        [lang === 'ar' ? 'Ø§Ù„Ù…Ø®Ø²ÙˆÙ† Ø§Ù„Ø­Ø§Ù„ÙŠ' : 'Current Stock']: m.currentStock || 0,
-        [lang === 'ar' ? 'Ø¢Ø®Ø± Ø³Ø¹Ø±' : 'Last Price']: m.lastPurchasePrice || 0,
-        [lang === 'ar' ? 'Ø§Ù„Ø­Ø§Ù„Ø©' : 'Status']: m.isActive !== false ? (lang === 'ar' ? 'Ù†Ø´Ø·' : 'Active') : (lang === 'ar' ? 'ØºÙŠØ± Ù†Ø´Ø·' : 'Inactive'),
+        [(lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code')]: m.code,
+        [(lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629' : 'Name (Arabic)')]: m.nameAr,
+        [(lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629' : 'Name (English)')]: m.nameEn,
+        [(lang === 'ar' ? '\u0627\u0644\u0641\u0626\u0629 \u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629' : 'Main Category')]: getCategoryLabel(m.mainCategory),
+        [(lang === 'ar' ? '\u0627\u0644\u0641\u0626\u0629 \u0627\u0644\u0641\u0631\u0639\u064a\u0629' : 'Sub Category')]: m.subCategory || '-',
+        [(lang === 'ar' ? '\u0627\u0644\u0648\u062d\u062f\u0629' : 'Unit')]: getUnitName(m.baseUnit?._id || m.baseUnit),
+        ['Current Stock']: m.currentStock || 0,
+        [(lang === 'ar' ? '\u0622\u062e\u0631 \u0633\u0639\u0631' : 'Last Price')]: m.lastPurchasePrice || 0,
+        [(lang === 'ar' ? '\u0627\u0644\u062d\u0627\u0644\u0629' : 'Status')]: m.isActive !== false ? ((lang === 'ar' ? '\u0646\u0634\u0637' : 'Active')) : ((lang === 'ar' ? '\u063a\u064a\u0631 \u0646\u0634\u0637' : 'Inactive')),
       }));
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, lang === 'ar' ? 'Ø§Ù„Ù…ÙˆØ§Ø¯' : 'Materials');
+      XLSX.utils.book_append_sheet(wb, ws, 'Materials');
       XLSX.writeFile(wb, `Materials_${new Date().toISOString().slice(0, 10)}.xlsx`);
-      toast.success(lang === 'ar' ? 'ØªÙ… Ø§Ù„ØªØµØ¯ÙŠØ± Ø¨Ù†Ø¬Ø§Ø­' : 'Exported successfully');
-    } catch { toast.error(lang === 'ar' ? 'ÙØ´Ù„ Ø§Ù„ØªØµØ¯ÙŠØ±' : 'Export failed'); }
+      toast.success((lang === 'ar' ? '\u062a\u0645 \u0627\u0644\u062a\u0635\u062f\u064a\u0631 \u0628\u0646\u062c\u0627\u062d' : 'Exported successfully'));
+    } catch { toast.error((lang === 'ar' ? '\u0641\u0634\u0644 \u0627\u0644\u062a\u0635\u062f\u064a\u0631' : 'Export failed')); }
   };
 
   const displayed = useMemo(() => {
@@ -564,15 +571,15 @@ export default function Supplies() {
 
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{lang === 'ar' ? 'Ø§Ù„Ù…Ø³ØªÙ„Ø²Ù…Ø§Øª ÙˆØ§Ù„Ù…ÙˆØ§Ø¯' : 'Supplies & Materials'}</h1>
-            <p className="text-sm text-gray-500 mt-1">{lang === 'ar' ? 'Ø¹Ø±Ø¶ ÙˆØ¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…ÙˆØ§Ø¯ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…Ø© ÙÙŠ Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹' : 'View and manage materials used in projects.'}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{lang === 'ar' ? '\u0627\u0644\u0645\u0633\u062a\u0644\u0632\u0645\u0627\u062a \u0648\u0627\u0644\u0645\u0648\u0627\u062f' : 'Supplies & Materials'}</h1>
+            <p className="text-sm text-gray-500 mt-1">{lang === 'ar' ? '\u0639\u0631\u0636 \u0648\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0648\u0627\u062f \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u0629 \u0641\u064a \u0627\u0644\u0645\u0634\u0627\u0631\u064a\u0639.' : 'View and manage materials used in projects.'}</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm">
-              <Download className="w-4 h-4" />{lang === 'ar' ? 'ØªØµØ¯ÙŠØ±' : 'Export'}
+              <Download className="w-4 h-4" />{lang === 'ar' ? '\u062a\u0635\u062f\u064a\u0631' : 'Export'}
             </button>
             <button onClick={() => setAddModal(true)} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm">
-              <Plus className="w-4 h-4" />{lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ù…Ø§Ø¯Ø©' : 'Add Material'}
+              <Plus className="w-4 h-4" />{lang === 'ar' ? '\u0625\u0636\u0627\u0641\u0629 \u0645\u0627\u062f\u0629' : 'Add Material'}
             </button>
           </div>
         </div>
@@ -584,45 +591,45 @@ export default function Supplies() {
             ) : (
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             )}
-            <input type="text" placeholder={lang === 'ar' ? 'Ø¨Ø­Ø« Ø¹Ù† Ù…Ø§Ø¯Ø©...' : 'Search materials...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" />
+            <input type="text" placeholder={lang === 'ar' ? '\u0628\u062d\u062b \u0641\u064a \u0627\u0644\u0645\u0648\u0627\u062f...' : 'Search materials...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" />
           </div>
 
           <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
-            <option value="all">{lang === 'ar' ? 'ÙƒÙ„ Ø§Ù„ÙØ¦Ø§Øª' : 'All Categories'}</option>
+            <option value="all">{lang === 'ar' ? '\u0643\u0644 \u0627\u0644\u0641\u0626\u0627\u062a' : 'All Categories'}</option>
             {categories.map(c => <option key={c.value} value={c.value}>{lang === 'ar' ? (c.labelAr || c.label) : (c.labelEn || c.label)}</option>)}
           </select>
 
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
-            <option value="ALL">{lang === 'ar' ? 'ÙƒÙ„ Ø§Ù„Ø­Ø§Ù„Ø§Øª' : 'All Status'}</option>
-            <option value="ACTIVE">{lang === 'ar' ? 'Ù†Ø´Ø·' : 'Active'}</option>
-            <option value="INACTIVE">{lang === 'ar' ? 'ØºÙŠØ± Ù†Ø´Ø·' : 'Inactive'}</option>
+            <option value="ALL">{lang === 'ar' ? '\u0643\u0644 \u0627\u0644\u062d\u0627\u0644\u0627\u062a' : 'All Status'}</option>
+            <option value="ACTIVE">{lang === 'ar' ? '\u0646\u0634\u0637' : 'Active'}</option>
+            <option value="INACTIVE">{lang === 'ar' ? '\u063a\u064a\u0631 \u0646\u0634\u0637' : 'Inactive'}</option>
           </select>
 
-          {isFiltering && <button onClick={handleClearFilters} className="text-sm text-indigo-600 hover:underline">{lang === 'ar' ? 'Ù…Ø³Ø­ Ø§Ù„ÙÙ„Ø§ØªØ±' : 'Clear'}</button>}
+          {isFiltering && <button onClick={handleClearFilters} className="text-sm text-indigo-600 hover:underline">{lang === 'ar' ? '\u0645\u0633\u062d' : 'Clear'}</button>}
         </div>
 
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
           {loading ? (
             <div className="p-16 text-center">
               <div className="animate-spin inline-block w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3" />
-              <p className="text-sm text-gray-500">{lang === 'ar' ? 'Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù…ÙŠÙ„...' : 'Loading...'}</p>
+              <p className="text-sm text-gray-500">{lang === 'ar' ? '\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644...' : 'Loading...'}</p>
             </div>
           ) : displayed.length === 0 ? (
             <div className="p-16 text-center">
               <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="font-medium text-gray-600">{lang === 'ar' ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…ÙˆØ§Ø¯' : 'No materials found'}</p>
+              <p className="font-medium text-gray-600">{lang === 'ar' ? '\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0648\u0627\u062f' : 'No materials found'}</p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„Ù…Ø§Ø¯Ø©'    : 'Material'}     field={lang === 'ar' ? 'nameAr' : 'nameEn'} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯'     : 'Code'}         field="code"              sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„ÙØ¦Ø©'     : 'Category'}     field="mainCategory"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„ÙˆØ­Ø¯Ø©'    : 'Unit'}         field="baseUnit"          sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„Ù…Ø®Ø²ÙˆÙ†'   : 'Stock'}        field="currentStock"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'Ø¢Ø®Ø± Ø³Ø¹Ø±'   : 'Last Price'}   field="lastPurchasePrice"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„Ø­Ø§Ù„Ø©'    : 'Status'}       field="isActive"          sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0645\u0627\u062f\u0629' : 'Material'}     field={'nameEn'} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code'}         field="code"              sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0641\u0626\u0629' : 'Category'}     field="mainCategory"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0648\u062d\u062f\u0629' : 'Unit'}         field="baseUnit"          sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0645\u062e\u0632\u0648\u0646' : 'Stock'}        field="currentStock"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? '\u0622\u062e\u0631 \u0633\u0639\u0631' : 'Last Price'}   field="lastPurchasePrice"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u062d\u0627\u0644\u0629' : 'Status'}       field="isActive"          sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3" />
                 </tr>
               </thead>

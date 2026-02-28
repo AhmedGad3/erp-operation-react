@@ -107,7 +107,7 @@ export default function Navbar({ onToggleSidebar }) {
                 {isAr ? "\u062f\u062e\u0648\u0644" : "Login"}
               </button>
             ) : (
-              <div className="relative">
+              <div className="relative" dir={isAr ? "rtl" : "ltr"}>
                 <button
                   onClick={() => setShowUserMenu((s) => !s)}
                   className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors ${
@@ -137,8 +137,8 @@ export default function Navbar({ onToggleSidebar }) {
 
                 {showUserMenu && (
                   <div
-                    className={`absolute mt-2 w-60 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden ${
-                      isAr ? "left-0" : "right-0"
+                    className={`absolute mt-2 w-[min(15rem,calc(100vw-1rem))] bg-white border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden ${
+                      isAr ? "right-0" : "right-0"
                     }`}
                   >
                     <div className="p-4 border-b border-gray-100">
