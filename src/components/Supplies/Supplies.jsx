@@ -597,7 +597,7 @@ export default function Supplies() {
           {loading ? (
             <div className="p-16 text-center">
               <div className="animate-spin inline-block w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3" />
-              <p className="text-sm text-gray-500">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
+              <p className="text-sm text-gray-500">{lang === 'ar' ? 'جاري تحميل المواد...' : 'Loading materials...'}</p>
             </div>
           ) : displayed.length === 0 ? (
             <div className="p-16 text-center">
