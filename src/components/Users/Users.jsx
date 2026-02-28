@@ -11,10 +11,12 @@ import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
 import AdminActionModal from '../modals/AdminActionModal';
 
+const tr = (lang, ar, en) => (lang === 'ar' ? ar : en);
+
 //  Sortable column header 
 const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
   <th
-    className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer select-none"
+    className="px-4 py-3 text-start text-sm font-medium text-gray-500 cursor-pointer select-none"
     onClick={() => onSort(field)}
   >
     <span className="inline-flex items-center gap-1">
@@ -30,16 +32,16 @@ const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
 //  Status badge 
 const StatusBadge = ({ isActive, lang }) => {
   if (isActive === false)
-    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{'Inactive'}</span>;
-  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{'Active'}</span>;
+    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{tr(lang, '\u063a\u064a\u0631 \u0646\u0634\u0637', 'Inactive')}</span>;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{tr(lang, '\u0646\u0634\u0637', 'Active')}</span>;
 };
 
 //  Role badge 
 const RoleBadge = ({ role, lang }) => {
   const map = {
-    admin:      { label: { ar: '&د`ر',      en: 'Admin'     }, cls: 'bg-gray-100 text-gray-700' },
-    accountant: { label: { ar: '&حاسب',     en: 'Accountant'}, cls: 'bg-gray-100 text-gray-700' },
-    manager:    { label: { ar: '&د`ر س&',  en: 'Manager'   }, cls: 'bg-gray-100 text-gray-700' },
+    admin: { label: { ar: '\u0645\u0633\u0624\u0648\u0644', en: 'Admin' }, cls: 'bg-gray-100 text-gray-700' },
+    accountant: { label: { ar: '\u0645\u062d\u0627\u0633\u0628', en: 'Accountant' }, cls: 'bg-gray-100 text-gray-700' },
+    manager: { label: { ar: '\u0645\u062f\u064a\u0631', en: 'Manager' }, cls: 'bg-gray-100 text-gray-700' },
   };
   const cfg = map[role] ?? { label: { ar: role, en: role }, cls: 'bg-gray-100 text-gray-700' };
   return (
@@ -65,7 +67,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
   const handleOpen = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      const menuHeight = 80; // زرار` 
+      const menuHeight = 80;
       const spaceBelow = window.innerHeight - rect.bottom;
 
       const top = spaceBelow < menuHeight
@@ -99,7 +101,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
           >
             <Edit className="w-4 h-4" />
-            {'Edit'}
+            {tr(lang, '\u062a\u0639\u062f\u064a\u0644', 'Edit')}
           </button>
 
           {user.isActive === false && (
@@ -108,7 +110,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
             >
               <CheckCircle className="w-4 h-4" />
-              {'Activate'}
+              {tr(lang, '\u062a\u0641\u0639\u064a\u0644', 'Activate')}
             </button>
           )}
 
@@ -118,7 +120,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
             >
               <Trash2 className="w-4 h-4" />
-              {'Delete'}
+              {tr(lang, '\u062d\u0630\u0641', 'Delete')}
             </button>
           )}
         </div>
@@ -133,29 +135,29 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
 
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
-      toast.error('Please fill all fields');
+      toast.error(tr(lang, '\u064a\u0631\u062c\u0649 \u0645\u0644\u0621 \u0643\u0644 \u0627\u0644\u062d\u0642\u0648\u0644', 'Please fill all fields'));
       return;
     }
     try {
       setSubmitting(true);
       await axiosInstance.post('/create', form);
-      toast.success('User created successfully');
+      toast.success(tr(lang, '\u062a\u0645 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0628\u0646\u062c\u0627\u062d', 'User created successfully'));
       onCreated();
       onClose();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to create user'));
+      toast.error(getErrorMessage(err, tr(lang, '\u0641\u0634\u0644 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645', 'Failed to create user')));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         {/* Modal header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
-            {'Add New User'}
+            {tr(lang, '\u0625\u0636\u0627\u0641\u0629 \u0645\u0633\u062a\u062e\u062f\u0645 \u062c\u062f\u064a\u062f', 'Add New User')}
           </h2>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
             <X className="w-5 h-5" />
@@ -166,7 +168,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
           {/* Full Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {'Full Name'}
+              {tr(lang, '\u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0643\u0627\u0645\u0644', 'Full Name')}
             </label>
             <input
               type="text"
@@ -180,7 +182,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {'Email'}
+              {tr(lang, '\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a', 'Email')}
             </label>
             <input
               type="email"
@@ -195,16 +197,16 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {'Role'}
+                {tr(lang, '\u0627\u0644\u062f\u0648\u0631', 'Role')}
               </label>
               <select
                 value={form.role}
                 onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50"
               >
-                <option value="admin">{'Admin'}</option>
-                <option value="accountant">{'Accountant'}</option>
-                <option value="manager">{'Manager'}</option>
+                <option value="admin">{tr(lang, '\u0645\u0633\u0624\u0648\u0644', 'Admin')}</option>
+                <option value="accountant">{tr(lang, '\u0645\u062d\u0627\u0633\u0628', 'Accountant')}</option>
+                <option value="manager">{tr(lang, '\u0645\u062f\u064a\u0631', 'Manager')}</option>
               </select>
             </div>
             {/* <div>
@@ -216,8 +218,8 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
                 onChange={e => setForm(f => ({ ...f, isActive: e.target.value === 'active' }))}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50"
               >
-                <option value="active">{'Active'}</option>
-                <option value="inactive">{'Inactive'}</option>
+                <option value="active">{tr(lang, '\u0646\u0634\u0637', 'Active')}</option>
+                <option value="inactive">{tr(lang, '\u063a\u064a\u0631 \u0646\u0634\u0637', 'Inactive')}</option>
               </select>
             </div> */}
           </div>
@@ -225,11 +227,11 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
           {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {'Password'}
+              {tr(lang, '\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631', 'Password')}
             </label>
             <input
               type="password"
-              placeholder="⬢⬢⬢⬢⬢⬢⬢⬢"
+              placeholder="********"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50"
@@ -243,14 +245,14 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
             onClick={onClose}
             className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
           >
-            {'Cancel'}
+            {tr(lang, '\u0625\u0644\u063a\u0627\u0621', 'Cancel')}
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting}
             className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50"
           >
-            {'Create User'}
+            {tr(lang, '\u0625\u0646\u0634\u0627\u0621 \u0645\u0633\u062a\u062e\u062f\u0645', 'Create User')}
           </button>
         </div>
       </div>
@@ -282,7 +284,7 @@ const UsersList = () => {
       const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('userData') || '{}');
       setCurrentUser(user);
       if (user?.role && user.role !== 'admin') {
-        toast.error('Access denied');
+        toast.error(tr(lang, '\u0644\u0627 \u062a\u0645\u0644\u0643 \u0635\u0644\u0627\u062d\u064a\u0629 \u0627\u0644\u0648\u0635\u0648\u0644', 'Access denied'));
         setTimeout(() => navigate('/'), 2000);
       }
     } catch { /* ignore */ }
@@ -294,7 +296,7 @@ const UsersList = () => {
       const res = await axiosInstance.get('/users');
       setUsers(Array.isArray(res.data) ? res.data : (res.data.result || []));
     } catch {
-      toast.error('Failed to load users');
+      toast.error(tr(lang, '\u0641\u0634\u0644 \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u064a\u0646', 'Failed to load users'));
     } finally {
       setLoading(false);
     }
@@ -303,22 +305,22 @@ const UsersList = () => {
   const handleDelete = async () => {
     try {
       await axiosInstance.delete(`/user/${deleteModal.user._id}`);
-      toast.success('User deleted');
+      toast.success(tr(lang, '\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645', 'User deleted'));
       setDeleteModal({ show: false, user: null });
       fetchUsers();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to delete user'));
+      toast.error(getErrorMessage(err, tr(lang, '\u0641\u0634\u0644 \u062d\u0630\u0641 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645', 'Failed to delete user')));
     }
   };
 
   const handleActivate = async () => {
     try {
       await axiosInstance.patch(`/user/activate/${activateModal.user._id}`);
-      toast.success('User activated');
+      toast.success(tr(lang, '\u062a\u0645 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645', 'User activated'));
       setActivateModal({ show: false, user: null });
       fetchUsers();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to activate user'));
+      toast.error(getErrorMessage(err, tr(lang, '\u0641\u0634\u0644 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645', 'Failed to activate user')));
     }
   };
 
@@ -328,7 +330,7 @@ const UsersList = () => {
   };
 
   const formatDate = (d) =>
-    new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    new Date(d).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
   // Filter + Sort
   const displayed = users
@@ -350,21 +352,21 @@ const UsersList = () => {
       return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
     });
 
-  if (loading) return <FullPageLoader text={'Loading users...'} />;
+  if (loading) return <FullPageLoader text={tr(lang, '\u062c\u0627\u0631\u064a \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u064a\u0646...', 'Loading users...')} />;
   if (currentUser?.role && currentUser.role !== 'admin') return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto">
 
         {/*  Page Header  */}
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {'User Management'}
+              {tr(lang, '\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u064a\u0646', 'User Management')}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {'Manage your team members and their account permissions.'}
+              {tr(lang, '\u0625\u062f\u0627\u0631\u0629 \u0623\u0639\u0636\u0627\u0621 \u0641\u0631\u064a\u0642\u0643 \u0648\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u062d\u0633\u0627\u0628\u0627\u062a\u0647\u0645.', 'Manage your team members and their account permissions.')}
             </p>
           </div>
           <button
@@ -372,7 +374,7 @@ const UsersList = () => {
             className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            {' Add User'}
+            {tr(lang, '\u0625\u0636\u0627\u0641\u0629 \u0645\u0633\u062a\u062e\u062f\u0645', 'Add User')}
           </button>
         </div>
 
@@ -380,13 +382,13 @@ const UsersList = () => {
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {/* Search */}
           <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 ${lang === 'ar' ? 'right-3' : 'left-3'}`} />
             <input
               type="text"
-              placeholder={'Search by name or email...'}
+              placeholder={tr(lang, '\u0628\u062d\u062b \u0628\u0627\u0644\u0627\u0633\u0645 \u0623\u0648 \u0627\u0644\u0628\u0631\u064a\u062f...', 'Search by name or email...')}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+              className={`w-full py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white ${lang === 'ar' ? 'pr-9 pl-4' : 'pl-9 pr-4'}`}
             />
           </div>
 
@@ -396,10 +398,10 @@ const UsersList = () => {
             onChange={e => setFilterRole(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
           >
-            <option value="ALL">{'All Roles'}</option>
-            <option value="admin">{'Admin'}</option>
-            <option value="accountant">{'Accountant'}</option>
-            <option value="manager">{'Manager'}</option>
+            <option value="ALL">{tr(lang, '\u0643\u0644 \u0627\u0644\u0623\u062f\u0648\u0627\u0631', 'All Roles')}</option>
+            <option value="admin">{tr(lang, '\u0645\u0633\u0624\u0648\u0644', 'Admin')}</option>
+            <option value="accountant">{tr(lang, '\u0645\u062d\u0627\u0633\u0628', 'Accountant')}</option>
+            <option value="manager">{tr(lang, '\u0645\u062f\u064a\u0631', 'Manager')}</option>
           </select>
 
           {/* Status */}
@@ -408,9 +410,9 @@ const UsersList = () => {
             onChange={e => setFilterStatus(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
           >
-            <option value="ALL">{'All Status'}</option>
-            <option value="ACTIVE">{'Active'}</option>
-            <option value="INACTIVE">{'Inactive'}</option>
+            <option value="ALL">{tr(lang, '\u0643\u0644 \u0627\u0644\u062d\u0627\u0644\u0627\u062a', 'All Status')}</option>
+            <option value="ACTIVE">{tr(lang, '\u0646\u0634\u0637', 'Active')}</option>
+            <option value="INACTIVE">{tr(lang, '\u063a\u064a\u0631 \u0646\u0634\u0637', 'Inactive')}</option>
           </select>
 
           {(searchTerm || filterRole !== 'ALL' || filterStatus !== 'ALL') && (
@@ -418,7 +420,7 @@ const UsersList = () => {
               onClick={() => { setSearchTerm(''); setFilterRole('ALL'); setFilterStatus('ALL'); }}
               className="text-sm text-indigo-600 hover:underline"
             >
-              {'Clear'}
+              {tr(lang, '\u0645\u0633\u062d', 'Clear')}
             </button>
           )}
         </div>
@@ -429,18 +431,18 @@ const UsersList = () => {
             <div className="p-16 text-center">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="font-medium text-gray-600">
-                {'No users found'}
+                {tr(lang, '\u0644\u0627 \u064a\u0648\u062c\u062f \u0645\u0633\u062a\u062e\u062f\u0645\u0648\u0646', 'No users found')}
               </p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <SortHeader label={'Full Name'}       field="name"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={'Email'}           field="email"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={'Role'}             field="role"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={'Status'}          field="isActive"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={'Created'} field="createdAt" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={tr(lang, '\u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0643\u0627\u0645\u0644', 'Full Name')}       field="name"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={tr(lang, '\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a', 'Email')}           field="email"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={tr(lang, '\u0627\u0644\u062f\u0648\u0631', 'Role')}             field="role"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={tr(lang, '\u0627\u0644\u062d\u0627\u0644\u0629', 'Status')} field="isActive" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={tr(lang, '\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0625\u0646\u0634\u0627\u0621', 'Created')} field="createdAt" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -527,4 +529,5 @@ const UsersList = () => {
 };
 
 export default UsersList;
+
 
