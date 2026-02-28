@@ -1,4 +1,4 @@
-import { useState, useRef, useContext, useEffect } from "react";
+﻿import { useState, useRef, useContext, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
@@ -22,6 +22,19 @@ export default function VerifyLogin() {
   useEffect(() => {
     if (!email) navigate("/login");
   }, [email, navigate]);
+
+  useEffect(() => {
+    const prevLang = document.documentElement.lang;
+    const prevDir = document.documentElement.dir;
+
+    document.documentElement.lang = "en";
+    document.documentElement.dir = "ltr";
+
+    return () => {
+      document.documentElement.lang = prevLang || "en";
+      document.documentElement.dir = prevDir || "ltr";
+    };
+  }, []);
 
   const otp = codes.join("");
 
@@ -240,9 +253,10 @@ export default function VerifyLogin() {
           disabled={isLoading}
           className="mt-3 text-white/40 hover:text-white/70 text-sm transition touch-manipulation py-2"
         >
-          ← Back to login
+          {"<- Back to login"}
         </button>
       </div>
     </div>
   );
 }
+

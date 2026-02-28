@@ -18,6 +18,19 @@ export default function Login() {
   const { setToken } = useContext(AuthContext);
 
   useEffect(() => {
+    const prevLang = document.documentElement.lang;
+    const prevDir = document.documentElement.dir;
+
+    document.documentElement.lang = "en";
+    document.documentElement.dir = "ltr";
+
+    return () => {
+      document.documentElement.lang = prevLang || "en";
+      document.documentElement.dir = prevDir || "ltr";
+    };
+  }, []);
+
+  useEffect(() => {
     let timeout;
 
     if (!isDeleting && charIndex < TYPING_TEXT.length) {
