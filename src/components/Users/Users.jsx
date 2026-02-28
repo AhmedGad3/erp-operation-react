@@ -127,7 +127,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
 };
 // ── Add User Modal ─────────────────────────────────────────
 const AddUserModal = ({ lang, onClose, onCreated }) => {
-  const [form, setForm] = useState({ name: '', email: '', role: 'manager', isActive: true, password: '' });
+  const [form, setForm] = useState({ name: '', email: '', role: 'manager',  password: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -137,7 +137,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
     }
     try {
       setSubmitting(true);
-      await axiosInstance.post('/users', form);
+      await axiosInstance.post('/create', form);
       toast.success(lang === 'ar' ? 'تم إنشاء المستخدم بنجاح' : 'User created successfully');
       onCreated();
       onClose();
@@ -206,7 +206,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
                 <option value="manager">{lang === 'ar' ? 'مدير قسم' : 'Manager'}</option>
               </select>
             </div>
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {lang === 'ar' ? 'الحالة' : 'Status'}
               </label>
@@ -218,7 +218,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
                 <option value="active">{lang === 'ar' ? 'نشط' : 'Active'}</option>
                 <option value="inactive">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</option>
               </select>
-            </div>
+            </div> */}
           </div>
 
           {/* Password */}

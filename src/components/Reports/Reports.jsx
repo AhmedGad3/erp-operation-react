@@ -1,42 +1,39 @@
 import React, { useState, useContext } from 'react';
-import { FileText, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { LanguageContext } from '../../context/LanguageContext';
 import ReportTabs from '../ReportTabs/ReportTabs';
 
-// Lazy import for each tab component
-import PurchasesReport from '../Purchasesreport/Purchasesreport';
+import PurchasesReport        from '../Purchasesreport/Purchasesreport';
 import SupplierPaymentsReport from '../Supplierpaymentsreport/Supplierpaymentsreport';
-import ClientPaymentsReport from '../Clientpaymentsreport/Clientpaymentsreport';
-import StockMovementsReport from '../Stockmovementsreport/Stockmovementsreport';
-import SupplierLedgerReport from '../Supplierledgerreport/Supplierledgerreport';
-import ClientLedgerReport from '../Clientledgerreport/Clientledgerreport';
-import ExpensesReport from '../Expensesreport/Expensesreport';
-import ProfitsReport from '../Profitsreport/Profitsreport';
-import ProjectSummaryReport from '../ProjectsSummary/ProjectsSummary';
+import ClientPaymentsReport   from '../Clientpaymentsreport/Clientpaymentsreport';
+import StockMovementsReport   from '../Stockmovementsreport/Stockmovementsreport';
+import SupplierLedgerReport   from '../Supplierledgerreport/Supplierledgerreport';
+import ClientLedgerReport     from '../Clientledgerreport/Clientledgerreport';
+import ExpensesReport         from '../Expensesreport/Expensesreport';
+import ProfitsReport          from '../Profitsreport/Profitsreport';
+import ProjectSummaryReport   from '../ProjectsSummary/ProjectsSummary';
+
+const SESSION_KEY = 'reports_active_tab';
 
 export default function ReportsPage() {
   const { lang } = useContext(LanguageContext);
   const isAr = lang === 'ar';
-  const [activeTab, setActiveTab] = useState('purchases');
+
+  // استرجع التاب المحفوظة من sessionStorage
+  const [activeTab, setActiveTab] = useState(
+    () => sessionStorage.getItem(SESSION_KEY) || 'purchases & returns'
+  );
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // احفظ التاب كل ما تتغير
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    sessionStorage.setItem(SESSION_KEY, tab);
+  };
 
   const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
-  const renderActiveTab = () => {
-    const commonProps = { isAr, refreshKey };
-    switch (activeTab) {
-      case 'purchases & returns':        return <PurchasesReport {...commonProps} />;
-      case 'projects':         return <ProjectSummaryReport {...commonProps} />;
-      case 'stockMovements':   return <StockMovementsReport {...commonProps} />;
-      case 'supplierPayments': return <SupplierPaymentsReport {...commonProps} />;
-      case 'clientPayments':   return <ClientPaymentsReport {...commonProps} />;
-      case 'supplierLedger':   return <SupplierLedgerReport {...commonProps} />;
-      case 'clientLedger':     return <ClientLedgerReport {...commonProps} />;
-      case 'expenses':         return <ExpensesReport {...commonProps} />;
-      case 'profits':          return <ProfitsReport {...commonProps} />;
-      default:                 return <PurchasesReport {...commonProps} />;
-    }
-  };
+  const commonProps = { isAr, refreshKey };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -55,20 +52,55 @@ export default function ReportsPage() {
           <button
             onClick={handleRefresh}
             className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-100 transition font-medium text-sm"
-            title={isAr ? 'تحديث' : 'Refresh'}
           >
             <RefreshCw className="w-4 h-4" />
             {isAr ? 'تحديث' : 'Refresh'}
           </button>
         </div>
 
-        {/* ── Tabs + Content ── */}
+        {/* ── Tabs ── */}
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden mb-6">
-          <ReportTabs activeTab={activeTab} setActiveTab={setActiveTab} isAr={isAr} />
+          <ReportTabs activeTab={activeTab} setActiveTab={handleTabChange} isAr={isAr} />
         </div>
 
-        {/* ── Active Tab Content ── */}
-        {renderActiveTab()}
+        {/* ── Tab Content ── */}
+        {/* كل component بيتعمل مرة واحدة بس ومش بيتمسح لما تغير التاب */}
+
+        <div style={{ display: activeTab === 'purchases & returns' ? 'block' : 'none' }}>
+          <PurchasesReport {...commonProps} />
+        </div>
+
+        <div style={{ display: activeTab === 'projects' ? 'block' : 'none' }}>
+          <ProjectSummaryReport {...commonProps} />
+        </div>
+
+        <div style={{ display: activeTab === 'stockMovements' ? 'block' : 'none' }}>
+          <StockMovementsReport {...commonProps} />
+        </div>
+
+        <div style={{ display: activeTab === 'supplierPayments' ? 'block' : 'none' }}>
+          <SupplierPaymentsReport {...commonProps} />
+        </div>
+
+        <div style={{ display: activeTab === 'clientPayments' ? 'block' : 'none' }}>
+          <ClientPaymentsReport {...commonProps} />
+        </div>
+
+        <div style={{ display: activeTab === 'supplierLedger' ? 'block' : 'none' }}>
+          <SupplierLedgerReport {...commonProps} />
+        </div>
+
+        <div style={{ display: activeTab === 'clientLedger' ? 'block' : 'none' }}>
+          <ClientLedgerReport {...commonProps} />
+        </div>
+
+        <div style={{ display: activeTab === 'expenses' ? 'block' : 'none' }}>
+          <ExpensesReport {...commonProps} />
+        </div>
+
+        <div style={{ display: activeTab === 'profits' ? 'block' : 'none' }}>
+          <ProfitsReport {...commonProps} />
+        </div>
 
       </div>
     </div>

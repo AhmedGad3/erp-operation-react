@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Loader2, TrendingDown, Package, Users, Receipt, Wrench, HardHat } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 import { exportToPDF } from '../../utils/pdfExport';
@@ -6,20 +6,20 @@ import { exportToExcel } from '../../utils/excelExport';
 import { fmtDate, fmt, renderExpenseCell } from '../../utils/Reportutils';
 
 import StatisticsCards from '../StatisicsCards/StatisicsCards';
-import FiltersBar from '../FiltersBar/FiltersBar';
 import ReportsTable from '../ReportsTable/ReportsTable';
 import ColumnFiltersPanel from '../CloumnFiltersPanel/CloumnFiltersPanel';
 
-export default function ExpensesReport({ isAr, refreshKey }) {
+export default function ExpensesReport({ isAr }) {
   const [rawSupplierPayments, setRawSupplierPayments] = useState([]);
   const [rawRefunds,          setRawRefunds]          = useState([]);
   const [rawMaterialIssues,   setRawMaterialIssues]   = useState([]);
   const [rawGeneralExpenses,  setRawGeneralExpenses]  = useState([]);
   const [rawProjects,         setRawProjects]         = useState([]);
-  const [rawAssetInvoices,    setRawAssetInvoices]    = useState([]);   // ← جديد
+  const [rawAssetInvoices,    setRawAssetInvoices]    = useState([]);
   const [materials,           setMaterials]           = useState([]);
-  const [loading,             setLoading]             = useState(true);
+  const [loading,             setLoading]             = useState(false);
   const [error,               setError]               = useState(null);
+  const [hasLoaded,           setHasLoaded]           = useState(false);
 
   const [dateFrom,          setDateFrom]          = useState('2024-01-01');
   const [dateTo,            setDateTo]            = useState('2026-12-31');
@@ -38,7 +38,7 @@ export default function ExpensesReport({ isAr, refreshKey }) {
         resGeneralExpenses,
         resProjects,
         resMaterials,
-        resAssetInvoices,         // ← جديد
+        resAssetInvoices,
       ] = await Promise.all([
         axiosInstance.get('/supplier/payments'),
         axiosInstance.get('/supplier/payments/refunds'),
@@ -46,24 +46,23 @@ export default function ExpensesReport({ isAr, refreshKey }) {
         axiosInstance.get('/general-expenses'),
         axiosInstance.get('/projects'),
         axiosInstance.get('/materials'),
-        axiosInstance.get('/asset-invoices'),  // ← جديد
+        axiosInstance.get('/asset-invoices'),
       ]);
 
-      setRawSupplierPayments(resPayments.data?.result       || []);
-      setRawRefunds(         resRefunds.data?.result        || []);
-      setRawMaterialIssues(  resMaterialIssues.data?.result || []);
+      setRawSupplierPayments(resPayments.data?.result        || []);
+      setRawRefunds(         resRefunds.data?.result         || []);
+      setRawMaterialIssues(  resMaterialIssues.data?.result  || []);
       setRawGeneralExpenses( resGeneralExpenses.data?.result || resGeneralExpenses.data || []);
-      setRawProjects(        resProjects.data?.result       || []);
-      setMaterials(          resMaterials.data?.result      || []);
-      setRawAssetInvoices(   resAssetInvoices.data?.result  || resAssetInvoices.data || []);  // ← جديد
+      setRawProjects(        resProjects.data?.result        || []);
+      setMaterials(          resMaterials.data?.result       || []);
+      setRawAssetInvoices(   resAssetInvoices.data?.result   || resAssetInvoices.data || []);
+      setHasLoaded(true);
     } catch (e) {
       setError(e.message || 'خطأ في جلب البيانات');
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => { fetchData(); }, [refreshKey]);
 
   const getMaterialName = (id) => {
     const mat = materials.find(m => m._id === id);
@@ -327,7 +326,7 @@ export default function ExpensesReport({ isAr, refreshKey }) {
     const equipmentExpenses  = expenseRows.filter(e => e.type === (isAr ? 'تكاليف معدات'        : 'Equipment Costs'    )).reduce((s, e) => s + (e.amountRaw || 0), 0);
     const subcontractorCosts = expenseRows.filter(e => e.type === (isAr ? 'مقاولو الباطن'       : 'Subcontractor Costs')).reduce((s, e) => s + (e.amountRaw || 0), 0);
     const materialIssues     = expenseRows.filter(e => e.type === (isAr ? 'صرف مواد للمشروع'    : 'Material Issue'     )).reduce((s, e) => s + (e.amountRaw || 0), 0);
-    const assetPurchases     = expenseRows.filter(e => e.type === (isAr ? 'شراء أصول'           : 'Asset Purchase'     )).reduce((s, e) => s + (e.amountRaw || 0), 0); // ← جديد
+    const assetPurchases     = expenseRows.filter(e => e.type === (isAr ? 'شراء أصول'           : 'Asset Purchase'     )).reduce((s, e) => s + (e.amountRaw || 0), 0);
 
     return [
       { label: isAr ? 'إجمالي المصاريف'  : 'Total Expenses',    value: fmt(totalExpenses),      color: 'red',    icon: TrendingDown },
@@ -337,7 +336,7 @@ export default function ExpensesReport({ isAr, refreshKey }) {
       { label: isAr ? 'تكاليف المعدات'   : 'Equipment Costs',   value: fmt(equipmentExpenses),  color: 'purple', icon: Wrench       },
       { label: isAr ? 'مقاولو الباطن'    : 'Subcontractors',    value: fmt(subcontractorCosts), color: 'yellow', icon: Users        },
       { label: isAr ? 'مواد المشاريع'    : 'Project Materials', value: fmt(materialIssues),     color: 'indigo', icon: Package      },
-      { label: isAr ? 'شراء الأصول'      : 'Asset Purchases',   value: fmt(assetPurchases),     color: 'teal',   icon: Wrench       }, // ← جديد
+      { label: isAr ? 'شراء الأصول'      : 'Asset Purchases',   value: fmt(assetPurchases),     color: 'teal',   icon: Wrench       },
     ];
   }, [expenseRows, isAr]);
 
@@ -377,26 +376,6 @@ export default function ExpensesReport({ isAr, refreshKey }) {
 
   const activeFilterCount = Object.keys(columnFilters).filter(k => columnFilters[k]).length;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-        <p className="text-red-700 font-semibold">{isAr ? 'حدث خطأ' : 'Error'}</p>
-        <p className="text-red-500 text-sm mt-1">{error}</p>
-        <button onClick={fetchData} className="mt-3 px-4 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition">
-          {isAr ? 'إعادة المحاولة' : 'Retry'}
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex">
       <div
@@ -406,22 +385,99 @@ export default function ExpensesReport({ isAr, refreshKey }) {
           transition: 'margin 0.3s ease',
         }}
       >
-        <StatisticsCards statistics={statistics} />
-        <FiltersBar
-          dateFrom={dateFrom}       setDateFrom={setDateFrom}
-          dateTo={dateTo}           setDateTo={setDateTo}
-          searchTerm={searchTerm}   setSearchTerm={setSearchTerm}
-          showColumnFilters={showColumnFilters} setShowColumnFilters={setShowColumnFilters}
-          activeFilterCount={activeFilterCount}
-          columnFilters={columnFilters} setColumnFilters={setColumnFilters}
-          columns={columns} isAr={isAr}
-          onExportExcel={handleExportExcel} onExportPDF={handleExportPDF}
-        />
-        <ReportsTable
-          columns={columns} filteredData={filteredData} allData={expenseRows}
-          isAr={isAr} activeTab="expenses" renderCell={renderCell}
-        />
+        {/* ── TOP BAR ── */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
+          <div className="flex flex-wrap gap-3 items-end">
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-500">{isAr ? 'من تاريخ' : 'From'}</label>
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-500">{isAr ? 'إلى تاريخ' : 'To'}</label>
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+            </div>
+
+            <button onClick={fetchData}
+              className="px-5 py-2 rounded-lg text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition flex items-center gap-2">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isAr ? 'تطبيق' : 'Apply')}
+            </button>
+
+            <div className="flex-1" />
+
+            {hasLoaded && (<>
+              <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-gray-50" style={{ minWidth: 180 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/></svg>
+                <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                  placeholder={isAr ? 'بحث...' : 'Search...'}
+                  className="bg-transparent text-sm outline-none w-full" />
+              </div>
+
+              <button onClick={() => setShowColumnFilters(v => !v)}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold border transition flex items-center gap-1 ${showColumnFilters || activeFilterCount > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-200'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 8h10M11 12h2M9 16h6"/></svg>
+                {isAr ? 'فلاتر الأعمدة' : 'Col. Filters'}
+                {activeFilterCount > 0 && <span className="bg-indigo-600 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">{activeFilterCount}</span>}
+              </button>
+
+              <button onClick={handleExportExcel}
+                className="px-3 py-2 rounded-lg text-sm font-semibold border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                Excel
+              </button>
+
+              <button onClick={handleExportPDF}
+                className="px-3 py-2 rounded-lg text-sm font-semibold border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                PDF
+              </button>
+            </>)}
+          </div>
+        </div>
+
+        {/* ── LOADING ── */}
+        {loading && (
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+          </div>
+        )}
+
+        {/* ── ERROR ── */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <p className="text-red-700 font-semibold">{isAr ? 'حدث خطأ' : 'Error'}</p>
+            <p className="text-red-500 text-sm mt-1">{error}</p>
+            <button onClick={fetchData} className="mt-3 px-4 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition">
+              {isAr ? 'إعادة المحاولة' : 'Retry'}
+            </button>
+          </div>
+        )}
+
+        {/* ── EMPTY STATE ── */}
+        {!loading && !error && !hasLoaded && (
+          <div className="flex flex-col items-center justify-center py-24 text-gray-400">
+            <TrendingDown className="w-14 h-14 mb-4 opacity-30" />
+            <p className="text-base font-semibold text-gray-500">
+              {isAr ? 'اختر الفترة واضغط تطبيق' : 'Select date range and press Apply'}
+            </p>
+          </div>
+        )}
+
+        {/* ── DATA ── */}
+        {hasLoaded && !loading && (
+          <>
+            <StatisticsCards statistics={statistics} />
+            <ReportsTable
+              columns={columns} filteredData={filteredData} allData={expenseRows}
+              isAr={isAr} activeTab="expenses" renderCell={renderCell}
+            />
+          </>
+        )}
       </div>
+
       <ColumnFiltersPanel
         showColumnFilters={showColumnFilters} setShowColumnFilters={setShowColumnFilters}
         columns={columns} columnFilters={columnFilters} setColumnFilters={setColumnFilters}
