@@ -12,10 +12,10 @@ import { useNavigate } from 'react-router-dom';
 import AdminActionModal from '../modals/AdminActionModal';
 
 const ASSET_STATUS = [
-  { value: 'AVAILABLE',   labelAr: '\u0645\u062a\u0627\u062d',          labelEn: 'Available'   },
-  { value: 'IN_USE',      labelAr: '\u0642\u064a\u062f \u0627\u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645', labelEn: 'In Use'      },
-  { value: 'MAINTENANCE', labelAr: '\u0641\u064a \u0627\u0644\u0635\u064a\u0627\u0646\u0629',    labelEn: 'Maintenance' },
-  { value: 'RETIRED',     labelAr: '\u0645\u062a\u0642\u0627\u0639\u062f',        labelEn: 'Retired'     },
+  { value: 'AVAILABLE',   labelAr: 'متاح',          labelEn: 'Available'   },
+  { value: 'IN_USE',      labelAr: 'قيد الاستخدام', labelEn: 'In Use'      },
+  { value: 'MAINTENANCE', labelAr: 'في الصيانة',    labelEn: 'Maintenance' },
+  { value: 'RETIRED',     labelAr: 'متقاعد',        labelEn: 'Retired'     },
 ];
 
 const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
@@ -32,8 +32,8 @@ const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
 
 const ActiveBadge = ({ isActive, lang }) => {
   if (isActive === false)
-    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? '\u063a\u064a\u0631 \u0646\u0634\u0637' : 'Inactive'}</span>;
-  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? '\u0646\u0634\u0637' : 'Active'}</span>;
+    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</span>;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? 'نشط' : 'Active'}</span>;
 };
 
 const StatusBadge = ({ status, lang }) => {
@@ -86,25 +86,25 @@ const ActionsMenu = ({ asset, lang, onEdit, onDelete, onActivate }) => {
           <button onClick={() => { setOpen(false); navigate(`/assets/${asset._id}`); }}
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
             <Eye className="w-4 h-4" />
-            {lang === 'ar' ? '\u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644' : 'Details'}
+            {lang === 'ar' ? 'التفاصيل' : 'Details'}
           </button>
           <button onClick={() => { setOpen(false); onEdit(asset); }}
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
             <Edit className="w-4 h-4" />
-            {lang === 'ar' ? '\u062a\u0639\u062f\u064a\u0644' : 'Edit'}
+            {lang === 'ar' ? 'تعديل' : 'Edit'}
           </button>
           {asset.isActive === false && (
             <button onClick={() => { setOpen(false); onActivate(asset); }}
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
               <CheckCircle className="w-4 h-4" />
-              {lang === 'ar' ? '\u062a\u0641\u0639\u064a\u0644' : 'Activate'}
+              {lang === 'ar' ? 'تفعيل' : 'Activate'}
             </button>
           )}
           {asset.isActive !== false && (
             <button onClick={() => { setOpen(false); onDelete(asset); }}
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
               <Trash2 className="w-4 h-4" />
-              {lang === 'ar' ? '\u062d\u0630\u0641' : 'Delete'}
+              {lang === 'ar' ? 'حذف' : 'Delete'}
             </button>
           )}
         </div>
@@ -127,13 +127,13 @@ const AssetModal = ({ lang, mode, asset: editAsset, onClose, onSaved }) => {
 
   const handleSubmit = async () => {
     if (!form.nameAr.trim() || !form.nameEn.trim()) {
-      toast.error((lang === 'ar' ? '\u0627\u0633\u0645 \u0627\u0644\u0623\u0635\u0644 \u0645\u0637\u0644\u0648\u0628' : 'Asset name is required')); return;
+      toast.error((lang === 'ar' ? 'اسم الأصل مطلوب' : 'Asset name is required')); return;
     }
     if (!form.code.trim()) {
-      toast.error((lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f \u0645\u0637\u0644\u0648\u0628' : 'Code is required')); return;
+      toast.error((lang === 'ar' ? 'الكود مطلوب' : 'Code is required')); return;
     }
     if (!form.assetTypeAr.trim() || !form.assetTypeEn.trim()) {
-      toast.error((lang === 'ar' ? '\u0646\u0648\u0639 \u0627\u0644\u0623\u0635\u0644 \u0645\u0637\u0644\u0648\u0628' : 'Asset type is required')); return;
+      toast.error((lang === 'ar' ? 'نوع الأصل مطلوب' : 'Asset type is required')); return;
     }
     try {
       setSubmitting(true);
@@ -151,7 +151,7 @@ const AssetModal = ({ lang, mode, asset: editAsset, onClose, onSaved }) => {
       } else {
         await axiosInstance.put(`/assets/${editAsset._id}`, payload);
       }
-      toast.success((lang === 'ar' ? '\u062a\u0645 \u0627\u0644\u062d\u0641\u0638 \u0628\u0646\u062c\u0627\u062d' : 'Saved successfully'));
+      toast.success((lang === 'ar' ? 'تم الحفظ بنجاح' : 'Saved successfully'));
       onSaved();
       onClose();
     } catch (err) {
@@ -178,45 +178,45 @@ const AssetModal = ({ lang, mode, asset: editAsset, onClose, onSaved }) => {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629' : 'Name (Arabic)'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)'} <span className="text-red-500">*</span></label>
               <input type="text" dir="rtl" value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629' : 'Name (English)'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)'} <span className="text-red-500">*</span></label>
               <input type="text" dir="ltr" value={form.nameEn} onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code'} <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الكود' : 'Code'} <span className="text-red-500">*</span></label>
             <input type="text" placeholder="EXCAVATOR-001" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0646\u0648\u0639 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629' : 'Type (Arabic)'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'النوع بالعربية' : 'Type (Arabic)'} <span className="text-red-500">*</span></label>
               <input type="text" dir="rtl" placeholder="حفار" value={form.assetTypeAr} onChange={e => setForm(f => ({ ...f, assetTypeAr: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0646\u0648\u0639 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629' : 'Type (English)'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'النوع بالإنجليزية' : 'Type (English)'} <span className="text-red-500">*</span></label>
               <input type="text" dir="ltr" placeholder="Excavator" value={form.assetTypeEn} onChange={e => setForm(f => ({ ...f, assetTypeEn: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u062d\u0627\u0644\u0629' : 'Status'}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الحالة' : 'Status'}</label>
             <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50">
               {ASSET_STATUS.map(s => <option key={s.value} value={s.value}>{lang === 'ar' ? s.labelAr : s.labelEn}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0645\u0644\u0627\u062d\u0638\u0627\u062a' : 'Notes'}</label>
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows="2" dir={'ltr'} placeholder={lang === 'ar' ? '\u0623\u0636\u0641 \u0645\u0644\u0627\u062d\u0638\u0627\u062a...' : 'Add notes...'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'ملاحظات' : 'Notes'}</label>
+            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows="2" dir={'ltr'} placeholder={lang === 'ar' ? 'أضف ملاحظات...' : 'Add notes...'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none" />
           </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
-            {lang === 'ar' ? '\u0625\u0644\u063a\u0627\u0621' : 'Cancel'}
+            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
           </button>
           <button onClick={handleSubmit} disabled={submitting} className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50">
-            {submitting ? ((lang === 'ar' ? '\u062c\u0627\u0631\u064a \u0627\u0644\u062d\u0641\u0638...' : 'Saving...')) : ((lang === 'ar' ? '\u062d\u0641\u0638' : 'Save'))}
+            {submitting ? ((lang === 'ar' ? 'جاري الحفظ...' : 'Saving...')) : ((lang === 'ar' ? 'حفظ' : 'Save'))}
           </button>
         </div>
       </div>
@@ -247,7 +247,7 @@ export default function Assets() {
       const { data } = await axiosInstance.get('/assets');
       setAssets(data.result || data || []);
     } catch {
-      toast.error((lang === 'ar' ? '\u0641\u0634\u0644 \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0623\u0635\u0648\u0644' : 'Failed to load assets'));
+      toast.error((lang === 'ar' ? 'فشل تحميل الأصول' : 'Failed to load assets'));
     } finally {
       setLoading(false);
     }
@@ -256,7 +256,7 @@ export default function Assets() {
   const handleDelete = async () => {
     try {
       await axiosInstance.delete(`/assets/${deleteModal.asset._id}`);
-      toast.success((lang === 'ar' ? '\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0623\u0635\u0644' : 'Asset deleted'));
+      toast.success((lang === 'ar' ? 'تم حذف الأصل' : 'Asset deleted'));
       setDeleteModal({ show: false, asset: null });
       fetchAssets();
     } catch (err) {
@@ -267,7 +267,7 @@ export default function Assets() {
   const handleActivate = async () => {
     try {
       await axiosInstance.patch(`/assets/${activateModal.asset._id}/activate`);
-      toast.success((lang === 'ar' ? '\u062a\u0645 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0623\u0635\u0644' : 'Asset activated'));
+      toast.success((lang === 'ar' ? 'تم تفعيل الأصل' : 'Asset activated'));
       setActivateModal({ show: false, asset: null });
       fetchAssets();
     } catch (err) {
@@ -283,22 +283,22 @@ export default function Assets() {
   const handleExport = () => {
     try {
       const data = displayed.map(a => ({
-        [(lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code')]:            a.code,
-        [(lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629' : 'Name (Arabic)')]:   a.nameAr,
-        [(lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629' : 'Name (English)')]: a.nameEn,
-        [(lang === 'ar' ? '\u0627\u0644\u0646\u0648\u0639 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629' : 'Type (Arabic)')]:   a.assetTypeAr,
-        [(lang === 'ar' ? '\u0627\u0644\u0646\u0648\u0639 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629' : 'Type (English)')]: a.assetTypeEn,
-        [(lang === 'ar' ? '\u0627\u0644\u062d\u0627\u0644\u0629' : 'Status')]:          ASSET_STATUS.find(s => s.value === a.status)?.['labelEn'] || a.status,
-        [(lang === 'ar' ? '\u0646\u0634\u0637' : 'Active')]:          a.isActive !== false ? ((lang === 'ar' ? '\u0646\u0634\u0637' : 'Active')) : ((lang === 'ar' ? '\u063a\u064a\u0631 \u0646\u0634\u0637' : 'Inactive')),
-        [(lang === 'ar' ? '\u0645\u0644\u0627\u062d\u0638\u0627\u062a' : 'Notes')]:           a.notes || '',
+        [(lang === 'ar' ? 'الكود' : 'Code')]:            a.code,
+        [(lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)')]:   a.nameAr,
+        [(lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)')]: a.nameEn,
+        [(lang === 'ar' ? 'النوع بالعربية' : 'Type (Arabic)')]:   a.assetTypeAr,
+        [(lang === 'ar' ? 'النوع بالإنجليزية' : 'Type (English)')]: a.assetTypeEn,
+        [(lang === 'ar' ? 'الحالة' : 'Status')]:          ASSET_STATUS.find(s => s.value === a.status)?.['labelEn'] || a.status,
+        [(lang === 'ar' ? 'نشط' : 'Active')]:          a.isActive !== false ? ((lang === 'ar' ? 'نشط' : 'Active')) : ((lang === 'ar' ? 'غير نشط' : 'Inactive')),
+        [(lang === 'ar' ? 'ملاحظات' : 'Notes')]:           a.notes || '',
       }));
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Assets');
       XLSX.writeFile(wb, `Assets_${new Date().toISOString().slice(0, 10)}.xlsx`);
-      toast.success((lang === 'ar' ? '\u062a\u0645 \u0627\u0644\u062a\u0635\u062f\u064a\u0631 \u0628\u0646\u062c\u0627\u062d' : 'Exported successfully'));
+      toast.success((lang === 'ar' ? 'تم التصدير بنجاح' : 'Exported successfully'));
     } catch {
-      toast.error((lang === 'ar' ? '\u0641\u0634\u0644 \u0627\u0644\u062a\u0635\u062f\u064a\u0631' : 'Export failed'));
+      toast.error((lang === 'ar' ? 'فشل التصدير' : 'Export failed'));
     }
   };
 
@@ -324,7 +324,7 @@ export default function Assets() {
   }, [assets, searchTerm, filterStatus, sortField, sortDir]);
 
   if (loading && assets.length === 0)
-    return <FullPageLoader text={lang === 'ar' ? '\u062c\u0627\u0631\u064a \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0623\u0635\u0648\u0644...' : 'Loading assets...'} />;
+    return <FullPageLoader text={lang === 'ar' ? 'جاري تحميل الأصول...' : 'Loading assets...'} />;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -334,32 +334,32 @@ export default function Assets() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {lang === 'ar' ? '\u0627\u0644\u0623\u0635\u0648\u0644 \u0648\u0627\u0644\u0645\u0639\u062f\u0627\u062a' : 'Assets & Equipment'}
+              {lang === 'ar' ? 'الأصول والمعدات' : 'Assets & Equipment'}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {lang === 'ar' ? '\u0639\u0631\u0636 \u0648\u0625\u062f\u0627\u0631\u0629 \u0623\u0635\u0648\u0644 \u0648\u0645\u0639\u062f\u0627\u062a \u0627\u0644\u0634\u0631\u0643\u0629.' : 'View and manage company assets and equipment.'}
+              {lang === 'ar' ? 'عرض وإدارة أصول ومعدات الشركة.' : 'View and manage company assets and equipment.'}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={fetchAssets} disabled={loading}
               className="p-2.5 border border-gray-200 text-gray-500 bg-white rounded-xl hover:bg-gray-50 transition shadow-sm"
-              title={lang === 'ar' ? '\u062a\u062d\u062f\u064a\u062b' : 'Refresh'}>
+              title={lang === 'ar' ? 'تحديث' : 'Refresh'}>
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm">
               <Download className="w-4 h-4" />
-              {lang === 'ar' ? '\u062a\u0635\u062f\u064a\u0631' : 'Export'}
+              {lang === 'ar' ? 'تصدير' : 'Export'}
             </button>
             <button onClick={() => navigate('/assets/invoice/create')}
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition font-semibold text-sm shadow-sm">
               <ShoppingCart className="w-4 h-4" />
-              {lang === 'ar' ? '\u0634\u0631\u0627\u0621 \u0623\u0635\u0644' : 'Buy Asset'}
+              {lang === 'ar' ? 'شراء أصل' : 'Buy Asset'}
             </button>
             <button onClick={() => setAddModal(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm">
               <Plus className="w-4 h-4" />
-              {lang === 'ar' ? '\u0625\u0636\u0627\u0641\u0629 \u0623\u0635\u0644' : 'Add Asset'}
+              {lang === 'ar' ? 'إضافة أصل' : 'Add Asset'}
             </button>
           </div>
         </div>
@@ -368,15 +368,15 @@ export default function Assets() {
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input type="text" placeholder={lang === 'ar' ? '\u0628\u062d\u062b \u0641\u064a \u0627\u0644\u0623\u0635\u0648\u0644...' : 'Search assets...'}
+            <input type="text" placeholder={lang === 'ar' ? 'بحث في الأصول...' : 'Search assets...'}
               value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" />
           </div>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
-            <option value="ALL">{lang === 'ar' ? '\u0643\u0644 \u0627\u0644\u062d\u0627\u0644\u0627\u062a' : 'All Status'}</option>
-            <option value="ACTIVE">{lang === 'ar' ? '\u0646\u0634\u0637' : 'Active'}</option>
-            <option value="INACTIVE">{lang === 'ar' ? '\u063a\u064a\u0631 \u0646\u0634\u0637' : 'Inactive'}</option>
+            <option value="ALL">{lang === 'ar' ? 'كل الحالات' : 'All Status'}</option>
+            <option value="ACTIVE">{lang === 'ar' ? 'نشط' : 'Active'}</option>
+            <option value="INACTIVE">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</option>
             {ASSET_STATUS.map(s => (
               <option key={s.value} value={s.value}>{lang === 'ar' ? s.labelAr : s.labelEn}</option>
             ))}
@@ -384,7 +384,7 @@ export default function Assets() {
           {(searchTerm || filterStatus !== 'ALL') && (
             <button onClick={() => { setSearchTerm(''); setFilterStatus('ALL'); }}
               className="text-sm text-indigo-600 hover:underline">
-              {lang === 'ar' ? '\u0645\u0633\u062d' : 'Clear'}
+              {lang === 'ar' ? 'مسح' : 'Clear'}
             </button>
           )}
         </div>
@@ -394,17 +394,17 @@ export default function Assets() {
           {displayed.length === 0 ? (
             <div className="p-16 text-center">
               <Wrench className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="font-medium text-gray-600">{lang === 'ar' ? '\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u0635\u0648\u0644' : 'No assets found'}</p>
+              <p className="font-medium text-gray-600">{lang === 'ar' ? 'لا توجد أصول' : 'No assets found'}</p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0623\u0635\u0644' : 'Asset'}        field={'nameEn'}             sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code'}         field="code"                                             sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0646\u0648\u0639' : 'Type'}         field={'assetTypeEn'}    sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? '\u062d\u0627\u0644\u0629 \u0627\u0644\u0623\u0635\u0644' : 'Asset Status'} field="status"                                           sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? '\u0646\u0634\u0637' : 'Active'}       field="isActive"                                         sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الأصل' : 'Asset'}        field={'nameEn'}             sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الكود' : 'Code'}         field="code"                                             sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'النوع' : 'Type'}         field={'assetTypeEn'}    sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'حالة الأصل' : 'Asset Status'} field="status"                                           sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'نشط' : 'Active'}       field="isActive"                                         sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -457,9 +457,9 @@ export default function Assets() {
           type="delete"
           lang={lang}
           entityLabelEn="asset"
-          entityLabelAr="\u0623\u0635\u0644"
+          entityLabelAr="أصل"
           itemName={lang === 'ar' ? deleteModal.asset?.nameAr : deleteModal.asset?.nameEn}
-          itemSubtitle={`${lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code'}: ${deleteModal.asset?.code || '-'}`}
+          itemSubtitle={`${lang === 'ar' ? 'الكود' : 'Code'}: ${deleteModal.asset?.code || '-'}`}
           onConfirm={handleDelete}
           onClose={() => setDeleteModal({ show: false, asset: null })}
         />
@@ -469,9 +469,9 @@ export default function Assets() {
           type="activate"
           lang={lang}
           entityLabelEn="asset"
-          entityLabelAr="\u0623\u0635\u0644"
+          entityLabelAr="أصل"
           itemName={lang === 'ar' ? activateModal.asset?.nameAr : activateModal.asset?.nameEn}
-          itemSubtitle={`${lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code'}: ${activateModal.asset?.code || '-'}`}
+          itemSubtitle={`${lang === 'ar' ? 'الكود' : 'Code'}: ${activateModal.asset?.code || '-'}`}
           onConfirm={handleActivate}
           onClose={() => setActivateModal({ show: false, asset: null })}
         />
@@ -479,4 +479,3 @@ export default function Assets() {
     </div>
   );
 }
-

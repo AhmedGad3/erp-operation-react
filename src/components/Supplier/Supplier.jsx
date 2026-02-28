@@ -30,8 +30,8 @@ const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
 //  Status badge 
 const StatusBadge = ({ isActive, lang }) => {
   if (isActive === false)
-    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? '\u063a\u064a\u0631 \u0646\u0634\u0637' : 'Inactive'}</span>;
-  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? '\u0646\u0634\u0637' : 'Active'}</span>;
+    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</span>;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? 'نشط' : 'Active'}</span>;
 };
 
 //  Three-dots menu 
@@ -47,10 +47,10 @@ const ActionsMenu = ({ supplier, lang, onEdit, onToggle }) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-    const handleOpen = () => {
+  const handleOpen = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      const menuHeight = 80; // زرار` 
+      const menuHeight = 80;
       const spaceBelow = window.innerHeight - rect.bottom;
 
       const top = spaceBelow < menuHeight
@@ -84,7 +84,7 @@ const ActionsMenu = ({ supplier, lang, onEdit, onToggle }) => {
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
           >
             <Edit className="w-4 h-4" />
-            {lang === 'ar' ? '\u062a\u0639\u062f\u064a\u0644' : 'Edit'}
+            {lang === 'ar' ? 'تعديل' : 'Edit'}
           </button>
 
           {isActive ? (
@@ -93,7 +93,7 @@ const ActionsMenu = ({ supplier, lang, onEdit, onToggle }) => {
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
             >
               <Trash2 className="w-4 h-4" />
-              {lang === 'ar' ? '\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u062a\u0641\u0639\u064a\u0644' : 'Deactivate'}
+              {lang === 'ar' ? 'إلغاء التفعيل' : 'Deactivate'}
             </button>
           ) : (
             <button
@@ -101,7 +101,7 @@ const ActionsMenu = ({ supplier, lang, onEdit, onToggle }) => {
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-green-600 hover:bg-green-50 transition"
             >
               <CheckCircle className="w-4 h-4" />
-              {lang === 'ar' ? '\u062a\u0641\u0639\u064a\u0644' : 'Activate'}
+              {lang === 'ar' ? 'تفعيل' : 'Activate'}
             </button>
           )}
         </div>
@@ -142,7 +142,7 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
       if (mode === "add") await axiosInstance.post("/suppliers", payload);
       else await axiosInstance.put(`/suppliers/${editSupplier._id}`, payload);
 
-      toast.success((lang === 'ar' ? '\u062a\u0645 \u0627\u0644\u062d\u0641\u0638 \u0628\u0646\u062c\u0627\u062d' : 'Saved successfully'));
+      toast.success(lang === 'ar' ? 'تم الحفظ بنجاح' : 'Saved successfully');
       onSaved();
       onClose();
     } catch (err) {
@@ -157,7 +157,7 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
-            {mode === "add" ? ("Add New Supplier") : ("Edit Supplier")}
+            {mode === "add" ? "Add New Supplier" : "Edit Supplier"}
           </h2>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
             <X className="w-5 h-5" />
@@ -167,48 +167,69 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629' : 'Name (Arabic)'} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)'} <span className="text-red-500">*</span>
+              </label>
               <input type="text" dir="rtl" value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629' : 'Name (English)'}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)'}
+              </label>
               <input type="text" dir="ltr" value={form.nameEn} onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code'}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === 'ar' ? 'الكود' : 'Code'}
+              </label>
               <input type="text" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0647\u0627\u062a\u0641' : 'Phone'}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {lang === 'ar' ? 'الهاتف' : 'Phone'}
+              </label>
               <input type="text" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a' : 'Email'}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+            </label>
             <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0627\u0644\u0639\u0646\u0648\u0627\u0646' : 'Address'}</label>
-            <input type="text" dir={"ltr"} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {lang === 'ar' ? 'العنوان' : 'Address'}
+            </label>
+            <input type="text" dir="ltr" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? '\u0645\u0644\u0627\u062d\u0638\u0627\u062a' : 'Notes'}</label>
-            <textarea rows="2" dir={"ltr"} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={lang === 'ar' ? '\u0623\u0636\u0641 \u0645\u0644\u0627\u062d\u0638\u0627\u062a...' : 'Add notes...'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {lang === 'ar' ? 'ملاحظات' : 'Notes'}
+            </label>
+            <textarea
+              rows="2"
+              dir="ltr"
+              value={form.notes}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              placeholder={lang === 'ar' ? 'أضف ملاحظات...' : 'Add notes...'}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none"
+            />
           </div>
         </div>
 
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
-            {lang === 'ar' ? '\u0625\u0644\u063a\u0627\u0621' : 'Cancel'}
+            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
           </button>
           <button onClick={handleSubmit} disabled={submitting} className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50">
-            {submitting ? ((lang === 'ar' ? '\u062c\u0627\u0631\u064a \u0627\u0644\u062d\u0641\u0638...' : 'Saving...')) : ((lang === 'ar' ? '\u062d\u0641\u0638' : 'Save'))}
+            {submitting ? (lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (lang === 'ar' ? 'حفظ' : 'Save')}
           </button>
         </div>
       </div>
@@ -216,7 +237,7 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
   );
 };
 
-//  Confirm Modal 
+//  Main Component 
 export default function Suppliers() {
   const { lang, t } = useContext(LanguageContext);
 
@@ -264,8 +285,8 @@ export default function Suppliers() {
     try {
       await axiosInstance.delete(`/suppliers/${supplier._id}`);
       toast.success(supplier.isActive !== false
-        ? ("Supplier deactivated")
-        : ("Supplier activated"));
+        ? "Supplier deactivated"
+        : "Supplier activated");
       setToggleModal({ show: false, supplier: null });
       fetchSuppliers();
     } catch (err) {
@@ -282,20 +303,24 @@ export default function Suppliers() {
     try {
       if (displayed.length === 0) { toast.warning("No data to export"); return; }
       const data = displayed.map(s => ({
-        ["Supplier Name"]: lang === "ar" ? s.nameAr : s.nameEn,
-        [(lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code')]: s.code || "",
-        [(lang === 'ar' ? '\u0627\u0644\u0647\u0627\u062a\u0641' : 'Phone')]: s.phone || "",
-        [(lang === 'ar' ? '\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a' : 'Email')]: s.email || "",
-        [(lang === 'ar' ? '\u0627\u0644\u0639\u0646\u0648\u0627\u0646' : 'Address')]: s.address || "",
-        ["Current Balance"]: s.balance || 0,
-        [(lang === 'ar' ? '\u0627\u0644\u062d\u0627\u0644\u0629' : 'Status')]: s.isActive !== false ? ((lang === 'ar' ? '\u0646\u0634\u0637' : 'Active')) : ((lang === 'ar' ? '\u063a\u064a\u0631 \u0646\u0634\u0637' : 'Inactive')),
+        "Supplier Name": lang === "ar" ? s.nameAr : s.nameEn,
+        [lang === 'ar' ? 'الكود' : 'Code']: s.code || "",
+        [lang === 'ar' ? 'الهاتف' : 'Phone']: s.phone || "",
+        [lang === 'ar' ? 'البريد الإلكتروني' : 'Email']: s.email || "",
+        [lang === 'ar' ? 'العنوان' : 'Address']: s.address || "",
+        "Current Balance": s.balance || 0,
+        [lang === 'ar' ? 'الحالة' : 'Status']: s.isActive !== false
+          ? (lang === 'ar' ? 'نشط' : 'Active')
+          : (lang === 'ar' ? 'غير نشط' : 'Inactive'),
       }));
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, (lang === 'ar' ? '\u0627\u0644\u0645\u0648\u0631\u062f\u0648\u0646' : 'Suppliers'));
+      XLSX.utils.book_append_sheet(wb, ws, lang === 'ar' ? 'الموردون' : 'Suppliers');
       XLSX.writeFile(wb, `Suppliers_${new Date().toISOString().slice(0, 10)}.xlsx`);
-      toast.success((lang === 'ar' ? '\u062a\u0645 \u0627\u0644\u062a\u0635\u062f\u064a\u0631 \u0628\u0646\u062c\u0627\u062d' : 'Exported successfully'));
-    } catch { toast.error((lang === 'ar' ? '\u0641\u0634\u0644 \u0627\u0644\u062a\u0635\u062f\u064a\u0631' : 'Export failed')); }
+      toast.success(lang === 'ar' ? 'تم التصدير بنجاح' : 'Exported successfully');
+    } catch {
+      toast.error(lang === 'ar' ? 'فشل التصدير' : 'Export failed');
+    }
   };
 
   // Merge balances + filter + sort
@@ -332,10 +357,10 @@ export default function Suppliers() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {lang === 'ar' ? '\u0627\u0644\u0645\u0648\u0631\u062f\u0648\u0646' : 'Suppliers'}
+              {lang === 'ar' ? 'الموردون' : 'Suppliers'}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {"View and manage suppliers and their accounts."}
+              View and manage suppliers and their accounts.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -344,14 +369,14 @@ export default function Suppliers() {
               className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
             >
               <Download className="w-4 h-4" />
-              {lang === 'ar' ? '\u062a\u0635\u062f\u064a\u0631' : 'Export'}
+              {lang === 'ar' ? 'تصدير' : 'Export'}
             </button>
             <button
               onClick={() => setAddModal(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
             >
               <Plus className="w-4 h-4" />
-              {lang === 'ar' ? '\u0625\u0636\u0627\u0641\u0629 \u0645\u0648\u0631\u062f' : 'Add Supplier'}
+              {lang === 'ar' ? 'إضافة مورد' : 'Add Supplier'}
             </button>
           </div>
         </div>
@@ -362,7 +387,7 @@ export default function Suppliers() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder={lang === 'ar' ? '\u0628\u062d\u062b \u0641\u064a \u0627\u0644\u0645\u0648\u0631\u062f\u064a\u0646...' : 'Search suppliers...'}
+              placeholder={lang === 'ar' ? 'بحث في الموردين...' : 'Search suppliers...'}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
@@ -374,9 +399,9 @@ export default function Suppliers() {
             onChange={e => setFilterStatus(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
           >
-            <option value="ALL">{lang === 'ar' ? '\u0643\u0644 \u0627\u0644\u062d\u0627\u0644\u0627\u062a' : 'All Status'}</option>
-            <option value="ACTIVE">{lang === 'ar' ? '\u0646\u0634\u0637' : 'Active'}</option>
-            <option value="INACTIVE">{lang === 'ar' ? '\u063a\u064a\u0631 \u0646\u0634\u0637' : 'Inactive'}</option>
+            <option value="ALL">{lang === 'ar' ? 'كل الحالات' : 'All Status'}</option>
+            <option value="ACTIVE">{lang === 'ar' ? 'نشط' : 'Active'}</option>
+            <option value="INACTIVE">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</option>
           </select>
 
           {(searchTerm || filterStatus !== "ALL") && (
@@ -384,7 +409,7 @@ export default function Suppliers() {
               onClick={() => { setSearchTerm(""); setFilterStatus("ALL"); }}
               className="text-sm text-indigo-600 hover:underline"
             >
-              {lang === 'ar' ? '\u0645\u0633\u062d' : 'Clear'}
+              {lang === 'ar' ? 'مسح' : 'Clear'}
             </button>
           )}
         </div>
@@ -395,18 +420,18 @@ export default function Suppliers() {
             <div className="p-16 text-center">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="font-medium text-gray-600">
-                {lang === 'ar' ? '\u0644\u0627 \u064a\u0648\u062c\u062f \u0645\u0648\u0631\u062f\u0648\u0646' : 'No suppliers found'}
+                {lang === 'ar' ? 'لا يوجد موردون' : 'No suppliers found'}
               </p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0645\u0648\u0631\u062f' : 'Supplier'}         field={"nameEn"} sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code'}             field="code"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0647\u0627\u062a\u0641' : 'Phone'}            field="phone"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u0631\u0635\u064a\u062f' : 'Balance'}          field="balance"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? '\u0627\u0644\u062d\u0627\u0644\u0629' : 'Status'}           field="isActive"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'المورد' : 'Supplier'}   field="nameEn"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الكود' : 'Code'}        field="code"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الهاتف' : 'Phone'}      field="phone"    sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الرصيد' : 'Balance'}    field="balance"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'الحالة' : 'Status'}     field="isActive" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -487,9 +512,9 @@ export default function Suppliers() {
           type={toggleModal.supplier?.isActive !== false ? "deactivate" : "activate"}
           lang={lang}
           entityLabelEn="supplier"
-          entityLabelAr="\u0645\u0648\u0631\u062f"
+          entityLabelAr="مورد"
           itemName={lang === "ar" ? toggleModal.supplier?.nameAr : toggleModal.supplier?.nameEn}
-          itemSubtitle={toggleModal.supplier?.code ? `${lang === 'ar' ? '\u0627\u0644\u0643\u0648\u062f' : 'Code'}: ${toggleModal.supplier.code}` : ""}
+          itemSubtitle={toggleModal.supplier?.code ? `${lang === 'ar' ? 'الكود' : 'Code'}: ${toggleModal.supplier.code}` : ""}
           onConfirm={handleToggle}
           onClose={() => setToggleModal({ show: false, supplier: null })}
         />
@@ -497,4 +522,3 @@ export default function Suppliers() {
     </div>
   );
 }
-
