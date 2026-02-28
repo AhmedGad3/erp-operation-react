@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+﻿import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
   Users, Search, Plus, Edit, Trash2, Shield, Mail,
   Calendar, Check, X, CheckCircle, ChevronUp, ChevronDown, MoreHorizontal
@@ -9,8 +9,9 @@ import { getErrorMessage } from '../../utils/errorHandler';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
+import AdminActionModal from '../modals/AdminActionModal';
 
-// ── Sortable column header ─────────────────────────────────
+// â”€â”€ Sortable column header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
   <th
     className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer select-none"
@@ -26,19 +27,19 @@ const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
   </th>
 );
 
-// ── Status badge ───────────────────────────────────────────
+// â”€â”€ Status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const StatusBadge = ({ isActive, lang }) => {
   if (isActive === false)
-    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? 'محذوف' : 'Inactive'}</span>;
-  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? 'نشط' : 'Active'}</span>;
+    return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">{lang === 'ar' ? 'Ù…Ø­Ø°ÙˆÙ' : 'Inactive'}</span>;
+  return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{lang === 'ar' ? 'Ù†Ø´Ø·' : 'Active'}</span>;
 };
 
-// ── Role badge ─────────────────────────────────────────────
+// â”€â”€ Role badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const RoleBadge = ({ role, lang }) => {
   const map = {
-    admin:      { label: { ar: 'مدير',      en: 'Admin'     }, cls: 'bg-gray-100 text-gray-700' },
-    accountant: { label: { ar: 'محاسب',     en: 'Accountant'}, cls: 'bg-gray-100 text-gray-700' },
-    manager:    { label: { ar: 'مدير قسم',  en: 'Manager'   }, cls: 'bg-gray-100 text-gray-700' },
+    admin:      { label: { ar: 'Ù…Ø¯ÙŠØ±',      en: 'Admin'     }, cls: 'bg-gray-100 text-gray-700' },
+    accountant: { label: { ar: 'Ù…Ø­Ø§Ø³Ø¨',     en: 'Accountant'}, cls: 'bg-gray-100 text-gray-700' },
+    manager:    { label: { ar: 'Ù…Ø¯ÙŠØ± Ù‚Ø³Ù…',  en: 'Manager'   }, cls: 'bg-gray-100 text-gray-700' },
   };
   const cfg = map[role] ?? { label: { ar: role, en: role }, cls: 'bg-gray-100 text-gray-700' };
   return (
@@ -48,7 +49,7 @@ const RoleBadge = ({ role, lang }) => {
   );
 };
 
-// ── Three-dots menu ────────────────────────────────────────
+// â”€â”€ Three-dots menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) => {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -64,7 +65,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
   const handleOpen = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      const menuHeight = 80; // زرارين
+      const menuHeight = 80; // Ø²Ø±Ø§Ø±ÙŠÙ†
       const spaceBelow = window.innerHeight - rect.bottom;
 
       const top = spaceBelow < menuHeight
@@ -98,7 +99,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
           >
             <Edit className="w-4 h-4" />
-            {lang === 'ar' ? 'تعديل' : 'Edit'}
+            {lang === 'ar' ? 'ØªØ¹Ø¯ÙŠÙ„' : 'Edit'}
           </button>
 
           {user.isActive === false && (
@@ -107,7 +108,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
             >
               <CheckCircle className="w-4 h-4" />
-              {lang === 'ar' ? 'تفعيل' : 'Activate'}
+              {lang === 'ar' ? 'ØªÙØ¹ÙŠÙ„' : 'Activate'}
             </button>
           )}
 
@@ -117,7 +118,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
             >
               <Trash2 className="w-4 h-4" />
-              {lang === 'ar' ? 'حذف' : 'Delete'}
+              {lang === 'ar' ? 'Ø­Ø°Ù' : 'Delete'}
             </button>
           )}
         </div>
@@ -125,24 +126,24 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
     </div>
   );
 };
-// ── Add User Modal ─────────────────────────────────────────
+// â”€â”€ Add User Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const AddUserModal = ({ lang, onClose, onCreated }) => {
   const [form, setForm] = useState({ name: '', email: '', role: 'manager',  password: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
-      toast.error(lang === 'ar' ? 'يرجى ملء جميع الحقول' : 'Please fill all fields');
+      toast.error(lang === 'ar' ? 'ÙŠØ±Ø¬Ù‰ Ù…Ù„Ø¡ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ„' : 'Please fill all fields');
       return;
     }
     try {
       setSubmitting(true);
       await axiosInstance.post('/create', form);
-      toast.success(lang === 'ar' ? 'تم إنشاء المستخدم بنجاح' : 'User created successfully');
+      toast.success(lang === 'ar' ? 'ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ù†Ø¬Ø§Ø­' : 'User created successfully');
       onCreated();
       onClose();
     } catch (err) {
-      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل إنشاء المستخدم' : 'Failed to create user'));
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'ÙØ´Ù„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…' : 'Failed to create user'));
     } finally {
       setSubmitting(false);
     }
@@ -154,7 +155,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
         {/* Modal header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
-            {lang === 'ar' ? 'إضافة مستخدم جديد' : 'Add New User'}
+            {lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ù…Ø³ØªØ®Ø¯Ù… Ø¬Ø¯ÙŠØ¯' : 'Add New User'}
           </h2>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 text-gray-400">
             <X className="w-5 h-5" />
@@ -165,7 +166,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
           {/* Full Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {lang === 'ar' ? 'الاسم الكامل' : 'Full Name'}
+              {lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„' : 'Full Name'}
             </label>
             <input
               type="text"
@@ -179,7 +180,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+              {lang === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Email'}
             </label>
             <input
               type="email"
@@ -194,29 +195,29 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {lang === 'ar' ? 'الدور' : 'Role'}
+                {lang === 'ar' ? 'Ø§Ù„Ø¯ÙˆØ±' : 'Role'}
               </label>
               <select
                 value={form.role}
                 onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50"
               >
-                <option value="admin">{lang === 'ar' ? 'مدير' : 'Admin'}</option>
-                <option value="accountant">{lang === 'ar' ? 'محاسب' : 'Accountant'}</option>
-                <option value="manager">{lang === 'ar' ? 'مدير قسم' : 'Manager'}</option>
+                <option value="admin">{lang === 'ar' ? 'Ù…Ø¯ÙŠØ±' : 'Admin'}</option>
+                <option value="accountant">{lang === 'ar' ? 'Ù…Ø­Ø§Ø³Ø¨' : 'Accountant'}</option>
+                <option value="manager">{lang === 'ar' ? 'Ù…Ø¯ÙŠØ± Ù‚Ø³Ù…' : 'Manager'}</option>
               </select>
             </div>
             {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {lang === 'ar' ? 'الحالة' : 'Status'}
+                {lang === 'ar' ? 'Ø§Ù„Ø­Ø§Ù„Ø©' : 'Status'}
               </label>
               <select
                 value={form.isActive ? 'active' : 'inactive'}
                 onChange={e => setForm(f => ({ ...f, isActive: e.target.value === 'active' }))}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50"
               >
-                <option value="active">{lang === 'ar' ? 'نشط' : 'Active'}</option>
-                <option value="inactive">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</option>
+                <option value="active">{lang === 'ar' ? 'Ù†Ø´Ø·' : 'Active'}</option>
+                <option value="inactive">{lang === 'ar' ? 'ØºÙŠØ± Ù†Ø´Ø·' : 'Inactive'}</option>
               </select>
             </div> */}
           </div>
@@ -224,11 +225,11 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
           {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {lang === 'ar' ? 'كلمة المرور' : 'Password'}
+              {lang === 'ar' ? 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±' : 'Password'}
             </label>
             <input
               type="password"
-              placeholder="••••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50"
@@ -242,14 +243,14 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
             onClick={onClose}
             className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
           >
-            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+            {lang === 'ar' ? 'Ø¥Ù„ØºØ§Ø¡' : 'Cancel'}
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting}
             className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50"
           >
-            {lang === 'ar' ? 'إنشاء مستخدم' : 'Create User'}
+            {lang === 'ar' ? 'Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø³ØªØ®Ø¯Ù…' : 'Create User'}
           </button>
         </div>
       </div>
@@ -257,51 +258,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
   );
 };
 
-// ── Confirm Modal ──────────────────────────────────────────
-const ConfirmModal = ({ type, user, lang, onConfirm, onClose }) => {
-  const isDelete = type === 'delete';
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center ${isDelete ? 'bg-red-100' : 'bg-green-100'}`}>
-            {isDelete
-              ? <Trash2 className="w-5 h-5 text-red-600" />
-              : <CheckCircle className="w-5 h-5 text-green-600" />}
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-gray-900">
-              {isDelete
-                ? (lang === 'ar' ? 'تأكيد الحذف' : 'Confirm Delete')
-                : (lang === 'ar' ? 'تأكيد التفعيل' : 'Confirm Activation')}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {isDelete
-                ? (lang === 'ar' ? 'هل أنت متأكد من حذف هذا المستخدم؟' : 'Are you sure you want to delete this user?')
-                : (lang === 'ar' ? 'هل أنت متأكد من تفعيل هذا المستخدم؟' : 'Are you sure you want to activate this user?')}
-            </p>
-          </div>
-        </div>
-        <div className="bg-gray-50 rounded-xl p-4 mb-4">
-          <p className="font-medium text-gray-900 text-sm">{user?.name}</p>
-          <p className="text-xs text-gray-500">{user?.email}</p>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
-            {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-          </button>
-          <button onClick={onConfirm}
-            className={`flex-1 px-4 py-2.5 text-white rounded-xl transition font-medium text-sm ${isDelete ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}>
-            {isDelete ? (lang === 'ar' ? 'حذف' : 'Delete') : (lang === 'ar' ? 'تفعيل' : 'Activate')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Main Component ─────────────────────────────────────────
+// â”€â”€ Confirm Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const UsersList = () => {
   const { lang }  = useContext(LanguageContext);
   const navigate  = useNavigate();
@@ -325,7 +282,7 @@ const UsersList = () => {
       const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('userData') || '{}');
       setCurrentUser(user);
       if (user?.role && user.role !== 'admin') {
-        toast.error(lang === 'ar' ? 'ليس لديك صلاحية للوصول لهذه الصفحة' : 'Access denied');
+        toast.error(lang === 'ar' ? 'Ù„ÙŠØ³ Ù„Ø¯ÙŠÙƒ ØµÙ„Ø§Ø­ÙŠØ© Ù„Ù„ÙˆØµÙˆÙ„ Ù„Ù‡Ø°Ù‡ Ø§Ù„ØµÙØ­Ø©' : 'Access denied');
         setTimeout(() => navigate('/'), 2000);
       }
     } catch { /* ignore */ }
@@ -337,7 +294,7 @@ const UsersList = () => {
       const res = await axiosInstance.get('/users');
       setUsers(Array.isArray(res.data) ? res.data : (res.data.result || []));
     } catch {
-      toast.error(lang === 'ar' ? 'فشل تحميل المستخدمين' : 'Failed to load users');
+      toast.error(lang === 'ar' ? 'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†' : 'Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -346,22 +303,22 @@ const UsersList = () => {
   const handleDelete = async () => {
     try {
       await axiosInstance.delete(`/user/${deleteModal.user._id}`);
-      toast.success(lang === 'ar' ? 'تم حذف المستخدم بنجاح' : 'User deleted');
+      toast.success(lang === 'ar' ? 'ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ù†Ø¬Ø§Ø­' : 'User deleted');
       setDeleteModal({ show: false, user: null });
       fetchUsers();
     } catch (err) {
-      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل حذف المستخدم' : 'Failed to delete user'));
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'ÙØ´Ù„ Ø­Ø°Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…' : 'Failed to delete user'));
     }
   };
 
   const handleActivate = async () => {
     try {
       await axiosInstance.patch(`/user/activate/${activateModal.user._id}`);
-      toast.success(lang === 'ar' ? 'تم تفعيل المستخدم بنجاح' : 'User activated');
+      toast.success(lang === 'ar' ? 'ØªÙ… ØªÙØ¹ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ù†Ø¬Ø§Ø­' : 'User activated');
       setActivateModal({ show: false, user: null });
       fetchUsers();
     } catch (err) {
-      toast.error(getErrorMessage(err, lang === 'ar' ? 'فشل تفعيل المستخدم' : 'Failed to activate user'));
+      toast.error(getErrorMessage(err, lang === 'ar' ? 'ÙØ´Ù„ ØªÙØ¹ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…' : 'Failed to activate user'));
     }
   };
 
@@ -393,21 +350,21 @@ const UsersList = () => {
       return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
     });
 
-  if (loading) return <FullPageLoader text={lang === 'ar' ? 'جاري التحميل...' : 'Loading users...'} />;
+  if (loading) return <FullPageLoader text={lang === 'ar' ? 'Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù…ÙŠÙ„...' : 'Loading users...'} />;
   if (currentUser?.role && currentUser.role !== 'admin') return null;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
 
-        {/* ── Page Header ── */}
+        {/* â”€â”€ Page Header â”€â”€ */}
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {lang === 'ar' ? 'إدارة المستخدمين' : 'User Management'}
+              {lang === 'ar' ? 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†' : 'User Management'}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {lang === 'ar' ? 'إدارة أعضاء الفريق وصلاحياتهم' : 'Manage your team members and their account permissions.'}
+              {lang === 'ar' ? 'Ø¥Ø¯Ø§Ø±Ø© Ø£Ø¹Ø¶Ø§Ø¡ Ø§Ù„ÙØ±ÙŠÙ‚ ÙˆØµÙ„Ø§Ø­ÙŠØ§ØªÙ‡Ù…' : 'Manage your team members and their account permissions.'}
             </p>
           </div>
           <button
@@ -415,18 +372,18 @@ const UsersList = () => {
             className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            {lang === 'ar' ? 'إضافة مستخدم' : ' Add User'}
+            {lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ù…Ø³ØªØ®Ø¯Ù…' : ' Add User'}
           </button>
         </div>
 
-        {/* ── Filters ── */}
+        {/* â”€â”€ Filters â”€â”€ */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {/* Search */}
           <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder={lang === 'ar' ? 'بحث بالاسم أو الإيميل...' : 'Search by name or email...'}
+              placeholder={lang === 'ar' ? 'Ø¨Ø­Ø« Ø¨Ø§Ù„Ø§Ø³Ù… Ø£Ùˆ Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„...' : 'Search by name or email...'}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
@@ -439,10 +396,10 @@ const UsersList = () => {
             onChange={e => setFilterRole(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
           >
-            <option value="ALL">{lang === 'ar' ? 'كل الأدوار' : 'All Roles'}</option>
-            <option value="admin">{lang === 'ar' ? 'مدير' : 'Admin'}</option>
-            <option value="accountant">{lang === 'ar' ? 'محاسب' : 'Accountant'}</option>
-            <option value="manager">{lang === 'ar' ? 'مدير قسم' : 'Manager'}</option>
+            <option value="ALL">{lang === 'ar' ? 'ÙƒÙ„ Ø§Ù„Ø£Ø¯ÙˆØ§Ø±' : 'All Roles'}</option>
+            <option value="admin">{lang === 'ar' ? 'Ù…Ø¯ÙŠØ±' : 'Admin'}</option>
+            <option value="accountant">{lang === 'ar' ? 'Ù…Ø­Ø§Ø³Ø¨' : 'Accountant'}</option>
+            <option value="manager">{lang === 'ar' ? 'Ù…Ø¯ÙŠØ± Ù‚Ø³Ù…' : 'Manager'}</option>
           </select>
 
           {/* Status */}
@@ -451,9 +408,9 @@ const UsersList = () => {
             onChange={e => setFilterStatus(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
           >
-            <option value="ALL">{lang === 'ar' ? 'كل الحالات' : 'All Status'}</option>
-            <option value="ACTIVE">{lang === 'ar' ? 'نشط' : 'Active'}</option>
-            <option value="INACTIVE">{lang === 'ar' ? 'غير نشط' : 'Inactive'}</option>
+            <option value="ALL">{lang === 'ar' ? 'ÙƒÙ„ Ø§Ù„Ø­Ø§Ù„Ø§Øª' : 'All Status'}</option>
+            <option value="ACTIVE">{lang === 'ar' ? 'Ù†Ø´Ø·' : 'Active'}</option>
+            <option value="INACTIVE">{lang === 'ar' ? 'ØºÙŠØ± Ù†Ø´Ø·' : 'Inactive'}</option>
           </select>
 
           {(searchTerm || filterRole !== 'ALL' || filterStatus !== 'ALL') && (
@@ -461,29 +418,29 @@ const UsersList = () => {
               onClick={() => { setSearchTerm(''); setFilterRole('ALL'); setFilterStatus('ALL'); }}
               className="text-sm text-indigo-600 hover:underline"
             >
-              {lang === 'ar' ? 'مسح الفلاتر' : 'Clear'}
+              {lang === 'ar' ? 'Ù…Ø³Ø­ Ø§Ù„ÙÙ„Ø§ØªØ±' : 'Clear'}
             </button>
           )}
         </div>
 
-        {/* ── Table ── */}
+        {/* â”€â”€ Table â”€â”€ */}
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
           {displayed.length === 0 ? (
             <div className="p-16 text-center">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="font-medium text-gray-600">
-                {lang === 'ar' ? 'لا يوجد مستخدمين' : 'No users found'}
+                {lang === 'ar' ? 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†' : 'No users found'}
               </p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <SortHeader label={lang === 'ar' ? 'الاسم' : 'Full Name'}       field="name"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'البريد' : 'Email'}           field="email"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'الدور' : 'Role'}             field="role"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'الحالة' : 'Status'}          field="isActive"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={lang === 'ar' ? 'تاريخ الإنشاء' : 'Created'} field="createdAt" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù…' : 'Full Name'}       field="name"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯' : 'Email'}           field="email"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„Ø¯ÙˆØ±' : 'Role'}             field="role"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'Ø§Ù„Ø­Ø§Ù„Ø©' : 'Status'}          field="isActive"  sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label={lang === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥Ù†Ø´Ø§Ø¡' : 'Created'} field="createdAt" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -537,22 +494,37 @@ const UsersList = () => {
         </div>
       </div>
 
-      {/* ── Modals ── */}
+      {/* â”€â”€ Modals â”€â”€ */}
       {addModal && (
         <AddUserModal lang={lang} onClose={() => setAddModal(false)} onCreated={fetchUsers} />
       )}
       {deleteModal.show && (
-        <ConfirmModal type="delete" user={deleteModal.user} lang={lang}
+        <AdminActionModal
+          type="delete"
+          lang={lang}
+          entityLabelEn="user"
+          entityLabelAr="\u0645\u0633\u062a\u062e\u062f\u0645"
+          itemName={deleteModal.user?.name}
+          itemSubtitle={deleteModal.user?.email}
           onConfirm={handleDelete}
-          onClose={() => setDeleteModal({ show: false, user: null })} />
+          onClose={() => setDeleteModal({ show: false, user: null })}
+        />
       )}
       {activateModal.show && (
-        <ConfirmModal type="activate" user={activateModal.user} lang={lang}
+        <AdminActionModal
+          type="activate"
+          lang={lang}
+          entityLabelEn="user"
+          entityLabelAr="\u0645\u0633\u062a\u062e\u062f\u0645"
+          itemName={activateModal.user?.name}
+          itemSubtitle={activateModal.user?.email}
           onConfirm={handleActivate}
-          onClose={() => setActivateModal({ show: false, user: null })} />
+          onClose={() => setActivateModal({ show: false, user: null })}
+        />
       )}
     </div>
   );
 };
 
 export default UsersList;
+

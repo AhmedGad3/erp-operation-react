@@ -22,10 +22,17 @@ const Dashboard = () => {
 
   useEffect(() => { fetchDashboardData(); }, []);
 
+  const normalizeApiList = (responseData) => {
+    if (Array.isArray(responseData)) return responseData;
+    if (Array.isArray(responseData?.result)) return responseData.result;
+    if (Array.isArray(responseData?.data)) return responseData.data;
+    return [];
+  };
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [projectsRes, suppliersRes, clientsRes, generalExpensesRes, purchasesRes] = await Promise.all([
+      const [projectsRes, suppliersRes, clientsRes, generalExpensesRes, purchasesRes] = await Promise.allSettled([
         axiosInstance.get('/projects'),
         axiosInstance.get('/suppliers'),
         axiosInstance.get('/clients'),
@@ -33,11 +40,21 @@ const Dashboard = () => {
         axiosInstance.get('/purchases')
       ]);
 
-      const projects = projectsRes.data.result || projectsRes.data || [];
-      const suppliers = suppliersRes.data.result || suppliersRes.data || [];
-      const clients = clientsRes.data.result || clientsRes.data || [];
-      const generalExpenses = generalExpensesRes.data || [];
-      const purchases = purchasesRes.data.result || purchasesRes.data || [];
+      const projects = projectsRes.status === "fulfilled"
+        ? normalizeApiList(projectsRes.value?.data)
+        : [];
+      const suppliers = suppliersRes.status === "fulfilled"
+        ? normalizeApiList(suppliersRes.value?.data)
+        : [];
+      const clients = clientsRes.status === "fulfilled"
+        ? normalizeApiList(clientsRes.value?.data)
+        : [];
+      const generalExpenses = generalExpensesRes.status === "fulfilled"
+        ? normalizeApiList(generalExpensesRes.value?.data)
+        : [];
+      const purchases = purchasesRes.status === "fulfilled"
+        ? normalizeApiList(purchasesRes.value?.data)
+        : [];
 
       const projectStats = {
         total: projects.length,

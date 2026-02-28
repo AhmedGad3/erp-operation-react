@@ -1,14 +1,19 @@
-import {
+﻿import {
   LayoutDashboard, Users, ShoppingCart, CreditCard, FileText, Package, Box,
   ChevronDown, ChevronUp, Briefcase, Receipt, DollarSign, UserCircle,
   FileSpreadsheet, Wrench, TrendingUp, ArrowLeftRight, Landmark, ClipboardList, X
 } from "lucide-react";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function Sidebar({ lang, isOpen, setIsOpen }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
+  const isAdmin = String(user?.role || "").toLowerCase() === "admin";
+  const adminOnlyPaths = new Set(["/users", "/material-issue/create", "/adjustments"]);
+  const canSeePath = (path) => isAdmin || !adminOnlyPaths.has(path);
   const [expandedSections, setExpandedSections] = useState({
     warehouse: true, operations: false, finance: false,
     projects: false, hr: false, reports: false
@@ -26,50 +31,50 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
   };
 
   const menuSections = [
-    { id: "dashboard", label: lang === "ar" ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, path: "/", exact: true },
+    { id: "dashboard", label: lang === "ar" ? "Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ…" : "Dashboard", icon: LayoutDashboard, path: "/", exact: true },
     {
-      id: "warehouse", label: lang === "ar" ? "المستودع" : "Warehouse", icon: Box,
+      id: "warehouse", label: lang === "ar" ? "Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹" : "Warehouse", icon: Box,
       items: [
-        { id: "units",       icon: Wrench,         label: lang === "ar" ? "الوحدات"   : "Units",        path: "/units" },
-        { id: "materials",   icon: Package,        label: lang === "ar" ? "المواد"    : "Materials",    path: "/materials" },
-        { id: "suppliers",   icon: Users,          label: lang === "ar" ? "الموردين"  : "Suppliers",    path: "/suppliers" },
-        { id: "assets",      icon: Landmark,       label: lang === "ar" ? "الأصول"    : "Assets",       path: "/assets" },
-        { id: "adjustments", icon: ArrowLeftRight, label: lang === "ar" ? "التسويات" : "Adjustments",  path: "/adjustments" },
+        { id: "units",       icon: Wrench,         label: lang === "ar" ? "Ø§Ù„ÙˆØ­Ø¯Ø§Øª"   : "Units",        path: "/units" },
+        { id: "materials",   icon: Package,        label: lang === "ar" ? "Ø§Ù„Ù…ÙˆØ§Ø¯"    : "Materials",    path: "/materials" },
+        { id: "suppliers",   icon: Users,          label: lang === "ar" ? "Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†"  : "Suppliers",    path: "/suppliers" },
+        { id: "assets",      icon: Landmark,       label: lang === "ar" ? "Ø§Ù„Ø£ØµÙˆÙ„"    : "Assets",       path: "/assets" },
+        { id: "adjustments", icon: ArrowLeftRight, label: lang === "ar" ? "Ø§Ù„ØªØ³ÙˆÙŠØ§Øª" : "Adjustments",  path: "/adjustments" },
       ],
     },
     {
-      id: "operations", label: lang === "ar" ? "العمليات" : "Operations", icon: ShoppingCart,
+      id: "operations", label: lang === "ar" ? "Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª" : "Operations", icon: ShoppingCart,
       items: [
-        { id: "purchases",        icon: ShoppingCart,  label: lang === "ar" ? "أوامر الشراء"   : "Purchase Orders",  path: "/purchases" },
-        { id: "purchase-returns", icon: TrendingUp,    label: lang === "ar" ? "مرتجعات الشراء" : "Purchase Returns", path: "/purchases/returns" },
-        { id: "material-issue",   icon: ClipboardList, label: lang === "ar" ? "صرف المواد"     : "Material Issue",   path: "/material-issue/create" },
+        { id: "purchases",        icon: ShoppingCart,  label: lang === "ar" ? "Ø£ÙˆØ§Ù…Ø± Ø§Ù„Ø´Ø±Ø§Ø¡"   : "Purchase Orders",  path: "/purchases" },
+        { id: "purchase-returns", icon: TrendingUp,    label: lang === "ar" ? "Ù…Ø±ØªØ¬Ø¹Ø§Øª Ø§Ù„Ø´Ø±Ø§Ø¡" : "Purchase Returns", path: "/purchases/returns" },
+        { id: "material-issue",   icon: ClipboardList, label: lang === "ar" ? "ØµØ±Ù Ø§Ù„Ù…ÙˆØ§Ø¯"     : "Material Issue",   path: "/material-issue/create" },
       ],
     },
     {
-      id: "projects & clients", label: lang === "ar" ? "المشاريع و العملاء" : "Projects & Clients", icon: Briefcase,
+      id: "projects & clients", label: lang === "ar" ? "Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹ Ùˆ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡" : "Projects & Clients", icon: Briefcase,
       items: [
-        { id: "projects", icon: Briefcase, label: lang === "ar" ? "المشاريع" : "Projects", path: "/projects" },
-        { id: "clients",  icon: Users,     label: lang === "ar" ? "العملاء"  : "Clients",  path: "/clients" },
+        { id: "projects", icon: Briefcase, label: lang === "ar" ? "Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹" : "Projects", path: "/projects" },
+        { id: "clients",  icon: Users,     label: lang === "ar" ? "Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡"  : "Clients",  path: "/clients" },
       ],
     },
     {
-      id: "finance", label: lang === "ar" ? "المالية" : "Finance", icon: DollarSign,
+      id: "finance", label: lang === "ar" ? "Ø§Ù„Ù…Ø§Ù„ÙŠØ©" : "Finance", icon: DollarSign,
       items: [
-        { id: "supplier-payments", icon: CreditCard,      label: lang === "ar" ? "مدفوعات الموردين" : "Supplier Payments", path: "/finance/supplier-payments" },
-        { id: "supplier-refunds",  icon: Receipt,         label: lang === "ar" ? "مرتجعات الموردين" : "Supplier Refunds",  path: "/finance/supplier-refunds" },
-        { id: "client-payments",   icon: CreditCard,      label: lang === "ar" ? "مدفوعات العملاء"  : "Client Payments",   path: "/finance/client-payments" },
-        { id: "general-expenses",  icon: FileText,        label: lang === "ar" ? "المصروفات العامة" : "General Expenses",  path: "/finance/general-expenses" },
-        { id: "supplier-ledger",   icon: FileSpreadsheet, label: lang === "ar" ? "دفتر الموردين"    : "Supplier Ledger",   path: "/ledger/suppliers" },
-        { id: "client-ledger",     icon: FileSpreadsheet, label: lang === "ar" ? "دفتر العملاء"     : "Client Ledger",     path: "/ledger/clients" },
+        { id: "supplier-payments", icon: CreditCard,      label: lang === "ar" ? "Ù…Ø¯ÙÙˆØ¹Ø§Øª Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†" : "Supplier Payments", path: "/finance/supplier-payments" },
+        { id: "supplier-refunds",  icon: Receipt,         label: lang === "ar" ? "Ù…Ø±ØªØ¬Ø¹Ø§Øª Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†" : "Supplier Refunds",  path: "/finance/supplier-refunds" },
+        { id: "client-payments",   icon: CreditCard,      label: lang === "ar" ? "Ù…Ø¯ÙÙˆØ¹Ø§Øª Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡"  : "Client Payments",   path: "/finance/client-payments" },
+        { id: "general-expenses",  icon: FileText,        label: lang === "ar" ? "Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª Ø§Ù„Ø¹Ø§Ù…Ø©" : "General Expenses",  path: "/finance/general-expenses" },
+        { id: "supplier-ledger",   icon: FileSpreadsheet, label: lang === "ar" ? "Ø¯ÙØªØ± Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†"    : "Supplier Ledger",   path: "/ledger/suppliers" },
+        { id: "client-ledger",     icon: FileSpreadsheet, label: lang === "ar" ? "Ø¯ÙØªØ± Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡"     : "Client Ledger",     path: "/ledger/clients" },
       ],
     },
     {
-      id: "hr", label: lang === "ar" ? "الموارد البشرية" : "Human Resources", icon: UserCircle,
-      items: [{ id: "users", icon: Users, label: lang === "ar" ? "المستخدمين" : "Users", path: "/users" }],
+      id: "hr", label: lang === "ar" ? "Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ©" : "Human Resources", icon: UserCircle,
+      items: [{ id: "users", icon: Users, label: lang === "ar" ? "Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†" : "Users", path: "/users" }],
     },
     {
-      id: "reports", label: lang === "ar" ? "التقارير" : "Reports", icon: FileText,
-      items: [{ id: "reports", icon: FileText, label: lang === "ar" ? "التقارير" : "Reports", path: "/reports" }],
+      id: "reports", label: lang === "ar" ? "Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ±" : "Reports", icon: FileText,
+      items: [{ id: "reports", icon: FileText, label: lang === "ar" ? "Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ±" : "Reports", path: "/reports" }],
     },
   ];
 
@@ -78,9 +83,10 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
       {menuSections.map((section, idx) => {
         const SectionIcon = section.icon;
         const isExpanded = expandedSections[section.id];
+        const visibleItems = section.items ? section.items.filter((item) => canSeePath(item.path)) : null;
 
-        /* ── standalone item (Dashboard) ── */
-        if (!section.items) {
+        /* â”€â”€ standalone item (Dashboard) â”€â”€ */
+        if (!visibleItems) {
           const isActive = section.exact
             ? location.pathname === section.path
             : isActivePath(section.path);
@@ -104,8 +110,10 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
           );
         }
 
-        /* ── collapsible section ── */
-        const hasActiveChild = section.items.some((i) => isActivePath(i.path));
+        /* â”€â”€ collapsible section â”€â”€ */
+        if (visibleItems.length === 0) return null;
+
+        const hasActiveChild = visibleItems.some((i) => isActivePath(i.path));
 
         return (
           <div key={section.id}>
@@ -136,7 +144,7 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
                   lang === "ar" ? "mr-5 pr-2" : "ml-5 pl-2"
                 }`}
               >
-                {section.items.map((item) => {
+                {visibleItems.map((item) => {
                   const ItemIcon = item.icon;
                   const isActive = isActivePath(item.path);
                   return (
@@ -170,9 +178,9 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
 
   return (
     <>
-      {/* ══════════════════════════════════════════
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           MOBILE: full-screen overlay drawer
-      ══════════════════════════════════════════ */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {isOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden flex flex-col bg-gradient-to-b from-slate-50 to-slate-100">
           {/* Header bar */}
@@ -189,7 +197,7 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
                 <rect x="13" y="15" width="2" height="2"  fill="white" />
               </svg>
               <span className="font-bold text-gray-800">
-                {lang === "ar" ? "القائمة" : "Menu"}
+                {lang === "ar" ? "Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©" : "Menu"}
               </span>
             </div>
             <button
@@ -207,9 +215,9 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           DESKTOP: fixed side panel (lg+)
-      ══════════════════════════════════════════ */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed top-1/2 -translate-y-1/2 hidden lg:flex z-50 bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-xl p-1 border-y border-blue-500 hover:from-blue-700 hover:to-blue-800 transition-all duration-300 ${
@@ -256,3 +264,5 @@ export default function Sidebar({ lang, isOpen, setIsOpen }) {
     </>
   );
 }
+
+

@@ -1,5 +1,5 @@
 import "./App.css";
-import { RouterProvider, createHashRouter } from "react-router-dom";
+import { Outlet, RouterProvider, createHashRouter } from "react-router-dom";
 import Layout from "./components/Layout/Layout";
 
 import Login from "./components/Login/Login";
@@ -12,7 +12,6 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import VerifyLogin from "./components/VerifyLogin/VerifyLogin";
 
-// ===== ERP =====
 import Dashboard from "./components/Dashboard/Dashboard";
 import Suppliers from "./components/Supplier/Supplier";
 import Supplies from "./components/Supplies/Supplies";
@@ -26,8 +25,8 @@ import SupplierLedger from "./components/SupplierLedger/SupplierLedger";
 import ClientLedger from "./components/ClientLedger/ClientLedger";
 import LanguageProvider from "./context/LanguageContext";
 import SupplierRefundsList from "./components/SupplierRefund/SupplierRefund";
+import UnauthorizedPage from "./components/Unauthorizedpage/Unauthorizedpage";
 
-// User Management
 import UsersList from "./components/Users/Users";
 import CreateUser from "./components/CreateUser/CreateUser";
 import EditUser from "./components/EditUser/EditUser";
@@ -37,9 +36,9 @@ import CreateProject from "./components/CreateProject/CreateProject";
 import ProjectsList from "./components/Projects/Projects";
 import ProjectDetails from "./components/ProjectDetails/ProjectDetails";
 import CreateMaterialIssue from "./components/MaterialIssue/MaterialIssue";
-import PaymentsList from './components/ClientsPayment/ClientsPayment';
+import PaymentsList from "./components/ClientsPayment/ClientsPayment";
 import CreateClientPayment from "./components/CreateClientPayment/CreateClientPayment";
-import PaymentDetails from './components/ClientsPaymentDetails/ClientsPaymentDetails';
+import PaymentDetails from "./components/ClientsPaymentDetails/ClientsPaymentDetails";
 import CreateSupplierPayment from "./components/CreateSupplierPayment/CreateSupplierPayment";
 import StockAdjustment from "./components/Adjustment/Adjustment";
 import ReportsPage from "./components/Reports/Reports";
@@ -49,15 +48,16 @@ import ProjectEquipmentDetails from "./components/ProjectEquipmentDetails/Projec
 import ProjectMiscellaneousDetails from "./components/ProjectMiscellaneousDetails/ProjectMiscellaneousDetails";
 import ProjectMaterialDetails from "./components/ProjectMaterialDetails/ProjectMaterialDetails";
 import GeneralExpenses from "./components/General-Expenses/General-Expenses";
-import ExpenseDetails from './components/General-ExpensesDetails/General-ExpensesDetails';
+import ExpenseDetails from "./components/General-ExpensesDetails/General-ExpensesDetails";
 import ProjectSubcontractorWork from "./components/SubContractorWorks/SubContractorWorks";
 import SupplierRefundDetails from "./components/SupplierRefundDetails/SupplierRefundDetails";
 import AssetInvoiceForm from "./components/AssetInvoiceForm/AssetInvoiceForm";
 import AssetDetails from "./components/AssetDetails/AssetDetails";
 
+const READ_ROLES = ["admin", "accountant", "manager"];
+
 function App() {
   const router = createHashRouter([
-    // ================= Public Routes =================
     {
       path: "/login",
       element: <Login />,
@@ -66,8 +66,6 @@ function App() {
       path: "/verify-login",
       element: <VerifyLogin />,
     },
-
-    // ================= Protected Layout =================
     {
       path: "/",
       element: (
@@ -77,58 +75,72 @@ function App() {
       ),
       errorElement: <Error />,
       children: [
-        // ── متاح لكل اليوزرين ──
         { index: true, element: <Dashboard /> },
+        { path: "unauthorized", element: <UnauthorizedPage /> },
+        {
+          element: (
+            <ProtectedRoute requiredRole={READ_ROLES}>
+              <Outlet />
+            </ProtectedRoute>
+          ),
+          children: [
+            { path: "suppliers", element: <Suppliers /> },
+            { path: "materials", element: <Supplies /> },
+            { path: "assets", element: <Assets /> },
+            { path: "assets/:id", element: <AssetDetails /> },
+            { path: "units", element: <Units /> },
 
-        { path: "suppliers",   element: <Suppliers /> },
-        { path: "materials",   element: <Supplies />  },
-        { path: "assets",      element: <Assets />    },
-        { path: "assets/:id",              element: <AssetDetails />    },
-        { path: "assets/invoice/create",   element: <ProtectedRoute requiredRole="admin"><AssetInvoiceForm /></ProtectedRoute> },
-        { path: "units",       element: <Units />     },
-        { path: "adjustments", element: <StockAdjustment /> },
+            { path: "purchases", element: <PurchaseOrders /> },
+            { path: "purchases/returns", element: <PurchaseReturns /> },
 
-        { path: "purchases",                element: <PurchaseOrders />      },
-        { path: "purchases/returns",        element: <PurchaseReturns />     },
-        { path: "purchases/returns/create", element: <ProtectedRoute requiredRole="admin"><CreatePurchaseReturn /></ProtectedRoute> },
+            { path: "projects", element: <ProjectsList /> },
+            { path: "projects/:id", element: <ProjectDetails /> },
+            { path: "projects/:id/labor", element: <ProjectLaborDetails /> },
+            { path: "projects/:id/equipment", element: <ProjectEquipmentDetails /> },
+            { path: "projects/:id/miscellaneous", element: <ProjectMiscellaneousDetails /> },
+            { path: "projects/:id/subcontractor-work", element: <ProjectSubcontractorWork /> },
+            { path: "projects/material-issue/project/:id", element: <ProjectMaterialDetails /> },
 
-        { path: "projects",              element: <ProjectsList />    },
-        { path: "projects/create",       element: <ProtectedRoute requiredRole="admin"><CreateProject /></ProtectedRoute> },
-        { path: "projects/:id",          element: <ProjectDetails />  },
-        { path: "projects/:id/labor",               element: <ProjectLaborDetails />         },
-        { path: "projects/:id/equipment",           element: <ProjectEquipmentDetails />     },
-        { path: "projects/:id/miscellaneous",       element: <ProjectMiscellaneousDetails /> },
-        { path: "projects/:id/subcontractor-work",  element: <ProjectSubcontractorWork />    },
-        { path: "projects/material-issue/project/:id", element: <ProjectMaterialDetails />   },
+            { path: "clients", element: <Clients /> },
 
-        { path: "material-issue/create", element: <ProtectedRoute requiredRole="admin"><CreateMaterialIssue /></ProtectedRoute> },
+            { path: "finance/supplier-payments", element: <SupplierPayments /> },
+            { path: "finance/supplier-refunds", element: <SupplierRefundsList /> },
+            { path: "finance/supplier-refunds/:id", element: <SupplierRefundDetails /> },
+            { path: "finance/client-payments", element: <PaymentsList /> },
+            { path: "finance/client-payments/:id", element: <PaymentDetails /> },
+            { path: "finance/general-expenses", element: <GeneralExpenses /> },
+            { path: "finance/general-expenses/:id", element: <ExpenseDetails /> },
 
-        { path: "clients",        element: <Clients />      },
-        { path: "clients/create", element: <ProtectedRoute requiredRole="admin"><CreateClient /></ProtectedRoute> },
+            { path: "ledger/suppliers", element: <SupplierLedger /> },
+            { path: "ledger/clients", element: <ClientLedger /> },
 
-        { path: "finance/supplier-payments",        element: <SupplierPayments />    },
-        { path: "finance/supplier-payments/create", element: <ProtectedRoute requiredRole="admin"><CreateSupplierPayment /></ProtectedRoute> },
-        { path: "finance/supplier-refunds",         element: <SupplierRefundsList /> },
-        { path: "finance/supplier-refunds/create",  element: <ProtectedRoute requiredRole="admin"><SupplierRefundForm /></ProtectedRoute> },
-        { path: "finance/supplier-refunds/:id",     element: <SupplierRefundDetails /> },
-        { path: "finance/client-payments",          element: <PaymentsList />        },
-        { path: "finance/client-payments/create",   element: <ProtectedRoute requiredRole="admin"><CreateClientPayment /></ProtectedRoute> },
-        { path: "finance/client-payments/:id",      element: <PaymentDetails />      },
-        { path: "finance/general-expenses",         element: <GeneralExpenses />     },
-        { path: "finance/general-expenses/:id",     element: <ExpenseDetails />      },
+            { path: "reports", element: <ReportsPage /> },
 
-        { path: "ledger/suppliers", element: <SupplierLedger /> },
-        { path: "ledger/clients",   element: <ClientLedger />   },
-
-        // ── أدمن فقط ──
-        { path: "users",           element: <ProtectedRoute requiredRole="admin"><UsersList />  </ProtectedRoute> },
-        { path: "users/create",    element: <ProtectedRoute requiredRole="admin"><CreateUser /> </ProtectedRoute> },
-        { path: "users/edit/:id",  element: <ProtectedRoute requiredRole="admin"><EditUser />   </ProtectedRoute> },
-        { path: "reports",         element: <ProtectedRoute requiredRole="admin"><ReportsPage /></ProtectedRoute> },
+            {
+              element: (
+                <ProtectedRoute requiredRole="admin">
+                  <Outlet />
+                </ProtectedRoute>
+              ),
+              children: [
+                { path: "assets/invoice/create", element: <AssetInvoiceForm /> },
+                { path: "adjustments", element: <StockAdjustment /> },
+                { path: "purchases/returns/create", element: <CreatePurchaseReturn /> },
+                { path: "projects/create", element: <CreateProject /> },
+                { path: "material-issue/create", element: <CreateMaterialIssue /> },
+                { path: "clients/create", element: <CreateClient /> },
+                { path: "finance/supplier-payments/create", element: <CreateSupplierPayment /> },
+                { path: "finance/supplier-refunds/create", element: <SupplierRefundForm /> },
+                { path: "finance/client-payments/create", element: <CreateClientPayment /> },
+                { path: "users", element: <UsersList /> },
+                { path: "users/create", element: <CreateUser /> },
+                { path: "users/edit/:id", element: <EditUser /> },
+              ],
+            },
+          ],
+        },
       ],
     },
-
-    // ================= Catch All =================
     {
       path: "*",
       element: <NotFound />,

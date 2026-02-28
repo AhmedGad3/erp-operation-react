@@ -63,7 +63,17 @@ export default function VerifyLogin() {
         { email, code: otp }
       );
       if (data.token) {
-        login(data.token);
+        const apiProfile =
+          data.user ||
+          data.result?.user ||
+          data.result ||
+          {};
+        const fallbackProfile = {
+          email,
+          name: email,
+        };
+        const profile = { ...fallbackProfile, ...apiProfile };
+        login(data.token, profile);
         localStorage.setItem("token", data.token);
         navigate("/");
       } else {
