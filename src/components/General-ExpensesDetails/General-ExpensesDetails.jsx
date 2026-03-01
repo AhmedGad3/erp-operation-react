@@ -4,8 +4,7 @@ import { ArrowLeft, Download } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { exportToPDF } from '../../utils/pdfExport';
 import { toast } from 'react-toastify';
 import megabuildLogo from '../../assets/megabuild1.svg';
 
@@ -89,31 +88,23 @@ const ExpenseDetails = () => {
   };
 
   const handlePDF = async () => {
-    try {
-      const element   = document.getElementById('expense-receipt-container');
-      const canvas    = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
-      const imgData   = canvas.toDataURL('image/png');
-      const pdf       = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth  = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth   = pageWidth - 20;
-      const imgHeight  = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft   = imgHeight;
-      let position     = 10;
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight - 20;
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-      toast.success(t('تم تحميل PDF بنجاح', 'PDF downloaded successfully'));
-      pdf.save(`expense-receipt-${expense.expenseNo}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error(t('خطأ في إنشاء PDF', 'Error generating PDF'));
-    }
+    const headers = [
+      { description: t('الوصف', 'Description') },
+      { amount: t('المبلغ', 'Amount') },
+    ];
+
+    const rows = [
+      { description: expense.title, amount: formatCurrency(expense.amount) },
+      { description: t('إجمالي المصروف', 'Total Expense'), amount: formatCurrency(expense.amount) },
+    ];
+
+    await exportToPDF(
+      rows,
+      headers,
+      `expense-receipt-${expense.expenseNo}`,
+      lang,
+      t('إيصال مصروف', 'EXPENSE RECEIPT')
+    );
   };
 
   const formatDate = (d) =>

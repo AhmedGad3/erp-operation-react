@@ -5,8 +5,7 @@ import axiosInstance from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { exportToPDF } from '../../utils/pdfExport';
 import megabuildLogo from '../../assets/megabuild1.svg';
 
 const RED        = '#C41E3A';
@@ -70,21 +69,22 @@ const SupplierRefundDetails = () => {
   };
 
   const handlePDF = async () => {
-    try {
-      const element   = document.getElementById('receipt-container');
-      const canvas    = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
-      const imgData   = canvas.toDataURL('image/png');
-      const pdf       = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const imgWidth  = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-      pdf.save(`refund-receipt-${refund.refundNo}.pdf`);
-      toast.success(t('تم تحميل PDF بنجاح', 'PDF downloaded successfully'));
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error(t('حدث خطأ أثناء إنشاء PDF', 'Error generating PDF'));
-    }
+    const headers = [
+      { description: t('الوصف', 'Description') },
+      { amount: t('المبلغ', 'Amount') },
+    ];
+
+    const rows = [
+      { description: t('مبلغ المرتجع', 'Refund Amount'), amount: formatCurrency(refund.amount) },
+    ];
+
+    await exportToPDF(
+      rows,
+      headers,
+      `refund-receipt-${refund.refundNo}`,
+      lang,
+      t('إيصال مرتجع مورد', 'SUPPLIER REFUND RECEIPT')
+    );
   };
 
   const formatDate = (d) =>

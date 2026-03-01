@@ -5,6 +5,75 @@ import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
 
+const BRAND_BLUE = '#003764';
+const BRAND_RED = '#C41E3A';
+
+const getPublicUrl = (path) => {
+  const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
+    ? import.meta.env.BASE_URL
+    : '/';
+  const safeBase = base.endsWith('/') ? base : `${base}/`;
+  const safePath = path.startsWith('/') ? path.slice(1) : path;
+  return `${safeBase}${safePath}`;
+};
+
+const loadImageBase64 = async (url) => {
+  try {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    return await new Promise(res => {
+      const r = new FileReader();
+      r.onloadend = () => res(r.result);
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return '';
+  }
+};
+
+const drawHeaderFooter = ({ pdf, pageWidth, pageHeight, logoBase64 }) => {
+  const headerH = 26;
+  const footerH = 14;
+
+  // Header background line
+  pdf.setDrawColor(BRAND_RED);
+  pdf.setLineWidth(0.8);
+  pdf.line(10, headerH + 2, pageWidth - 10, headerH + 2);
+
+  // Logo (optional)
+  if (logoBase64 && typeof logoBase64 === 'string' && logoBase64.startsWith('data:image')) {
+    try {
+      pdf.addImage(logoBase64, 'PNG', 10, 6, 14, 14);
+    } catch {}
+  }
+
+  // Brand text
+  pdf.setFontSize(16);
+  pdf.setTextColor(BRAND_RED);
+  pdf.text('MEGA', pageWidth - 35, 14);
+  pdf.setTextColor(BRAND_BLUE);
+  pdf.text('BUILD', pageWidth - 18, 14);
+
+  pdf.setFontSize(8);
+  pdf.setTextColor(120);
+  pdf.text('We Build Value', pageWidth - 10, 18, { align: 'right' });
+
+  // Footer bar
+  pdf.setFillColor(BRAND_BLUE);
+  pdf.rect(0, pageHeight - footerH, pageWidth * 0.38, footerH, 'F');
+  pdf.setFillColor(255, 255, 255);
+  pdf.rect(pageWidth * 0.38, pageHeight - footerH, pageWidth * 0.02, footerH, 'F');
+  pdf.setFillColor(BRAND_RED);
+  pdf.rect(pageWidth * 0.40, pageHeight - footerH, pageWidth * 0.60, footerH, 'F');
+
+  // Footer text
+  pdf.setFontSize(8);
+  pdf.setTextColor(120);
+  pdf.text('This is a computer-generated report', pageWidth / 2, pageHeight - footerH - 4, { align: 'center' });
+
+  return { headerH, footerH };
+};
+
 export const exportTableToPDF = async (tableId, fileName, title = '') => {
   try {
     const element = document.getElementById(tableId);
@@ -60,6 +129,8 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
   const isAr = lang === 'ar';
   
   try {
+    const logoBase64 = await loadImageBase64(getPublicUrl('../../public/assets/Meega.jpg'));
+
     // إنشاء عنصر مؤقت في الصفحة
     const tempDiv = document.createElement('div');
     tempDiv.id = 'temp-pdf-export';
@@ -73,10 +144,10 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
     // إنشاء HTML للجدول
     let html = `
       <div style="font-family: Arial, sans-serif; direction: ${isAr ? 'rtl' : 'ltr'};">
-        ${title ? `<h2 style="text-align: center; color: #4338ca; margin-bottom: 20px;">${title}</h2>` : ''}
+        ${title ? `<h2 style="text-align: center; color: #000; margin-bottom: 16px;">${title}</h2>` : ''}
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <thead>
-            <tr style="background-color: #4f46e5; color: white;">
+            <tr style="background-color: #c00707; color: white;">
     `;
     
     // رؤوس الجدول
@@ -95,7 +166,7 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
           <tbody>
     `;
     
-    // صفوف البيانات
+    
     const displayKeys = isAr ? [...headerKeys].reverse() : headerKeys;
     
     data.forEach((row, index) => {
@@ -119,19 +190,15 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
     html += `
           </tbody>
         </table>
-        <p style="text-align: center; margin-top: 20px; font-size: 12px; color: #64748b;">
-          ${isAr ? `التاريخ: ${new Date().toLocaleDateString('ar-EG')}` : `Date: ${new Date().toLocaleDateString('en-US')}`}
-        </p>
       </div>
     `;
     
     tempDiv.innerHTML = html;
     document.body.appendChild(tempDiv);
     
-    // الانتظار لضمان رسم العنصر
+    
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    // تحويل إلى صورة
     const canvas = await html2canvas(tempDiv, {
       scale: 2,
       useCORS: true,
@@ -139,10 +206,10 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
       backgroundColor: '#ffffff',
     });
     
-    // إزالة العنصر المؤقت
+   
     document.body.removeChild(tempDiv);
     
-    // إنشاء PDF
+   
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
       orientation: 'landscape',
@@ -154,19 +221,35 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const imgWidth = pdfWidth - 20;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    
+
+    const { headerH, footerH } = drawHeaderFooter({
+      pdf,
+      pageWidth: pdfWidth,
+      pageHeight: pdfHeight,
+      logoBase64,
+    });
+
+    const topMargin = headerH + 6;
+    const bottomMargin = footerH + 6;
+    const availableHeight = pdfHeight - topMargin - bottomMargin;
     let heightLeft = imgHeight;
-    let position = 10;
-    
-    // إضافة الصورة (مع دعم الصفحات المتعددة)
-    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-    heightLeft -= pdfHeight;
-    
+    let yOffset = 0;
+
+   
+    pdf.addImage(imgData, 'PNG', 10, topMargin - yOffset, imgWidth, imgHeight);
+    heightLeft -= availableHeight;
+
     while (heightLeft > 0) {
-      position = heightLeft - imgHeight + 10;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
+      drawHeaderFooter({
+        pdf,
+        pageWidth: pdfWidth,
+        pageHeight: pdfHeight,
+        logoBase64,
+      });
+      yOffset += availableHeight;
+      pdf.addImage(imgData, 'PNG', 10, topMargin - yOffset, imgWidth, imgHeight);
+      heightLeft -= availableHeight;
     }
     
     const date = new Date().toISOString().split('T')[0];
@@ -180,9 +263,6 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
   }
 };
 
-// ═══════════════════════════════════════════════════════════
-//  SUPPLIER STATEMENT EXPORT - نفس الطريقة
-// ═══════════════════════════════════════════════════════════
 
 export const exportSupplierStatementToPDF = async (supplier, invoices, payments, lang = 'en') => {
   const isAr = lang === 'ar';

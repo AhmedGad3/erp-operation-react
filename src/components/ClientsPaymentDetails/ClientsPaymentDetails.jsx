@@ -5,8 +5,7 @@ import axiosInstance from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { exportToPDF } from '../../utils/pdfExport';
 import megabuildLogo from '../../assets/megabuild1.svg';
 
 /* ── Brand colors ── */
@@ -70,31 +69,24 @@ const PaymentDetails = () => {
   };
 
   const handlePDF = async () => {
-    try {
-      const element    = document.getElementById('receipt-container');
-      const canvas     = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
-      const imgData    = canvas.toDataURL('image/png');
-      const pdf        = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth  = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth   = pageWidth - 20;
-      const imgHeight  = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft   = imgHeight;
-      let position     = 10;
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight - 20;
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-      pdf.save(`payment-receipt-${payment.paymentNo}.pdf`);
-      toast.success(t('تم تحميل PDF بنجاح', 'PDF downloaded successfully'));
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error(t('حدث خطأ أثناء إنشاء PDF', 'Error generating PDF'));
-    }
+    const headers = [
+      { description: t('الوصف', 'Description') },
+      { amount: t('المبلغ', 'Amount') },
+    ];
+
+    const rows = [
+      { description: t('الرصيد السابق', 'Previous Balance'), amount: formatCurrency(previousBalance) },
+      { description: t('المبلغ المدفوع', 'Amount Paid'), amount: `- ${formatCurrency(payment.amount)}` },
+      { description: t('المبلغ المتبقي', 'Remaining Balance'), amount: formatCurrency(remainingBalance) },
+    ];
+
+    await exportToPDF(
+      rows,
+      headers,
+      `payment-receipt-${payment.paymentNo}`,
+      lang,
+      t('إيصال دفعة', 'PAYMENT RECEIPT')
+    );
   };
 
   const formatDate = (d) =>

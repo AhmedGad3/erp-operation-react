@@ -4,8 +4,7 @@ import { formatCurrency, formatDateShort } from "../../utils/dateFormat";
 import axiosInstance from "../../utils/axiosInstance";
 import { LanguageContext } from "../../context/LanguageContext";
 import { toast } from "react-toastify";
-import jsPDF from "jspdf";
-import autoTable from 'jspdf-autotable';
+import { exportToPDF } from "../../utils/pdfExport";
 
 export default function SupplierStatement({ data, onClose }) {
   const { lang, t } = useContext(LanguageContext);
@@ -93,79 +92,47 @@ export default function SupplierStatement({ data, onClose }) {
   const totalDiscount = filteredRows.reduce((sum, r) => sum + (r.discountAmount || 0), 0);
   const currentBalance = filteredRows.length > 0 ? (filteredRows[filteredRows.length - 1]?.balanceAfter || 0) : 0;
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
-      const doc = new jsPDF();
-      
-      doc.setFontSize(18);
-      doc.text(lang === "ar" ? "كشف حساب مورد" : "Supplier Statement", 14, 20);
-      
-      doc.setFontSize(12);
-      doc.text(
-        `${lang === "ar" ? "المورد:" : "Supplier:"} ${lang === "ar" ? data.supplier.nameAr : data.supplier.nameEn}`,
-        14, 30
-      );
-      doc.text(
-        `${lang === "ar" ? "الكود:" : "Code:"} ${data.supplier.code || "-"}`,
-        14, 37
-      );
-      doc.text(
-        `${lang === "ar" ? "التاريخ:" : "Date:"} ${new Date().toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US")}`,
-        14, 44
-      );
+      const headers = [
+        { date: lang === "ar" ? "التاريخ" : "Date" },
+        { transNo: lang === "ar" ? "رقم المعاملة" : "Trans No" },
+        { description: lang === "ar" ? "الوصف" : "Description" },
+        { debit: lang === "ar" ? "مدين" : "Debit" },
+        { credit: lang === "ar" ? "دائن" : "Credit" },
+        { discount: lang === "ar" ? "الخصم" : "Discount" },
+        { balance: lang === "ar" ? "الرصيد" : "Balance" },
+      ];
 
-      const tableData = filteredRows.map(row => [
-        formatDateShort(row.transactionDate, lang),
-        row.transactionNo || "-",
-        `${row.type || (lang === "ar" ? "معاملة" : "Transaction")}${row.description ? ` - ${row.description}` : ""}`,
-        row.debit > 0 ? formatCurrency(row.debit, lang) : "-",
-        row.credit > 0 ? formatCurrency(row.credit, lang) : "-",
-        row.discountAmount > 0 ? formatCurrency(row.discountAmount, lang) : "-",
-        formatCurrency(Math.abs(row.balanceAfter || 0), lang)
-      ]);
+      const rows = filteredRows.map(row => ({
+        date: formatDateShort(row.transactionDate, lang),
+        transNo: row.transactionNo || "-",
+        description: `${row.type || (lang === "ar" ? "معاملة" : "Transaction")}${row.description ? ` - ${row.description}` : ""}`,
+        debit: row.debit > 0 ? formatCurrency(row.debit, lang) : "-",
+        credit: row.credit > 0 ? formatCurrency(row.credit, lang) : "-",
+        discount: row.discountAmount > 0 ? formatCurrency(row.discountAmount, lang) : "-",
+        balance: formatCurrency(Math.abs(row.balanceAfter || 0), lang),
+      }));
 
-      tableData.push([
-        { content: lang === "ar" ? "الإجمالي" : "Total", colSpan: 3, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
-        { content: formatCurrency(totalDebit, lang), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
-        { content: formatCurrency(totalCredit, lang), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
-        { content: formatCurrency(totalDiscount, lang), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
-        { content: formatCurrency(Math.abs(currentBalance), lang), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
-      ]);
-
-      autoTable(doc, {
-        startY: 52,
-        head: [[
-          lang === "ar" ? "التاريخ" : "Date",
-          lang === "ar" ? "رقم المعاملة" : "Trans No",
-          lang === "ar" ? "الوصف" : "Description",
-          lang === "ar" ? "مدين" : "Debit",
-          lang === "ar" ? "دائن" : "Credit",
-          lang === "ar" ? "الخصم" : "Discount",
-          lang === "ar" ? "الرصيد" : "Balance"
-        ]],
-        body: tableData,
-        headStyles: {
-          fillColor: [71, 85, 105],
-          textColor: 255,
-          fontStyle: 'bold'
-        },
-        styles: {
-          fontSize: 9,
-          cellPadding: 3
-        },
-        columnStyles: {
-          3: { halign: 'right' },
-          4: { halign: 'right' },
-          5: { halign: 'right' },
-          6: { halign: 'right' }
-        }
+      rows.push({
+        date: "",
+        transNo: "",
+        description: lang === "ar" ? "الإجمالي" : "Total",
+        debit: formatCurrency(totalDebit, lang),
+        credit: formatCurrency(totalCredit, lang),
+        discount: formatCurrency(totalDiscount, lang),
+        balance: formatCurrency(Math.abs(currentBalance), lang),
       });
 
-      const fileName = `supplier_statement_${data.supplier.code || 'unknown'}_${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(fileName);
+      await exportToPDF(
+        rows,
+        headers,
+        `supplier_statement_${data.supplier.code || "unknown"}`,
+        lang,
+        lang === "ar" ? "كشف حساب مورد" : "Supplier Statement"
+      );
 
       toast.success(lang === "ar" ? "تم تصدير PDF بنجاح" : "PDF exported successfully");
-
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error(lang === "ar" ? "حدث خطأ أثناء تصدير PDF" : "Error exporting PDF");

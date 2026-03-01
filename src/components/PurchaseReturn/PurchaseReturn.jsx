@@ -9,6 +9,7 @@ import axiosInstance from '../../utils/axiosInstance';
 import { LanguageContext } from '../../context/LanguageContext';
 import FullPageLoader from '../Loader/Loader';
 import { exportToExcel } from '../../utils/excelExport';
+import { exportToPDF } from '../../utils/pdfExport';
 import { toast } from 'react-toastify';
 import { formatCurrency, formatDateShort } from '../../utils/dateFormat';
 
@@ -397,31 +398,33 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
   };
 
   const handleDownloadPDF = async () => {
-    const el = invoiceRef.current;
-    if (!el) return;
     setIsExporting(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf'),
-      ]);
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false });
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pdfW    = pdf.internal.pageSize.getWidth();
-      const pdfH    = (canvas.height * pdfW) / canvas.width;
-      const pageH   = pdf.internal.pageSize.getHeight();
-      if (pdfH <= pageH) {
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
-      } else {
-        let yOffset = 0;
-        while (yOffset < pdfH) {
-          pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfW, pdfH);
-          yOffset += pageH;
-          if (yOffset < pdfH) pdf.addPage();
-        }
-      }
-      pdf.save(`${tr('مرتجع', 'Return')}_${returnDoc.returnNo}.pdf`);
+      const headers = [
+        { item: tr('المادة', 'Item') },
+        { code: tr('الكود', 'Code') },
+        { unit: tr('الوحدة', 'Unit') },
+        { qty: tr('الكمية', 'Qty') },
+        { unitPrice: tr('سعر الوحدة', 'Unit Price') },
+        { amount: tr('الإجمالي', 'Amount') },
+      ];
+
+      const rows = (returnDoc.items || []).map((item) => ({
+        item: getMaterialName(item) || tr('غير معروف', 'Unknown'),
+        code: item.material?.code || item.materialId?.code || '-',
+        unit: getUnitName(item) || '-',
+        qty: item.quantity?.toLocaleString(isAr ? 'ar-EG' : 'en-US'),
+        unitPrice: formatCurrency(item.unitPrice, lang),
+        amount: formatCurrency(getItemTotal(item), lang),
+      }));
+
+      await exportToPDF(
+        rows,
+        headers,
+        `${tr('مرتجع', 'Return')}_${returnDoc.returnNo}`,
+        lang,
+        tr('مرتجع مشتريات', 'PURCHASE RETURN')
+      );
       toast.success(tr('تم تحميل PDF بنجاح', 'PDF downloaded successfully'));
     } catch (err) {
       console.error('PDF export error:', err);

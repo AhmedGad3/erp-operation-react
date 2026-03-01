@@ -19,8 +19,6 @@ import { formatCurrency, formatDateShort } from "../../utils/dateFormat";
 import axiosInstance from "../../utils/axiosInstance";
 import { LanguageContext } from "../../context/LanguageContext";
 import FullPageLoader from "../Loader/Loader";
-import jsPDF from "jspdf";
-import autoTable from 'jspdf-autotable';
 import { toast } from "react-toastify";
 import { exportToPDF } from "../../utils/pdfExport";
 
