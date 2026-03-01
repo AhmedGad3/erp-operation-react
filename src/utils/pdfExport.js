@@ -89,7 +89,7 @@ export const exportTableToPDF = async (tableId, fileName, title = '') => {
     });
 
     const imgData = canvas.toDataURL('image/png');
-    const imgWidth = 297; // A4 landscape width in mm
+    const imgWidth = 297; 
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
     const pdf = new jsPDF({
@@ -100,14 +100,14 @@ export const exportTableToPDF = async (tableId, fileName, title = '') => {
 
     let position = 10;
 
-    // إضافة العنوان
+   
     if (title) {
       pdf.setFontSize(16);
       pdf.text(title, pdf.internal.pageSize.getWidth() / 2, position, { align: 'center' });
       position += 10;
     }
 
-    // إضافة الصورة
+   
     pdf.addImage(imgData, 'PNG', 10, position, imgWidth - 20, imgHeight);
 
     const date = new Date().toISOString().split('T')[0];
@@ -121,9 +121,6 @@ export const exportTableToPDF = async (tableId, fileName, title = '') => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════
-//  الحل 2: إنشاء جدول HTML مؤقت ثم تصديره
-// ═══════════════════════════════════════════════════════════
 
 export const exportToPDF = async (data, headers, fileName, lang = 'en', title = '') => {
   const isAr = lang === 'ar';
@@ -131,7 +128,7 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
   try {
     const logoBase64 = await loadImageBase64(getPublicUrl('../../public/assets/Meega.jpg'));
 
-    // إنشاء عنصر مؤقت في الصفحة
+    
     const tempDiv = document.createElement('div');
     tempDiv.id = 'temp-pdf-export';
     tempDiv.style.position = 'absolute';
@@ -141,7 +138,7 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
     tempDiv.style.padding = '20px';
     tempDiv.style.direction = isAr ? 'rtl' : 'ltr';
     
-    // إنشاء HTML للجدول
+    
     let html = `
       <div style="font-family: Arial, sans-serif; direction: ${isAr ? 'rtl' : 'ltr'};">
         ${title ? `<h2 style="text-align: center; color: #000; margin-bottom: 16px;">${title}</h2>` : ''}
@@ -150,7 +147,7 @@ export const exportToPDF = async (data, headers, fileName, lang = 'en', title = 
             <tr style="background-color: #c00707; color: white;">
     `;
     
-    // رؤوس الجدول
+   
     const headerKeys = headers.map(h => Object.keys(h)[0]);
     const displayHeaders = isAr ? [...headers].reverse() : headers;
     
@@ -294,7 +291,7 @@ export const exportSupplierStatementToPDF = async (supplier, invoices, payments,
     }
   }[lang];
 
-  // تحضير البيانات
+  
   const transactions = [];
   let runningBalance = 0;
 
@@ -324,7 +321,7 @@ export const exportSupplierStatementToPDF = async (supplier, invoices, payments,
 
   transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // تحويل إلى headers و data
+  
   const headers = [
     { date: t.date },
     { type: t.type },
