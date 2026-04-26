@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.active {
+    @apply text-blue-700 underline;
+}
+
+button[disabled] {
+    @apply opacity-50;
+}
+
+.row {
+    @apply flex flex-wrap
+}
+
+.product:hover {
+    box-shadow: var(--shadow);
+
+}
+
+
+
+.product .btn {
+    transition: transform 1s, opacity 1s;
+    transform: translateY(70%);
+    opacity: 0;
+}
+
+.product:hover .btn {
+    opacity: 1;
+    transform: translateY(0%);
+
+}
