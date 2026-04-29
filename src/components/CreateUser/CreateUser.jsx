@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { LanguageContext } from "../../context/LanguageContext";
 import axiosInstance from "../../utils/axiosInstance";
+import { getErrorMessage } from "../../utils/axiosInstance";
 import { validateCreateUserInput } from "../../utils/userValidation";
 import FullPageLoader from "../Loader/Loader";
 
@@ -60,9 +61,10 @@ const CreateUser = () => {
       );
       setTimeout(() => navigate("/users"), 1500);
     } catch (error) {
-      const message =
-        error.response?.data?.message ||
-        (lang === "ar" ? "فشل إنشاء المستخدم" : "Failed to create user");
+      const message = getErrorMessage(
+        error,
+        lang === "ar" ? "فشل إنشاء المستخدم" : "Failed to create user"
+      );
       toast.error(message);
     } finally {
       setSubmitting(false);

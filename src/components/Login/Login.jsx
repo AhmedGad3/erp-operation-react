@@ -1,8 +1,8 @@
-import { useState, useContext, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Mail } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../../context/AuthContext";
+import { getErrorMessage } from "../../utils/axiosInstance";
 
 const TYPING_TEXT = "Welcome to MEGA BUILD Construction";
 
@@ -15,7 +15,6 @@ export default function Login() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
-  const { setToken } = useContext(AuthContext);
 
   useEffect(() => {
     const prevLang = document.documentElement.lang;
@@ -55,8 +54,9 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
+    const normalizedEmail = email.trim();
 
-    if (!email) {
+    if (!normalizedEmail) {
       setError("Please enter your email");
       return;
     }
@@ -65,14 +65,14 @@ export default function Login() {
     try {
       const { data } = await axios.post(
         "https://erp-operations.vercel.app/auth/login",
-        { email }
+        { email: normalizedEmail }
       );
 
-      if (data.message === "OTP sent to your email") {
-        navigate("/verify-login", { state: { email } });
+      if (data) {
+        navigate("/verify-login", { state: { email: normalizedEmail } });
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong");
+      setError(getErrorMessage(err, "Something went wrong"));
     } finally {
       setIsLoading(false);
     }

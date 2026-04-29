@@ -9,6 +9,7 @@ import axiosInstance from '../../utils/axiosInstance';
 import { getErrorMessage } from '../../utils/errorHandler';
 import { LanguageContext } from '../../context/LanguageContext';
 import * as XLSX from 'xlsx';
+import { createAutoCode } from '../../utils/autoCode';
 
 // Fallback hardcoded categories (used if API fails)
 const FALLBACK_CATEGORIES = [
@@ -266,8 +267,18 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
   });
   const [submitting, setSubmitting] = useState(false);
   const [showQuickUnitModal, setShowQuickUnitModal] = useState(false);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(Boolean(editMaterial?.subCategory || editMaterial?.description || editMaterial?.alternativeUnits?.length || editMaterial?.lastPurchasePrice));
+  const [codeTouched, setCodeTouched] = useState(Boolean(editMaterial?.code));
 
   const activeUnits = units.filter(u => u.isActive !== false);
+
+  useEffect(() => {
+    if (codeTouched) return;
+    setForm((prev) => ({
+      ...prev,
+      code: createAutoCode(prev.nameEn || prev.nameAr, 'MAT'),
+    }));
+  }, [form.nameAr, form.nameEn, codeTouched]);
 
   // الوحدات المتاحة لـ alternativeUnits (غير الـ baseUnit)
   const altUnitOptions = activeUnits.filter(u => u._id !== form.baseUnit);
@@ -309,14 +320,20 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
 
   const handleQuickUnitSaved = async (createdUnit) => {
     await refreshUnits?.();
+    const newBaseUnit = createdUnit?._id || createdUnit?.id || '';
     setForm(f => ({
       ...f,
-      baseUnit: createdUnit?._id || createdUnit?.id || '',
+      baseUnit: newBaseUnit,
       alternativeUnits: [],
-      defaultPurchaseUnit: '',
-      defaultIssueUnit: '',
+      defaultPurchaseUnit: newBaseUnit,
+      defaultIssueUnit: newBaseUnit,
     }));
     setShowQuickUnitModal(false);
+  };
+
+  const handleCodeChange = (value) => {
+    setCodeTouched(true);
+    setForm((prev) => ({ ...prev, code: value.toUpperCase() }));
   };
 
   const handleSubmit = async () => {
@@ -395,7 +412,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الكود' : 'Code'} <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="STEEL-14MM" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+              <input type="text" placeholder="MAT-STEEL-14MM" value={form.code} onChange={e => handleCodeChange(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الفئة الرئيسية' : 'Main Category'} <span className="text-red-500">*</span></label>
@@ -413,7 +430,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'وحدة التخزين (Base)' : 'Storage Unit (Base)'} <span className="text-red-500">*</span></label>
-              <select value={form.baseUnit} onChange={e => setForm(f => ({ ...f, baseUnit: e.target.value, alternativeUnits: [], defaultPurchaseUnit: '', defaultIssueUnit: '' }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50">
+              <select value={form.baseUnit} onChange={e => setForm(f => ({ ...f, baseUnit: e.target.value, alternativeUnits: [], defaultPurchaseUnit: e.target.value, defaultIssueUnit: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50">
                 <option value="">{lang === 'ar' ? 'اختر الوحدة' : 'Select Unit'}</option>
                 {activeUnits.map(u => <option key={u._id} value={u._id}>{lang === 'ar' ? u.nameAr : u.nameEn} ({u.symbol})</option>)}
               </select>
@@ -424,6 +441,18 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
             </div>
           </div>
 
+          <button
+            type="button"
+            onClick={() => setShowAdvancedSettings(v => !v)}
+            className="text-sm font-medium text-indigo-700 hover:text-indigo-800"
+          >
+            {showAdvancedSettings
+              ? (lang === 'ar' ? 'إخفاء إعدادات المخزون والوحدات الإضافية' : 'Hide stock and unit settings')
+              : (lang === 'ar' ? 'إضافة إعدادات وحدات ومخزون اختيارية' : 'Add optional stock and unit settings')}
+          </button>
+
+          {showAdvancedSettings && (
+            <>
           {/* ✅ Alternative Units Section */}
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
@@ -551,6 +580,8 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
             <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الوصف' : 'Description'}</label>
             <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows="2" dir={lang === 'ar' ? 'rtl' : 'ltr'} placeholder={lang === 'ar' ? 'أضف وصفاً للمادة...' : 'Add material description...'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none" />
           </div>
+            </>
+          )}
         </div>
 
         <div className="flex gap-3 mt-6">

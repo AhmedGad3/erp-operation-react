@@ -6,28 +6,49 @@ import { getErrorMessage } from '../../utils/errorHandler';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
+import { createAutoCode } from '../../utils/autoCode';
 
 const CreateProject = () => {
   const { lang } = useContext(LanguageContext);
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    nameAr: '', nameEn: '', code: '', clientId: '',
-    projectManager: '', siteEngineer: '', location: '',
-    startDate: '', expectedEndDate: '', contractAmount: '',
-    notes: '', status: 'PLANNED'
+    nameAr: '',
+    nameEn: '',
+    code: '',
+    clientId: '',
+    projectManager: '',
+    siteEngineer: '',
+    location: '',
+    startDate: '',
+    expectedEndDate: '',
+    contractAmount: '',
+    notes: '',
+    status: 'PLANNED',
   });
 
-  const [clients,    setClients]    = useState([]);
-  const [errors,     setErrors]     = useState({});
+  const [clients, setClients] = useState([]);
+  const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [codeTouched, setCodeTouched] = useState(false);
 
-  React.useEffect(() => { fetchClients(); }, []);
+  React.useEffect(() => {
+    fetchClients();
+  }, []);
+
+  React.useEffect(() => {
+    if (codeTouched) return;
+    setFormData((prev) => ({
+      ...prev,
+      code: createAutoCode(prev.nameEn || prev.nameAr, 'PRJ'),
+    }));
+  }, [formData.nameAr, formData.nameEn, codeTouched]);
 
   const fetchClients = async () => {
     try {
       const response = await axiosInstance.get('/clients');
-      setClients(Array.isArray(response.data) ? response.data : (response.data.result || []));
+      setClients(Array.isArray(response.data) ? response.data : response.data.result || []);
     } catch (error) {
       toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل تحميل العملاء' : 'Failed to load clients'));
     }
@@ -35,40 +56,50 @@ const CreateProject = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.nameAr || formData.nameAr.length < 2)
+    if (!formData.nameAr || formData.nameAr.length < 2) {
       newErrors.nameAr = lang === 'ar' ? 'الاسم بالعربية مطلوب (حرفين على الأقل)' : 'Arabic name is required (min 2 characters)';
-    if (!formData.nameEn || formData.nameEn.length < 2)
+    }
+    if (!formData.nameEn || formData.nameEn.length < 2) {
       newErrors.nameEn = lang === 'ar' ? 'الاسم بالإنجليزية مطلوب (حرفين على الأقل)' : 'English name is required (min 2 characters)';
-    if (!formData.code || formData.code.length < 3)
+    }
+    if (!formData.code || formData.code.length < 3) {
       newErrors.code = lang === 'ar' ? 'الكود مطلوب (3 أحرف على الأقل)' : 'Code is required (min 3 characters)';
-    if (!formData.clientId)
+    }
+    if (!formData.clientId) {
       newErrors.clientId = lang === 'ar' ? 'اختر عميل' : 'Please select a client';
-    if (!formData.startDate)
+    }
+    if (!formData.startDate) {
       newErrors.startDate = lang === 'ar' ? 'تاريخ البداية مطلوب' : 'Start date is required';
-    if (!formData.contractAmount || parseFloat(formData.contractAmount) <= 0)
+    }
+    if (!formData.contractAmount || parseFloat(formData.contractAmount) <= 0) {
       newErrors.contractAmount = lang === 'ar' ? 'قيمة العقد مطلوبة وأكبر من صفر' : 'Contract amount is required and must be greater than 0';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) { toast.error(lang === 'ar' ? 'يرجى إصلاح الأخطاء' : 'Please fix errors'); return; }
+    if (!validateForm()) {
+      toast.error(lang === 'ar' ? 'يرجى إصلاح الأخطاء' : 'Please fix errors');
+      return;
+    }
+
     try {
       setSubmitting(true);
       await axiosInstance.post('/projects', {
-        nameAr:          formData.nameAr.trim(),
-        nameEn:          formData.nameEn.trim(),
-        code:            formData.code.trim().toUpperCase(),
-        clientId:        formData.clientId,
-        projectManager:  formData.projectManager.trim(),
-        siteEngineer:    formData.siteEngineer.trim(),
-        location:        formData.location.trim(),
-        startDate:       formData.startDate,
+        nameAr: formData.nameAr.trim(),
+        nameEn: formData.nameEn.trim(),
+        code: formData.code.trim().toUpperCase(),
+        clientId: formData.clientId,
+        projectManager: formData.projectManager.trim(),
+        siteEngineer: formData.siteEngineer.trim(),
+        location: formData.location.trim(),
+        startDate: formData.startDate,
         expectedEndDate: formData.expectedEndDate,
-        contractAmount:  parseFloat(formData.contractAmount),
-        notes:           formData.notes.trim(),
-        status:          formData.status,
+        contractAmount: parseFloat(formData.contractAmount),
+        notes: formData.notes.trim(),
+        status: formData.status,
       });
       toast.success(lang === 'ar' ? 'تم إنشاء المشروع بنجاح!' : 'Project created successfully!');
       setTimeout(() => navigate('/projects'), 1500);
@@ -79,7 +110,11 @@ const CreateProject = () => {
     }
   };
 
-  const handleChange = (field, value) => setFormData({ ...formData, [field]: value });
+  const handleChange = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleCodeChange = (value) => {
+    setCodeTouched(true);
+    handleChange('code', value.toUpperCase());
+  };
 
   const inputCls = (hasError) =>
     `w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-gray-50 ${
@@ -91,15 +126,13 @@ const CreateProject = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
-
-        {/* ── Page Header ── */}
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               {lang === 'ar' ? 'إضافة مشروع جديد' : 'Add New Project'}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {lang === 'ar' ? 'إنشاء مشروع جديد في النظام' : 'Create a new project in the system'}
+              {lang === 'ar' ? 'أدخل البيانات الأساسية أولاً ثم أضف باقي التفاصيل عند الحاجة' : 'Start with the essentials and add more details only when needed'}
             </p>
           </div>
           <button
@@ -112,11 +145,9 @@ const CreateProject = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-
-          {/* ── Names ── */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <h2 className="text-sm font-semibold text-gray-700 mb-4">
-              {lang === 'ar' ? 'اسم المشروع' : 'Project Name'}
+              {lang === 'ar' ? 'البيانات الأساسية' : 'Core Details'}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -126,7 +157,7 @@ const CreateProject = () => {
                 <input
                   type="text"
                   value={formData.nameAr}
-                  onChange={e => handleChange('nameAr', e.target.value)}
+                  onChange={(e) => handleChange('nameAr', e.target.value)}
                   className={inputCls(errors.nameAr)}
                   placeholder={lang === 'ar' ? 'أدخل اسم المشروع' : 'Enter project name'}
                   dir="rtl"
@@ -142,22 +173,14 @@ const CreateProject = () => {
                 <input
                   type="text"
                   value={formData.nameEn}
-                  onChange={e => handleChange('nameEn', e.target.value)}
+                  onChange={(e) => handleChange('nameEn', e.target.value)}
                   className={inputCls(errors.nameEn)}
                   placeholder={lang === 'ar' ? 'أدخل اسم المشروع بالإنجليزية' : 'Enter project name in English'}
                   disabled={submitting}
                 />
                 {errors.nameEn && <p className="mt-1 text-xs text-red-500">{errors.nameEn}</p>}
               </div>
-            </div>
-          </div>
 
-          {/* ── Code + Client ── */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">
-              {lang === 'ar' ? 'بيانات المشروع' : 'Project Details'}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {lang === 'ar' ? 'الكود' : 'Code'} <span className="text-red-500">*</span>
@@ -165,9 +188,9 @@ const CreateProject = () => {
                 <input
                   type="text"
                   value={formData.code}
-                  onChange={e => handleChange('code', e.target.value)}
+                  onChange={(e) => handleCodeChange(e.target.value)}
                   className={inputCls(errors.code)}
-                  placeholder="PRJ001"
+                  placeholder="PRJ-MEGA-TOWER"
                   disabled={submitting}
                 />
                 {errors.code && <p className="mt-1 text-xs text-red-500">{errors.code}</p>}
@@ -179,12 +202,12 @@ const CreateProject = () => {
                 </label>
                 <select
                   value={formData.clientId}
-                  onChange={e => handleChange('clientId', e.target.value)}
+                  onChange={(e) => handleChange('clientId', e.target.value)}
                   className={inputCls(errors.clientId)}
                   disabled={submitting}
                 >
                   <option value="">{lang === 'ar' ? 'اختر عميل' : 'Select a client'}</option>
-                  {clients.map(client => (
+                  {clients.map((client) => (
                     <option key={client._id} value={client._id}>
                       {lang === 'ar' ? client.nameAr : client.nameEn}
                     </option>
@@ -195,69 +218,19 @@ const CreateProject = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'مدير المشروع' : 'Project Manager'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.projectManager}
-                  onChange={e => handleChange('projectManager', e.target.value)}
-                  className={inputCls(false)}
-                  placeholder={lang === 'ar' ? 'أدخل اسم المدير' : 'Enter manager name'}
-                  disabled={submitting}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'مهندس الموقع' : 'Site Engineer'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.siteEngineer}
-                  onChange={e => handleChange('siteEngineer', e.target.value)}
-                  className={inputCls(false)}
-                  placeholder={lang === 'ar' ? 'أدخل اسم المهندس' : 'Enter engineer name'}
-                  disabled={submitting}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الموقع' : 'Location'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={e => handleChange('location', e.target.value)}
-                  className={inputCls(false)}
-                  placeholder={lang === 'ar' ? 'أدخل موقع المشروع' : 'Enter location'}
-                  disabled={submitting}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
                   {lang === 'ar' ? 'قيمة العقد' : 'Contract Amount'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   value={formData.contractAmount}
-                  onChange={e => handleChange('contractAmount', e.target.value)}
+                  onChange={(e) => handleChange('contractAmount', e.target.value)}
                   className={inputCls(errors.contractAmount)}
                   placeholder="5000000"
                   disabled={submitting}
                 />
                 {errors.contractAmount && <p className="mt-1 text-xs text-red-500">{errors.contractAmount}</p>}
               </div>
-            </div>
-          </div>
 
-          {/* ── Dates ── */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">
-              {lang === 'ar' ? 'التواريخ' : 'Dates'}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {lang === 'ar' ? 'تاريخ البداية' : 'Start Date'} <span className="text-red-500">*</span>
@@ -265,45 +238,102 @@ const CreateProject = () => {
                 <input
                   type="date"
                   value={formData.startDate}
-                  onChange={e => handleChange('startDate', e.target.value)}
+                  onChange={(e) => handleChange('startDate', e.target.value)}
                   className={inputCls(errors.startDate)}
                   disabled={submitting}
                 />
                 {errors.startDate && <p className="mt-1 text-xs text-red-500">{errors.startDate}</p>}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'تاريخ النهاية المتوقع' : 'Expected End Date'}
-                </label>
-                <input
-                  type="date"
-                  value={formData.expectedEndDate}
-                  onChange={e => handleChange('expectedEndDate', e.target.value)}
-                  className={inputCls(false)}
-                  disabled={submitting}
-                />
-              </div>
             </div>
           </div>
 
-          {/* ── Notes ── */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {lang === 'ar' ? 'ملاحظات' : 'Notes'}
-              <span className="text-gray-400 font-normal ml-1">({lang === 'ar' ? 'اختياري' : 'Optional'})</span>
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={e => handleChange('notes', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-gray-50 resize-none"
-              placeholder={lang === 'ar' ? 'أدخل ملاحظات' : 'Enter notes'}
-              rows={3}
-              disabled={submitting}
-            />
+            <button
+              type="button"
+              onClick={() => setShowMoreDetails((prev) => !prev)}
+              className="text-sm font-medium text-green-700 hover:text-green-800"
+            >
+              {showMoreDetails
+                ? (lang === 'ar' ? 'إخفاء التفاصيل الإضافية' : 'Hide optional details')
+                : (lang === 'ar' ? 'إضافة تفاصيل اختيارية' : 'Add optional details')}
+            </button>
+
+            {showMoreDetails && (
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {lang === 'ar' ? 'مدير المشروع' : 'Project Manager'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.projectManager}
+                      onChange={(e) => handleChange('projectManager', e.target.value)}
+                      className={inputCls(false)}
+                      placeholder={lang === 'ar' ? 'أدخل اسم المدير' : 'Enter manager name'}
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {lang === 'ar' ? 'مهندس الموقع' : 'Site Engineer'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.siteEngineer}
+                      onChange={(e) => handleChange('siteEngineer', e.target.value)}
+                      className={inputCls(false)}
+                      placeholder={lang === 'ar' ? 'أدخل اسم المهندس' : 'Enter engineer name'}
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {lang === 'ar' ? 'الموقع' : 'Location'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => handleChange('location', e.target.value)}
+                      className={inputCls(false)}
+                      placeholder={lang === 'ar' ? 'أدخل موقع المشروع' : 'Enter location'}
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {lang === 'ar' ? 'تاريخ النهاية المتوقع' : 'Expected End Date'}
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.expectedEndDate}
+                      onChange={(e) => handleChange('expectedEndDate', e.target.value)}
+                      className={inputCls(false)}
+                      disabled={submitting}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {lang === 'ar' ? 'ملاحظات' : 'Notes'}
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => handleChange('notes', e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-gray-50 resize-none"
+                    placeholder={lang === 'ar' ? 'أدخل ملاحظات' : 'Enter notes'}
+                    rows={3}
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* ── Actions ── */}
           <div className="flex gap-3">
             <button
               type="button"
@@ -322,7 +352,6 @@ const CreateProject = () => {
               {lang === 'ar' ? 'إنشاء المشروع' : 'Create Project'}
             </button>
           </div>
-
         </form>
       </div>
     </div>

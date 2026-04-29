@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { ShieldCheck } from "lucide-react";
 import { toast } from "react-toastify";
+import { getErrorMessage } from "../../utils/axiosInstance";
 
 export default function VerifyLogin() {
   const fieldsRef = useRef();
@@ -75,25 +76,29 @@ export default function VerifyLogin() {
         "https://erp-operations.vercel.app/auth/verify-login",
         { email, code: otp }
       );
-      if (data.token) {
+      const token = data?.token || data?.result?.token || data?.data?.token;
+
+      if (token) {
         const apiProfile =
           data.user ||
           data.result?.user ||
+          data.data?.user ||
           data.result ||
+          data.data ||
           {};
         const fallbackProfile = {
           email,
           name: email,
         };
         const profile = { ...fallbackProfile, ...apiProfile };
-        login(data.token, profile);
-        localStorage.setItem("token", data.token);
+        login(token, profile);
+        localStorage.setItem("token", token);
         navigate("/");
       } else {
         setError("Invalid response from server");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid code. Please try again.");
+      setError(getErrorMessage(err, "Invalid code. Please try again."));
       setCodes(["", "", "", "", "", ""]);
       fieldsRef.current.children[0].focus();
     } finally {
@@ -114,7 +119,7 @@ export default function VerifyLogin() {
       await axios.post("https://erp-operations.vercel.app/auth/login", { email });
       toast.success("Code resent successfully");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to resend code");
+      toast.error(getErrorMessage(err, "Failed to resend code"));
     }
   };
 

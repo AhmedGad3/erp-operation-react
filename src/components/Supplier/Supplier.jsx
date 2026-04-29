@@ -10,6 +10,7 @@ import { getErrorMessage } from "../../utils/errorHandler";
 import { LanguageContext } from "../../context/LanguageContext";
 import * as XLSX from "xlsx";
 import AdminActionModal from "../modals/AdminActionModal";
+import { createAutoCode } from "../../utils/autoCode";
 
 //  Sortable column header 
 const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
@@ -122,6 +123,16 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
     notes:   editSupplier?.notes   || "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [showMoreDetails, setShowMoreDetails] = useState(Boolean(editSupplier?.email || editSupplier?.address || editSupplier?.notes));
+  const [codeTouched, setCodeTouched] = useState(Boolean(editSupplier?.code));
+
+  useEffect(() => {
+    if (codeTouched) return;
+    setForm((prev) => ({
+      ...prev,
+      code: createAutoCode(prev.nameEn || prev.nameAr, 'SUP'),
+    }));
+  }, [form.nameAr, form.nameEn, codeTouched]);
 
   const handleSubmit = async () => {
     if (!form.nameAr.trim() && !form.nameEn.trim()) {
@@ -150,6 +161,11 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCodeChange = (value) => {
+    setCodeTouched(true);
+    setForm((prev) => ({ ...prev, code: value.toUpperCase() }));
   };
 
   return (
@@ -185,7 +201,7 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {lang === 'ar' ? 'الكود' : 'Code'}
               </label>
-              <input type="text" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+              <input type="text" value={form.code} onChange={e => handleCodeChange(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -195,33 +211,47 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
-            </label>
-            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowMoreDetails(v => !v)}
+            className="text-sm font-medium text-indigo-700 hover:text-indigo-800"
+          >
+            {showMoreDetails
+              ? (lang === 'ar' ? 'إخفاء التفاصيل الإضافية' : 'Hide optional details')
+              : (lang === 'ar' ? 'إضافة تفاصيل اختيارية' : 'Add optional details')}
+          </button>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {lang === 'ar' ? 'العنوان' : 'Address'}
-            </label>
-            <input type="text" dir="ltr" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
-          </div>
+          {showMoreDetails && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                </label>
+                <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {lang === 'ar' ? 'ملاحظات' : 'Notes'}
-            </label>
-            <textarea
-              rows="2"
-              dir="ltr"
-              value={form.notes}
-              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              placeholder={lang === 'ar' ? 'أضف ملاحظات...' : 'Add notes...'}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {lang === 'ar' ? 'العنوان' : 'Address'}
+                </label>
+                <input type="text" dir={lang === 'ar' ? 'rtl' : 'ltr'} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {lang === 'ar' ? 'ملاحظات' : 'Notes'}
+                </label>
+                <textarea
+                  rows="2"
+                  dir={lang === 'ar' ? 'rtl' : 'ltr'}
+                  value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder={lang === 'ar' ? 'أضف ملاحظات...' : 'Add notes...'}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 resize-none"
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex gap-3 mt-6">

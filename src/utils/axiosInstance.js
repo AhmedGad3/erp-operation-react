@@ -10,26 +10,6 @@ const axiosInstance = axios.create({
 
 let isRedirectingToLogin = false;
 
-function getResponseMessage(error) {
-  const data = error?.response?.data;
-  if (!data) return "";
-  if (Array.isArray(data.message)) return data.message.join(" ").toLowerCase();
-  if (typeof data.message === "string") return data.message.toLowerCase();
-  if (typeof data.error === "string") return data.error.toLowerCase();
-  return "";
-}
-
-function shouldLogoutOnUnauthorized(error) {
-  const msg = getResponseMessage(error);
-  return (
-    msg.includes("expired") ||
-    msg.includes("jwt") ||
-    msg.includes("token") ||
-    msg.includes("signature") ||
-    msg.includes("malformed")
-  );
-}
-
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -46,7 +26,9 @@ axiosInstance.interceptors.request.use(
         } else {
           config.params = { lang };
         }
-      } catch {}
+      } catch (langError) {
+        void langError;
+      }
     }
 
     return config;
@@ -59,9 +41,10 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       const token = localStorage.getItem("token");
-      if (token && shouldLogoutOnUnauthorized(error) && !isRedirectingToLogin) {
+      if (token && !isRedirectingToLogin) {
         isRedirectingToLogin = true;
         localStorage.removeItem("token");
+        localStorage.removeItem("user_profile");
         toast.info("Session expired, please login again");
         setTimeout(() => {
           window.location.href = "/login";
