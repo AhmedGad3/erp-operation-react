@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import axiosInstance from '../../utils/axiosInstance';
 import { LanguageContext } from '../../context/LanguageContext';
 import { createAutoCode } from '../../utils/autoCode';
+import QuickSupplierModal from '../quick-create/QuickSupplierModal';
 
 const ASSET_STATUS = [
   { value: 'AVAILABLE', labelAr: 'متاح', labelEn: 'Available' },
@@ -41,6 +42,7 @@ export default function AssetInvoiceForm() {
   const [showAssetDetails, setShowAssetDetails] = useState(false);
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
   const [codeTouched, setCodeTouched] = useState(false);
+  const [showQuickSupplierModal, setShowQuickSupplierModal] = useState(false);
 
   const [assetForm, setAssetForm] = useState({
     nameAr: '',
@@ -74,6 +76,11 @@ export default function AssetInvoiceForm() {
   const setAssetCode = (value) => {
     setCodeTouched(true);
     setA('code', value.toUpperCase());
+  };
+  const handleQuickSupplierCreated = (createdSupplier) => {
+    const supplierName = isAr ? createdSupplier?.nameAr || createdSupplier?.nameEn : createdSupplier?.nameEn || createdSupplier?.nameAr;
+    if (!supplierName) return;
+    setI('vendorName', supplierName);
   };
 
   const validate = () => {
@@ -237,6 +244,13 @@ export default function AssetInvoiceForm() {
                 <Field label={t('اسم المورد', 'Vendor Name')} required>
                   <input type="text" value={invoiceForm.vendorName} onChange={(e) => setI('vendorName', e.target.value)} placeholder={t('مثال: شركة المعدات الحديثة', 'e.g., Modern Equipment Co.')} className={inputCls} />
                 </Field>
+                <button
+                  type="button"
+                  onClick={() => setShowQuickSupplierModal(true)}
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                >
+                  {t('إضافة مورد سريعًا', 'Quick Add Supplier')}
+                </button>
               </div>
 
               <Field label={t('المبلغ', 'Amount')} required>
@@ -298,6 +312,14 @@ export default function AssetInvoiceForm() {
           </div>
         </div>
       </div>
+
+      {showQuickSupplierModal && (
+        <QuickSupplierModal
+          lang={lang}
+          onClose={() => setShowQuickSupplierModal(false)}
+          onCreated={handleQuickSupplierCreated}
+        />
+      )}
     </div>
   );
 }

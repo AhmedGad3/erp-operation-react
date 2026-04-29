@@ -7,6 +7,7 @@ import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
 import { createAutoCode } from '../../utils/autoCode';
+import QuickClientModal from '../quick-create/QuickClientModal';
 
 const CreateProject = () => {
   const { lang } = useContext(LanguageContext);
@@ -32,6 +33,7 @@ const CreateProject = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [codeTouched, setCodeTouched] = useState(false);
+  const [showQuickClientModal, setShowQuickClientModal] = useState(false);
 
   React.useEffect(() => {
     fetchClients();
@@ -114,6 +116,11 @@ const CreateProject = () => {
   const handleCodeChange = (value) => {
     setCodeTouched(true);
     handleChange('code', value.toUpperCase());
+  };
+  const handleQuickClientCreated = (createdClient) => {
+    if (!createdClient?._id) return;
+    setClients((prev) => [...prev, createdClient]);
+    handleChange('clientId', createdClient._id);
   };
 
   const inputCls = (hasError) =>
@@ -214,6 +221,13 @@ const CreateProject = () => {
                   ))}
                 </select>
                 {errors.clientId && <p className="mt-1 text-xs text-red-500">{errors.clientId}</p>}
+                <button
+                  type="button"
+                  onClick={() => setShowQuickClientModal(true)}
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700"
+                >
+                  {lang === 'ar' ? 'إضافة عميل سريعًا' : 'Quick Add Client'}
+                </button>
               </div>
 
               <div>
@@ -354,6 +368,14 @@ const CreateProject = () => {
           </div>
         </form>
       </div>
+
+      {showQuickClientModal && (
+        <QuickClientModal
+          lang={lang}
+          onClose={() => setShowQuickClientModal(false)}
+          onCreated={handleQuickClientCreated}
+        />
+      )}
     </div>
   );
 };

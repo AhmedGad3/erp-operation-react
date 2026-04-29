@@ -14,6 +14,7 @@ import { Input } from "../ui/input";
 import axiosInstance from "../../utils/axiosInstance";
 import { LanguageContext } from "../../context/LanguageContext";
 import megabuildLogo from "../../assets/megabuild1.svg";
+import QuickSupplierModal from "../quick-create/QuickSupplierModal";
 
 /* ─── brand colors ─── */
 const RED  = "#C41E3A";
@@ -130,6 +131,11 @@ export default function PurchaseOrders() {
     supplierInvoiceNo: "", creditDays: 30,
     items: [{ materialId: "", unitId: "", quantity: 1, unitPrice: 0, conversionFactor: "" }], notes: ""
   });
+  const handleQuickSupplierCreated = (createdSupplier) => {
+    if (!createdSupplier?._id) return;
+    setSuppliers((prev) => [...prev, createdSupplier]);
+    setFormData((prev) => ({ ...prev, supplierId: createdSupplier._id }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -363,6 +369,7 @@ export default function PurchaseOrders() {
         <PurchaseModal
           formData={formData} setFormData={setFormData}
           suppliers={suppliers} materials={materials} units={units}
+          onSupplierCreated={handleQuickSupplierCreated}
           onClose={() => { setShowModal(false); setEditingPurchase(null); resetForm(); }}
           onSubmit={handleSubmit} saving={saving} editing={!!editingPurchase}
           t={t} lang={lang}
@@ -384,11 +391,17 @@ export default function PurchaseOrders() {
 // ═══════════════════════════════════════════
 // PURCHASE MODAL
 // ═══════════════════════════════════════════
-function PurchaseModal({ formData, setFormData, suppliers, materials, units, onClose, onSubmit, saving, editing, t, lang }) {
+function PurchaseModal({ formData, setFormData, suppliers, materials, units, onSupplierCreated, onClose, onSubmit, saving, editing, t, lang }) {
+  const [showQuickSupplierModal, setShowQuickSupplierModal] = useState(false);
   const handleAddItem    = () => setFormData({ ...formData, items: [...formData.items, { materialId: "", unitId: "", quantity: 1, unitPrice: 0, conversionFactor: "" }] });
   const handleRemoveItem = (i) => setFormData({ ...formData, items: formData.items.filter((_, idx) => idx !== i) });
   const calculateTotal   = () => formData.items.reduce((s, i) => s + (parseFloat(i.quantity || 0) * parseFloat(i.unitPrice || 0)), 0);
   const getMaterialName  = (id) => { const m = materials.find(m => m._id === id); return m ? (lang === "ar" ? m.nameAr : m.nameEn) : ""; };
+  const handleQuickSupplierCreated = (createdSupplier) => {
+    onSupplierCreated?.(createdSupplier);
+    if (!createdSupplier?._id) return;
+    setFormData((prev) => ({ ...prev, supplierId: createdSupplier._id }));
+  };
 
   const handleItemChange = (idx, field, value) => {
     const items = [...formData.items];
@@ -438,6 +451,14 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onC
                     <option value="">{lang === "ar" ? "اختر المورد" : "Select Supplier"}</option>
                     {suppliers.map(s => <option key={s._id} value={s._id}>{lang === "ar" ? s.nameAr : s.nameEn}</option>)}
                   </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickSupplierModal(true)}
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                  >
+                    <Plus size={12} />
+                    {lang === "ar" ? "إضافة مورد سريعًا" : "Quick Add Supplier"}
+                  </button>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "رقم فاتورة المورد" : "Supplier Invoice No"}</label>
@@ -611,6 +632,14 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onC
             {saving ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />{lang === "ar" ? "جاري الحفظ..." : "Saving..."}</> : <>{lang === "ar" ? "حفظ" : "Save"}</>}
           </button>
         </div>
+
+        {showQuickSupplierModal && (
+          <QuickSupplierModal
+            lang={lang}
+            onClose={() => setShowQuickSupplierModal(false)}
+            onCreated={handleQuickSupplierCreated}
+          />
+        )}
       </div>
     </div>
   );
