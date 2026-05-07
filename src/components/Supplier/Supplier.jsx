@@ -135,8 +135,14 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
   }, [form.nameAr, form.nameEn, codeTouched]);
 
   const handleSubmit = async () => {
-    if (!form.nameAr.trim() && !form.nameEn.trim()) {
-      toast.error("Supplier name is required"); return;
+    if (!form.nameAr.trim()) {
+      toast.error(lang === "ar" ? "الاسم بالعربية مطلوب" : "Arabic name is required"); return;
+    }
+    if (!form.nameEn.trim()) {
+      toast.error(lang === "ar" ? "الاسم بالإنجليزية مطلوب" : "English name is required"); return;
+    }
+    if (!form.code.trim()) {
+      toast.error(lang === "ar" ? "الكود مطلوب" : "Code is required"); return;
     }
     try {
       setSubmitting(true);

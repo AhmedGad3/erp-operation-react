@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { UserPlus, ArrowLeft } from 'lucide-react';
+import { UserPlus, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
@@ -37,7 +37,9 @@ const CreateClient = () => {
     }));
   }, [formData.nameAr, formData.nameEn, codeTouched]);
 
-  const set = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
+  const set = (field, value) =>
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
   const setCode = (value) => {
     setCodeTouched(true);
     set('code', value.toUpperCase());
@@ -45,22 +47,21 @@ const CreateClient = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.nameAr || formData.nameAr.length < 2) {
-      newErrors.nameAr = lang === 'ar' ? 'الاسم بالعربية يجب أن يكون حرفين على الأقل' : 'Arabic name must be at least 2 characters';
+
+    if (!formData.nameAr.trim()) {
+      newErrors.nameAr =
+        lang === 'ar' ? 'الاسم بالعربية مطلوب' : 'Arabic name is required';
     }
-    if (!formData.nameEn || formData.nameEn.length < 2) {
-      newErrors.nameEn = lang === 'ar' ? 'الاسم بالإنجليزية يجب أن يكون حرفين على الأقل' : 'English name must be at least 2 characters';
+
+    if (!formData.nameEn.trim()) {
+      newErrors.nameEn =
+        lang === 'ar' ? 'الاسم بالإنجليزية مطلوب' : 'English name is required';
     }
-    if (!formData.code || formData.code.length < 2) {
-      newErrors.code = lang === 'ar' ? 'الكود يجب أن يكون حرفين على الأقل' : 'Code must be at least 2 characters';
+
+    if (!formData.code.trim()) {
+      newErrors.code = lang === 'ar' ? 'الكود مطلوب' : 'Code is required';
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
-      newErrors.email = lang === 'ar' ? 'البريد الإلكتروني غير صحيح' : 'Invalid email format';
-    }
-    if (formData.phone && formData.phone.length < 7) {
-      newErrors.phone = lang === 'ar' ? 'رقم الهاتف يجب أن يكون 7 أرقام على الأقل' : 'Phone must be at least 7 digits';
-    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -68,9 +69,14 @@ const CreateClient = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error(lang === 'ar' ? 'يرجى إصلاح الأخطاء قبل الإرسال' : 'Please fix errors before submitting');
+      toast.error(
+        lang === 'ar'
+          ? 'يرجى إصلاح الأخطاء قبل الإرسال'
+          : 'Please fix errors before submitting',
+      );
       return;
     }
+
     try {
       setSubmitting(true);
       await axiosInstance.post('/clients', {
@@ -85,10 +91,20 @@ const CreateClient = () => {
         commercialRegister: formData.commercialRegister.trim(),
         type: formData.type,
       });
-      toast.success(lang === 'ar' ? 'تم إنشاء العميل بنجاح!' : 'Client created successfully!');
+
+      toast.success(
+        lang === 'ar'
+          ? 'تم إنشاء العميل بنجاح!'
+          : 'Client created successfully!',
+      );
       setTimeout(() => navigate('/clients'), 1500);
     } catch (error) {
-      toast.error(getErrorMessage(error, lang === 'ar' ? 'فشل إنشاء العميل' : 'Failed to create client'));
+      toast.error(
+        getErrorMessage(
+          error,
+          lang === 'ar' ? 'فشل إنشاء العميل' : 'Failed to create client',
+        ),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -99,7 +115,11 @@ const CreateClient = () => {
       hasError ? 'border-red-400' : 'border-gray-200'
     }`;
 
-  if (submitting) return <FullPageLoader text={lang === 'ar' ? 'جاري المعالجة...' : 'Processing...'} />;
+  if (submitting) {
+    return (
+      <FullPageLoader text={lang === 'ar' ? 'جاري المعالجة...' : 'Processing...'} />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -110,7 +130,9 @@ const CreateClient = () => {
               {lang === 'ar' ? 'إضافة عميل جديد' : 'Add New Client'}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {lang === 'ar' ? 'ابدأ بالاسم والكود ووسيلة التواصل الأساسية، وأضف الباقي عند الحاجة' : 'Start with the basics and add the rest only when needed'}
+              {lang === 'ar'
+                ? 'الحقول الأساسية مطلوبة، والتفاصيل الباقية اختيارية حسب عقد الباك'
+                : 'Core fields are required, the rest is optional per the backend contract'}
             </p>
           </div>
           <button
@@ -130,38 +152,53 @@ const CreateClient = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'} <span className="text-red-500">*</span>
+                  {lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.nameAr}
                   onChange={(e) => set('nameAr', e.target.value)}
                   className={inputCls(errors.nameAr)}
-                  placeholder={lang === 'ar' ? 'أدخل اسم العميل بالعربية' : 'Enter client name in Arabic'}
+                  placeholder={
+                    lang === 'ar'
+                      ? 'أدخل اسم العميل بالعربية'
+                      : 'Enter client name in Arabic'
+                  }
                   dir="rtl"
                   disabled={submitting}
                 />
-                {errors.nameAr && <p className="mt-1 text-xs text-red-500">{errors.nameAr}</p>}
+                {errors.nameAr && (
+                  <p className="mt-1 text-xs text-red-500">{errors.nameAr}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'} <span className="text-red-500">*</span>
+                  {lang === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.nameEn}
                   onChange={(e) => set('nameEn', e.target.value)}
                   className={inputCls(errors.nameEn)}
-                  placeholder={lang === 'ar' ? 'أدخل اسم العميل بالإنجليزية' : 'Enter client name in English'}
+                  placeholder={
+                    lang === 'ar'
+                      ? 'أدخل اسم العميل بالإنجليزية'
+                      : 'Enter client name in English'
+                  }
                   disabled={submitting}
                 />
-                {errors.nameEn && <p className="mt-1 text-xs text-red-500">{errors.nameEn}</p>}
+                {errors.nameEn && (
+                  <p className="mt-1 text-xs text-red-500">{errors.nameEn}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الكود' : 'Code'} <span className="text-red-500">*</span>
+                  {lang === 'ar' ? 'الكود' : 'Code'}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -171,7 +208,9 @@ const CreateClient = () => {
                   placeholder="CLT-ALFA-TRADING"
                   disabled={submitting}
                 />
-                {errors.code && <p className="mt-1 text-xs text-red-500">{errors.code}</p>}
+                {errors.code && (
+                  <p className="mt-1 text-xs text-red-500">{errors.code}</p>
+                )}
               </div>
 
               <div>
@@ -182,11 +221,12 @@ const CreateClient = () => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => set('phone', e.target.value)}
-                  className={inputCls(errors.phone)}
-                  placeholder={lang === 'ar' ? 'أدخل رقم الهاتف' : 'Enter phone number'}
+                  className={inputCls(false)}
+                  placeholder={
+                    lang === 'ar' ? 'أدخل رقم الهاتف' : 'Enter phone number'
+                  }
                   disabled={submitting}
                 />
-                {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
               </div>
             </div>
           </div>
@@ -195,11 +235,22 @@ const CreateClient = () => {
             <button
               type="button"
               onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="text-sm font-medium text-blue-700 hover:text-blue-800"
+              className="w-full flex items-center justify-between text-sm font-medium text-blue-700 hover:text-blue-800"
             >
-              {showMoreDetails
-                ? (lang === 'ar' ? 'إخفاء التفاصيل الإضافية' : 'Hide optional details')
-                : (lang === 'ar' ? 'إضافة تفاصيل اختيارية' : 'Add optional details')}
+              <span>
+                {showMoreDetails
+                  ? lang === 'ar'
+                    ? 'إخفاء التفاصيل الاختيارية'
+                    : 'Hide optional details'
+                  : lang === 'ar'
+                    ? 'إضافة تفاصيل اختيارية'
+                    : 'Add optional details'}
+              </span>
+              {showMoreDetails ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
             </button>
 
             {showMoreDetails && (
@@ -213,11 +264,14 @@ const CreateClient = () => {
                       type="email"
                       value={formData.email}
                       onChange={(e) => set('email', e.target.value)}
-                      className={inputCls(errors.email)}
-                      placeholder={lang === 'ar' ? 'أدخل البريد الإلكتروني' : 'Enter email address'}
+                      className={inputCls(false)}
+                      placeholder={
+                        lang === 'ar'
+                          ? 'أدخل البريد الإلكتروني'
+                          : 'Enter email address'
+                      }
                       disabled={submitting}
                     />
-                    {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
                   </div>
 
                   <div>
@@ -230,8 +284,12 @@ const CreateClient = () => {
                       className={inputCls(false)}
                       disabled={submitting}
                     >
-                      <option value="INDIVIDUAL">{lang === 'ar' ? 'فرد' : 'Individual'}</option>
-                      <option value="COMPANY">{lang === 'ar' ? 'شركة' : 'Company'}</option>
+                      <option value="INDIVIDUAL">
+                        {lang === 'ar' ? 'فرد' : 'Individual'}
+                      </option>
+                      <option value="COMPANY">
+                        {lang === 'ar' ? 'شركة' : 'Company'}
+                      </option>
                     </select>
                   </div>
 
@@ -244,7 +302,9 @@ const CreateClient = () => {
                       value={formData.address}
                       onChange={(e) => set('address', e.target.value)}
                       className={inputCls(false)}
-                      placeholder={lang === 'ar' ? 'أدخل العنوان' : 'Enter address'}
+                      placeholder={
+                        lang === 'ar' ? 'أدخل العنوان' : 'Enter address'
+                      }
                       dir={lang === 'ar' ? 'rtl' : 'ltr'}
                       disabled={submitting}
                     />
@@ -254,28 +314,42 @@ const CreateClient = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {lang === 'ar' ? 'رقم التعريف الضريبي' : 'Tax Number'}
+                      {lang === 'ar'
+                        ? 'رقم التعريف الضريبي'
+                        : 'Tax Number'}
                     </label>
                     <input
                       type="text"
                       value={formData.taxNumber}
                       onChange={(e) => set('taxNumber', e.target.value)}
                       className={inputCls(false)}
-                      placeholder={lang === 'ar' ? 'أدخل رقم التعريف الضريبي' : 'Enter tax number'}
+                      placeholder={
+                        lang === 'ar'
+                          ? 'أدخل رقم التعريف الضريبي'
+                          : 'Enter tax number'
+                      }
                       disabled={submitting}
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {lang === 'ar' ? 'رقم السجل التجاري' : 'Commercial Register'}
+                      {lang === 'ar'
+                        ? 'رقم السجل التجاري'
+                        : 'Commercial Register'}
                     </label>
                     <input
                       type="text"
                       value={formData.commercialRegister}
-                      onChange={(e) => set('commercialRegister', e.target.value)}
+                      onChange={(e) =>
+                        set('commercialRegister', e.target.value)
+                      }
                       className={inputCls(false)}
-                      placeholder={lang === 'ar' ? 'أدخل رقم السجل التجاري' : 'Enter commercial register'}
+                      placeholder={
+                        lang === 'ar'
+                          ? 'أدخل رقم السجل التجاري'
+                          : 'Enter commercial register'
+                      }
                       disabled={submitting}
                     />
                   </div>
@@ -289,7 +363,11 @@ const CreateClient = () => {
                     value={formData.notes}
                     onChange={(e) => set('notes', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 resize-none"
-                    placeholder={lang === 'ar' ? 'أدخل أي ملاحظات إضافية' : 'Enter any additional notes'}
+                    placeholder={
+                      lang === 'ar'
+                        ? 'أدخل أي ملاحظات إضافية'
+                        : 'Enter any additional notes'
+                    }
                     rows={3}
                     dir={lang === 'ar' ? 'rtl' : 'ltr'}
                     disabled={submitting}

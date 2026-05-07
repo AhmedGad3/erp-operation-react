@@ -341,6 +341,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
     if (!form.code.trim())   { toast.error(lang === 'ar' ? 'الكود مطلوب' : 'Code is required'); return; }
     if (!form.baseUnit)      { toast.error(lang === 'ar' ? 'الوحدة الأساسية مطلوبة' : 'Base unit is required'); return; }
 
+    if (!form.subCategory.trim()) { toast.error(lang === 'ar' ? 'الفئة الفرعية مطلوبة' : 'Sub category is required'); return; }
     // Validate alternativeUnits
     for (const [i, alt] of form.alternativeUnits.entries()) {
       if (!alt.unitId) { toast.error(lang === 'ar' ? `اختر وحدة في السطر ${i + 1}` : `Select unit in row ${i + 1}`); return; }

@@ -48,8 +48,24 @@ export default function SupplierModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.nameAr?.trim() && !formData.nameEn?.trim()) {
-      toast.error(t?.supplierNameRequired || 'Supplier name is required', {
+    if (!formData.nameAr?.trim()) {
+      toast.error(lang === 'ar' ? 'الاسم بالعربية مطلوب' : 'Arabic name is required', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (!formData.nameEn?.trim()) {
+      toast.error(lang === 'ar' ? 'الاسم بالإنجليزية مطلوب' : 'English name is required', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (!formData.code?.trim()) {
+      toast.error(lang === 'ar' ? 'الكود مطلوب' : 'Code is required', {
         position: 'top-right',
         autoClose: 3000,
       });
@@ -111,8 +127,8 @@ export default function SupplierModal({
               <h3 className="text-xl font-bold text-gray-900">{title}</h3>
               <p className="text-sm text-gray-500 mt-1">
                 {lang === 'ar'
-                  ? 'ابدأ بالبيانات الأساسية والباقي اختياري'
-                  : 'Start with the basics, optional details can be added later'}
+                  ? 'الحقول الأساسية مطلوبة، والباقي اختياري حسب عقد الباك'
+                  : 'Core fields are required, the rest is optional per the backend contract'}
               </p>
             </div>
             <button
@@ -129,8 +145,7 @@ export default function SupplierModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5 text-gray-700">
-                  {t?.nameAr || 'Name (Arabic)'}{' '}
-                  <span className="text-red-500">*</span>
+                  {t?.nameAr || 'Name (Arabic)'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -145,7 +160,7 @@ export default function SupplierModal({
 
               <div>
                 <label className="block text-sm font-medium mb-1.5 text-gray-700">
-                  {t?.nameEn || 'Name (English)'}
+                  {t?.nameEn || 'Name (English)'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -159,7 +174,7 @@ export default function SupplierModal({
 
               <div>
                 <label className="block text-sm font-medium mb-1.5 text-gray-700">
-                  {t?.code || 'Code'}
+                  {t?.code || 'Code'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"

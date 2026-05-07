@@ -34,15 +34,24 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
     set('code', value.toUpperCase());
   };
 
-  const inputCls = `w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50`;
+  const inputCls =
+    'w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.nameAr.trim() && !form.nameEn.trim()) {
-      toast.error(
-        lang === 'ar' ? 'اسم المورد مطلوب' : 'Supplier name is required',
-      );
+    if (!form.nameAr.trim()) {
+      toast.error(lang === 'ar' ? 'الاسم بالعربية مطلوب' : 'Arabic name is required');
+      return;
+    }
+
+    if (!form.nameEn.trim()) {
+      toast.error(lang === 'ar' ? 'الاسم بالإنجليزية مطلوب' : 'English name is required');
+      return;
+    }
+
+    if (!form.code.trim()) {
+      toast.error(lang === 'ar' ? 'الكود مطلوب' : 'Code is required');
       return;
     }
 
@@ -58,9 +67,7 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
         notes: form.notes.trim(),
       });
       const created = data?.result || data;
-      toast.success(
-        lang === 'ar' ? 'تم إنشاء المورد' : 'Supplier created',
-      );
+      toast.success(lang === 'ar' ? 'تم إنشاء المورد' : 'Supplier created');
       onCreated?.(created);
       onClose();
     } catch (error) {
@@ -106,7 +113,8 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)'}
+                  {lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)'}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -120,7 +128,8 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)'}
+                  {lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)'}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -133,7 +142,8 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الكود' : 'Code'}
+                  {lang === 'ar' ? 'الكود' : 'Code'}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"

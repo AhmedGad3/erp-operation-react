@@ -1,6 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Wrench, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Save, Wrench } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../utils/axiosInstance';
 import { LanguageContext } from '../../context/LanguageContext';
@@ -20,7 +20,8 @@ const PAYMENT_METHODS = [
   { value: 'CHEQUE', labelAr: 'شيك', labelEn: 'Cheque' },
 ];
 
-const inputCls = 'w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition';
+const inputCls =
+  'w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition';
 
 const Field = ({ label, required, children }) => (
   <div>
@@ -63,7 +64,7 @@ export default function AssetInvoiceForm() {
     notes: '',
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (codeTouched) return;
     setAssetForm((prev) => ({
       ...prev,
@@ -71,16 +72,23 @@ export default function AssetInvoiceForm() {
     }));
   }, [assetForm.nameAr, assetForm.nameEn, codeTouched]);
 
-  const setA = (key, val) => setAssetForm((prev) => ({ ...prev, [key]: val }));
-  const setI = (key, val) => setInvoiceForm((prev) => ({ ...prev, [key]: val }));
+  const setAssetField = (key, value) =>
+    setAssetForm((prev) => ({ ...prev, [key]: value }));
+  const setInvoiceField = (key, value) =>
+    setInvoiceForm((prev) => ({ ...prev, [key]: value }));
+
   const setAssetCode = (value) => {
     setCodeTouched(true);
-    setA('code', value.toUpperCase());
+    setAssetField('code', value.toUpperCase());
   };
+
   const handleQuickSupplierCreated = (createdSupplier) => {
-    const supplierName = isAr ? createdSupplier?.nameAr || createdSupplier?.nameEn : createdSupplier?.nameEn || createdSupplier?.nameAr;
+    const supplierName = isAr
+      ? createdSupplier?.nameAr || createdSupplier?.nameEn
+      : createdSupplier?.nameEn || createdSupplier?.nameAr;
+
     if (!supplierName) return;
-    setI('vendorName', supplierName);
+    setInvoiceField('vendorName', supplierName);
   };
 
   const validate = () => {
@@ -88,32 +96,40 @@ export default function AssetInvoiceForm() {
       toast.error(t('اسم الأصل مطلوب', 'Asset name is required'));
       return false;
     }
+
     if (!assetForm.code.trim()) {
       toast.error(t('الكود مطلوب', 'Code is required'));
       return false;
     }
+
     if (!assetForm.assetTypeAr.trim() || !assetForm.assetTypeEn.trim()) {
       toast.error(t('نوع الأصل مطلوب', 'Asset type is required'));
       return false;
     }
+
     if (!invoiceForm.vendorName.trim()) {
       toast.error(t('اسم المورد مطلوب', 'Vendor name is required'));
       return false;
     }
-    if (!invoiceForm.amount || Number(invoiceForm.amount) <= 0) {
-      toast.error(t('المبلغ يجب أن يكون أكبر من صفر', 'Amount must be greater than zero'));
+
+    if (invoiceForm.amount === '' || Number(invoiceForm.amount) < 0) {
+      toast.error(t('المبلغ يجب أن يكون صفر أو أكبر', 'Amount must be zero or greater'));
       return false;
     }
+
     if (!invoiceForm.invoiceDate) {
       toast.error(t('تاريخ الفاتورة مطلوب', 'Invoice date is required'));
       return false;
     }
+
     return true;
   };
 
   const handleSubmit = async () => {
     if (!validate()) return;
+
     let createdAssetId = null;
+
     try {
       setSaving(true);
 
@@ -139,15 +155,19 @@ export default function AssetInvoiceForm() {
         notes: invoiceForm.notes?.trim() || undefined,
       });
 
-      toast.success(t('تم إنشاء الأصل والفاتورة بنجاح', 'Asset and invoice created successfully'));
+      toast.success(
+        t('تم إنشاء الأصل والفاتورة بنجاح', 'Asset and invoice created successfully')
+      );
       navigate(`/assets/${createdAssetId}`);
     } catch (err) {
       if (createdAssetId) {
         await axiosInstance.delete(`/assets/${createdAssetId}`).catch(() => {});
       }
+
       const msg = Array.isArray(err.response?.data?.message)
         ? err.response.data.message.join(', ')
         : err.response?.data?.message || err.message;
+
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -158,13 +178,22 @@ export default function AssetInvoiceForm() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
-          <button onClick={() => navigate('/assets')} className="p-2 border border-gray-200 rounded-xl hover:bg-gray-100 transition bg-white">
+          <button
+            onClick={() => navigate('/assets')}
+            className="p-2 border border-gray-200 rounded-xl hover:bg-gray-100 transition bg-white"
+          >
             <ArrowLeft className="w-4 h-4 text-gray-600" />
           </button>
+
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('شراء أصل جديد', 'Buy New Asset')}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {t('شراء أصل جديد', 'Buy New Asset')}
+            </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {t('أدخل البيانات الأساسية أولاً ثم أضف التفاصيل الإضافية عند الحاجة', 'Start with the essentials and add extra details only when needed')}
+              {t(
+                'أدخل البيانات الأساسية أولًا ثم أضف التفاصيل الإضافية عند الحاجة',
+                'Start with the essentials and add extra details only when needed'
+              )}
             </p>
           </div>
         </div>
@@ -175,29 +204,65 @@ export default function AssetInvoiceForm() {
               <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
                 <Wrench className="w-4 h-4 text-indigo-600" />
               </div>
-              <h2 className="text-base font-semibold text-gray-900">{t('بيانات الأصل', 'Asset Details')}</h2>
+              <h2 className="text-base font-semibold text-gray-900">
+                {t('بيانات الأصل', 'Asset Details')}
+              </h2>
             </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Field label={t('الاسم بالعربية', 'Name (Arabic)')} required>
-                  <input type="text" dir="rtl" value={assetForm.nameAr} onChange={(e) => setA('nameAr', e.target.value)} className={inputCls} />
+                  <input
+                    type="text"
+                    dir="rtl"
+                    value={assetForm.nameAr}
+                    onChange={(e) => setAssetField('nameAr', e.target.value)}
+                    className={inputCls}
+                  />
                 </Field>
+
                 <Field label={t('الاسم بالإنجليزية', 'Name (English)')} required>
-                  <input type="text" dir="ltr" value={assetForm.nameEn} onChange={(e) => setA('nameEn', e.target.value)} className={inputCls} />
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={assetForm.nameEn}
+                    onChange={(e) => setAssetField('nameEn', e.target.value)}
+                    className={inputCls}
+                  />
                 </Field>
               </div>
 
               <Field label={t('الكود', 'Code')} required>
-                <input type="text" placeholder="AST-EXCAVATOR" value={assetForm.code} onChange={(e) => setAssetCode(e.target.value)} className={inputCls} />
+                <input
+                  type="text"
+                  placeholder="AST-EXCAVATOR"
+                  value={assetForm.code}
+                  onChange={(e) => setAssetCode(e.target.value)}
+                  className={inputCls}
+                />
               </Field>
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label={t('النوع بالعربية', 'Type (Arabic)')} required>
-                  <input type="text" dir="rtl" placeholder="حفار" value={assetForm.assetTypeAr} onChange={(e) => setA('assetTypeAr', e.target.value)} className={inputCls} />
+                  <input
+                    type="text"
+                    dir="rtl"
+                    placeholder="حفار"
+                    value={assetForm.assetTypeAr}
+                    onChange={(e) => setAssetField('assetTypeAr', e.target.value)}
+                    className={inputCls}
+                  />
                 </Field>
+
                 <Field label={t('النوع بالإنجليزية', 'Type (English)')} required>
-                  <input type="text" dir="ltr" placeholder="Excavator" value={assetForm.assetTypeEn} onChange={(e) => setA('assetTypeEn', e.target.value)} className={inputCls} />
+                  <input
+                    type="text"
+                    dir="ltr"
+                    placeholder="Excavator"
+                    value={assetForm.assetTypeEn}
+                    onChange={(e) => setAssetField('assetTypeEn', e.target.value)}
+                    className={inputCls}
+                  />
                 </Field>
               </div>
 
@@ -214,17 +279,28 @@ export default function AssetInvoiceForm() {
               {showAssetDetails && (
                 <div className="space-y-4">
                   <Field label={t('الحالة', 'Status')}>
-                    <select value={assetForm.status} onChange={(e) => setA('status', e.target.value)} className={inputCls}>
-                      {ASSET_STATUS.map((s) => (
-                        <option key={s.value} value={s.value}>
-                          {isAr ? s.labelAr : s.labelEn}
+                    <select
+                      value={assetForm.status}
+                      onChange={(e) => setAssetField('status', e.target.value)}
+                      className={inputCls}
+                    >
+                      {ASSET_STATUS.map((status) => (
+                        <option key={status.value} value={status.value}>
+                          {isAr ? status.labelAr : status.labelEn}
                         </option>
                       ))}
                     </select>
                   </Field>
 
                   <Field label={t('ملاحظات', 'Notes')}>
-                    <textarea rows={2} value={assetForm.notes} onChange={(e) => setA('notes', e.target.value)} dir={isAr ? 'rtl' : 'ltr'} placeholder={t('أضف ملاحظات...', 'Add notes...')} className={`${inputCls} resize-none`} />
+                    <textarea
+                      rows={2}
+                      value={assetForm.notes}
+                      onChange={(e) => setAssetField('notes', e.target.value)}
+                      dir={isAr ? 'rtl' : 'ltr'}
+                      placeholder={t('أضف ملاحظات...', 'Add notes...')}
+                      className={`${inputCls} resize-none`}
+                    />
                   </Field>
                 </div>
               )}
@@ -236,14 +312,23 @@ export default function AssetInvoiceForm() {
               <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <FileText className="w-4 h-4 text-emerald-600" />
               </div>
-              <h2 className="text-base font-semibold text-gray-900">{t('بيانات الفاتورة', 'Invoice Details')}</h2>
+              <h2 className="text-base font-semibold text-gray-900">
+                {t('بيانات الفاتورة', 'Invoice Details')}
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <Field label={t('اسم المورد', 'Vendor Name')} required>
-                  <input type="text" value={invoiceForm.vendorName} onChange={(e) => setI('vendorName', e.target.value)} placeholder={t('مثال: شركة المعدات الحديثة', 'e.g., Modern Equipment Co.')} className={inputCls} />
+                  <input
+                    type="text"
+                    value={invoiceForm.vendorName}
+                    onChange={(e) => setInvoiceField('vendorName', e.target.value)}
+                    placeholder={t('مثال: شركة المعدات الحديثة', 'e.g., Modern Equipment Co.')}
+                    className={inputCls}
+                  />
                 </Field>
+
                 <button
                   type="button"
                   onClick={() => setShowQuickSupplierModal(true)}
@@ -254,28 +339,51 @@ export default function AssetInvoiceForm() {
               </div>
 
               <Field label={t('المبلغ', 'Amount')} required>
-                <input type="number" min="0" step="0.01" value={invoiceForm.amount} onChange={(e) => setI('amount', e.target.value)} className={inputCls} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={invoiceForm.amount}
+                  onChange={(e) => setInvoiceField('amount', e.target.value)}
+                  className={inputCls}
+                />
               </Field>
 
               <Field label={t('تاريخ الفاتورة', 'Invoice Date')} required>
-                <input type="date" value={invoiceForm.invoiceDate} onChange={(e) => setI('invoiceDate', e.target.value)} className={inputCls} />
+                <input
+                  type="date"
+                  value={invoiceForm.invoiceDate}
+                  onChange={(e) => setInvoiceField('invoiceDate', e.target.value)}
+                  className={inputCls}
+                />
               </Field>
 
               <Field label={t('طريقة الدفع', 'Payment Method')} required>
-                <select value={invoiceForm.paymentMethod} onChange={(e) => setI('paymentMethod', e.target.value)} className={inputCls}>
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {isAr ? m.labelAr : m.labelEn}
+                <select
+                  value={invoiceForm.paymentMethod}
+                  onChange={(e) => setInvoiceField('paymentMethod', e.target.value)}
+                  className={inputCls}
+                >
+                  {PAYMENT_METHODS.map((method) => (
+                    <option key={method.value} value={method.value}>
+                      {isAr ? method.labelAr : method.labelEn}
                     </option>
                   ))}
                 </select>
               </Field>
             </div>
 
-            {(invoiceForm.paymentMethod === 'TRANSFER' || invoiceForm.paymentMethod === 'CHEQUE') && (
+            {(invoiceForm.paymentMethod === 'TRANSFER' ||
+              invoiceForm.paymentMethod === 'CHEQUE') && (
               <div className="mt-4">
                 <Field label={t('رقم المرجع', 'Reference No')}>
-                  <input type="text" value={invoiceForm.referenceNo} onChange={(e) => setI('referenceNo', e.target.value)} placeholder={t('رقم الفاتورة أو الإيصال', 'Invoice or receipt number')} className={inputCls} />
+                  <input
+                    type="text"
+                    value={invoiceForm.referenceNo}
+                    onChange={(e) => setInvoiceField('referenceNo', e.target.value)}
+                    placeholder={t('رقم الفاتورة أو الإيصال', 'Invoice or receipt number')}
+                    className={inputCls}
+                  />
                 </Field>
               </div>
             )}
@@ -295,19 +403,39 @@ export default function AssetInvoiceForm() {
             {showInvoiceDetails && (
               <div className="mt-4">
                 <Field label={t('ملاحظات', 'Notes')}>
-                  <textarea rows={3} value={invoiceForm.notes} onChange={(e) => setI('notes', e.target.value)} placeholder={t('أضف ملاحظات...', 'Add notes...')} className={`${inputCls} resize-none`} />
+                  <textarea
+                    rows={3}
+                    value={invoiceForm.notes}
+                    onChange={(e) => setInvoiceField('notes', e.target.value)}
+                    placeholder={t('أضف ملاحظات...', 'Add notes...')}
+                    className={`${inputCls} resize-none`}
+                  />
                 </Field>
               </div>
             )}
           </div>
 
           <div className="flex gap-3">
-            <button onClick={() => navigate('/assets')} className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm bg-white">
+            <button
+              onClick={() => navigate('/assets')}
+              className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm bg-white"
+            >
               {t('إلغاء', 'Cancel')}
             </button>
-            <button onClick={handleSubmit} disabled={saving} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm disabled:opacity-50">
-              {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
-              {saving ? t('جاري الحفظ...', 'Saving...') : t('حفظ الأصل والفاتورة', 'Save Asset & Invoice')}
+
+            <button
+              onClick={handleSubmit}
+              disabled={saving}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm disabled:opacity-50"
+            >
+              {saving ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {saving
+                ? t('جاري الحفظ...', 'Saving...')
+                : t('حفظ الأصل والفاتورة', 'Save Asset & Invoice')}
             </button>
           </div>
         </div>
