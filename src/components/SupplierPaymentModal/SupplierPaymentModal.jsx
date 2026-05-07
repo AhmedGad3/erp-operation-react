@@ -315,7 +315,8 @@ export default function SupplierPaymentModal({
             {formData.method === 'CHEQUE' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {lang === 'ar' ? 'رقم الشيك' : 'Cheque Number'}
+                  {lang === 'ar' ? 'رقم الشيك' : 'Cheque Number'}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -332,7 +333,8 @@ export default function SupplierPaymentModal({
             {formData.method === 'TRANSFER' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {lang === 'ar' ? 'رقم التحويل' : 'Transfer Reference'}
+                  {lang === 'ar' ? 'رقم التحويل' : 'Transfer Reference'}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"

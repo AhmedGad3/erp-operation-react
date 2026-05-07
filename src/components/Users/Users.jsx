@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import { useContext, useEffect, useRef, useState } from "react";
 import {
   CheckCircle,
@@ -55,14 +55,14 @@ const StatusBadge = ({ isActive, lang }) => {
   if (isActive === false) {
     return (
       <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-        {tr(lang, "غير نشط", "Inactive")}
+        {tr(lang, "ØºÙŠØ± Ù†Ø´Ø·", "Inactive")}
       </span>
     );
   }
 
   return (
     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-      {tr(lang, "نشط", "Active")}
+      {tr(lang, "Ù†Ø´Ø·", "Active")}
     </span>
   );
 };
@@ -70,15 +70,15 @@ const StatusBadge = ({ isActive, lang }) => {
 const RoleBadge = ({ role, lang }) => {
   const map = {
     admin: {
-      label: { ar: "مسؤول", en: "Admin" },
+      label: { ar: "Ù…Ø³Ø¤ÙˆÙ„", en: "Admin" },
       cls: "bg-gray-100 text-gray-700",
     },
     accountant: {
-      label: { ar: "محاسب", en: "Accountant" },
+      label: { ar: "Ù…Ø­Ø§Ø³Ø¨", en: "Accountant" },
       cls: "bg-gray-100 text-gray-700",
     },
     manager: {
-      label: { ar: "مدير", en: "Manager" },
+      label: { ar: "Ù…Ø¯ÙŠØ±", en: "Manager" },
       cls: "bg-gray-100 text-gray-700",
     },
   };
@@ -147,7 +147,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
           >
             <Edit className="w-4 h-4" />
-            {tr(lang, "تعديل", "Edit")}
+            {tr(lang, "ØªØ¹Ø¯ÙŠÙ„", "Edit")}
           </button>
 
           {user.isActive === false && (
@@ -159,7 +159,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
             >
               <CheckCircle className="w-4 h-4" />
-              {tr(lang, "تفعيل", "Activate")}
+              {tr(lang, "ØªÙØ¹ÙŠÙ„", "Activate")}
             </button>
           )}
 
@@ -172,7 +172,7 @@ const ActionsMenu = ({ user, currentUser, lang, onEdit, onDelete, onActivate }) 
               className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
             >
               <Trash2 className="w-4 h-4" />
-              {tr(lang, "حذف", "Delete")}
+              {tr(lang, "Ø­Ø°Ù", "Delete")}
             </button>
           )}
         </div>
@@ -202,7 +202,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
 
     if (Object.keys(nextErrors).length > 0) {
       toast.error(
-        tr(lang, "يرجى إصلاح الأخطاء قبل الإرسال", "Please fix errors before submitting")
+        tr(lang, "ÙŠØ±Ø¬Ù‰ Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ø£Ø®Ø·Ø§Ø¡ Ù‚Ø¨Ù„ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„", "Please fix errors before submitting")
       );
       return;
     }
@@ -214,14 +214,14 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
         name: form.name.trim(),
         email: form.email.trim(),
       });
-      toast.success(tr(lang, "تم إنشاء المستخدم بنجاح", "User created successfully"));
+      toast.success(tr(lang, "ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ù†Ø¬Ø§Ø­", "User created successfully"));
       onCreated();
       onClose();
     } catch (err) {
       toast.error(
         getErrorMessage(
           err,
-          tr(lang, "فشل إنشاء المستخدم", "Failed to create user")
+          tr(lang, "ÙØ´Ù„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…", "Failed to create user")
         )
       );
     } finally {
@@ -237,7 +237,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
-            {tr(lang, "إضافة مستخدم جديد", "Add New User")}
+            {tr(lang, "Ø¥Ø¶Ø§ÙØ© Ù…Ø³ØªØ®Ø¯Ù… Ø¬Ø¯ÙŠØ¯", "Add New User")}
           </h2>
           <button
             onClick={onClose}
@@ -250,7 +250,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {tr(lang, "الاسم الكامل", "Full Name")}
+              {tr(lang, "Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„", "Full Name")} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -268,7 +268,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {tr(lang, "البريد الإلكتروني", "Email")}
+              {tr(lang, "Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ", "Email")} <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -287,7 +287,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {tr(lang, "الدور", "Role")}
+                {tr(lang, "Ø§Ù„Ø¯ÙˆØ±", "Role")}
               </label>
               <select
                 value={form.role}
@@ -296,11 +296,11 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
                 }
                 className={inputClass("role")}
               >
-                <option value="admin">{tr(lang, "مسؤول", "Admin")}</option>
+                <option value="admin">{tr(lang, "Ù…Ø³Ø¤ÙˆÙ„", "Admin")}</option>
                 <option value="accountant">
-                  {tr(lang, "محاسب", "Accountant")}
+                  {tr(lang, "Ù…Ø­Ø§Ø³Ø¨", "Accountant")}
                 </option>
-                <option value="manager">{tr(lang, "مدير", "Manager")}</option>
+                <option value="manager">{tr(lang, "Ù…Ø¯ÙŠØ±", "Manager")}</option>
               </select>
               {errors.role && (
                 <p className="mt-1 text-xs text-red-500">{errors.role}</p>
@@ -310,7 +310,7 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {tr(lang, "كلمة المرور", "Password")}
+              {tr(lang, "ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±", "Password")} <span className="text-red-500">*</span>
             </label>
             <input
               type="password"
@@ -332,14 +332,14 @@ const AddUserModal = ({ lang, onClose, onCreated }) => {
             onClick={onClose}
             className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
           >
-            {tr(lang, "إلغاء", "Cancel")}
+            {tr(lang, "Ø¥Ù„ØºØ§Ø¡", "Cancel")}
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting}
             className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-sm disabled:opacity-50"
           >
-            {tr(lang, "إنشاء مستخدم", "Create User")}
+            {tr(lang, "Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø³ØªØ®Ø¯Ù…", "Create User")}
           </button>
         </div>
       </div>
@@ -370,7 +370,7 @@ const UsersList = () => {
     if (authLoading) return;
 
     if (currentUser?.role && currentUser.role !== "admin") {
-      toast.error(tr(lang, "لا تملك صلاحية الوصول", "Access denied"));
+      toast.error(tr(lang, "Ù„Ø§ ØªÙ…Ù„Ùƒ ØµÙ„Ø§Ø­ÙŠØ© Ø§Ù„ÙˆØµÙˆÙ„", "Access denied"));
       const timer = setTimeout(() => navigate("/"), 2000);
       return () => clearTimeout(timer);
     }
@@ -381,7 +381,7 @@ const UsersList = () => {
         const res = await axiosInstance.get("/users");
         setUsers(Array.isArray(res.data) ? res.data : res.data.result || []);
       } catch {
-        toast.error(tr(lang, "فشل تحميل المستخدمين", "Failed to load users"));
+        toast.error(tr(lang, "ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†", "Failed to load users"));
       } finally {
         setLoading(false);
       }
@@ -396,7 +396,7 @@ const UsersList = () => {
       const res = await axiosInstance.get("/users");
       setUsers(Array.isArray(res.data) ? res.data : res.data.result || []);
     } catch {
-      toast.error(tr(lang, "فشل تحميل المستخدمين", "Failed to load users"));
+      toast.error(tr(lang, "ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†", "Failed to load users"));
     } finally {
       setLoading(false);
     }
@@ -405,14 +405,14 @@ const UsersList = () => {
   const handleDelete = async () => {
     try {
       await axiosInstance.delete(`/user/${deleteModal.user._id}`);
-      toast.success(tr(lang, "تم حذف المستخدم", "User deleted"));
+      toast.success(tr(lang, "ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…", "User deleted"));
       setDeleteModal({ show: false, user: null });
       fetchUsers();
     } catch (err) {
       toast.error(
         getErrorMessage(
           err,
-          tr(lang, "فشل حذف المستخدم", "Failed to delete user")
+          tr(lang, "ÙØ´Ù„ Ø­Ø°Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…", "Failed to delete user")
         )
       );
     }
@@ -421,14 +421,14 @@ const UsersList = () => {
   const handleActivate = async () => {
     try {
       await axiosInstance.patch(`/user/activate/${activateModal.user._id}`);
-      toast.success(tr(lang, "تم تفعيل المستخدم", "User activated"));
+      toast.success(tr(lang, "ØªÙ… ØªÙØ¹ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…", "User activated"));
       setActivateModal({ show: false, user: null });
       fetchUsers();
     } catch (err) {
       toast.error(
         getErrorMessage(
           err,
-          tr(lang, "فشل تفعيل المستخدم", "Failed to activate user")
+          tr(lang, "ÙØ´Ù„ ØªÙØ¹ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…", "Failed to activate user")
         )
       );
     }
@@ -485,7 +485,7 @@ const UsersList = () => {
   if (authLoading || loading) {
     return (
       <FullPageLoader
-        text={tr(lang, "جاري تحميل المستخدمين...", "Loading users...")}
+        text={tr(lang, "Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†...", "Loading users...")}
       />
     );
   }
@@ -501,12 +501,12 @@ const UsersList = () => {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {tr(lang, "إدارة المستخدمين", "User Management")}
+              {tr(lang, "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†", "User Management")}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               {tr(
                 lang,
-                "إدارة أعضاء فريقك وصلاحيات حساباتهم.",
+                "Ø¥Ø¯Ø§Ø±Ø© Ø£Ø¹Ø¶Ø§Ø¡ ÙØ±ÙŠÙ‚Ùƒ ÙˆØµÙ„Ø§Ø­ÙŠØ§Øª Ø­Ø³Ø§Ø¨Ø§ØªÙ‡Ù….",
                 "Manage your team members and their account permissions."
               )}
             </p>
@@ -516,7 +516,7 @@ const UsersList = () => {
             className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            {tr(lang, "إضافة مستخدم", "Add User")}
+            {tr(lang, "Ø¥Ø¶Ø§ÙØ© Ù…Ø³ØªØ®Ø¯Ù…", "Add User")}
           </button>
         </div>
 
@@ -531,7 +531,7 @@ const UsersList = () => {
               type="text"
               placeholder={tr(
                 lang,
-                "بحث بالاسم أو البريد...",
+                "Ø¨Ø­Ø« Ø¨Ø§Ù„Ø§Ø³Ù… Ø£Ùˆ Ø§Ù„Ø¨Ø±ÙŠØ¯...",
                 "Search by name or email..."
               )}
               value={searchTerm}
@@ -547,12 +547,12 @@ const UsersList = () => {
             onChange={(e) => setFilterRole(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
           >
-            <option value="ALL">{tr(lang, "كل الأدوار", "All Roles")}</option>
-            <option value="admin">{tr(lang, "مسؤول", "Admin")}</option>
+            <option value="ALL">{tr(lang, "ÙƒÙ„ Ø§Ù„Ø£Ø¯ÙˆØ§Ø±", "All Roles")}</option>
+            <option value="admin">{tr(lang, "Ù…Ø³Ø¤ÙˆÙ„", "Admin")}</option>
             <option value="accountant">
-              {tr(lang, "محاسب", "Accountant")}
+              {tr(lang, "Ù…Ø­Ø§Ø³Ø¨", "Accountant")}
             </option>
-            <option value="manager">{tr(lang, "مدير", "Manager")}</option>
+            <option value="manager">{tr(lang, "Ù…Ø¯ÙŠØ±", "Manager")}</option>
           </select>
 
           <select
@@ -560,9 +560,9 @@ const UsersList = () => {
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
           >
-            <option value="ALL">{tr(lang, "كل الحالات", "All Status")}</option>
-            <option value="ACTIVE">{tr(lang, "نشط", "Active")}</option>
-            <option value="INACTIVE">{tr(lang, "غير نشط", "Inactive")}</option>
+            <option value="ALL">{tr(lang, "ÙƒÙ„ Ø§Ù„Ø­Ø§Ù„Ø§Øª", "All Status")}</option>
+            <option value="ACTIVE">{tr(lang, "Ù†Ø´Ø·", "Active")}</option>
+            <option value="INACTIVE">{tr(lang, "ØºÙŠØ± Ù†Ø´Ø·", "Inactive")}</option>
           </select>
 
           {(searchTerm || filterRole !== "ALL" || filterStatus !== "ALL") && (
@@ -574,7 +574,7 @@ const UsersList = () => {
               }}
               className="text-sm text-indigo-600 hover:underline"
             >
-              {tr(lang, "مسح", "Clear")}
+              {tr(lang, "Ù…Ø³Ø­", "Clear")}
             </button>
           )}
         </div>
@@ -584,7 +584,7 @@ const UsersList = () => {
             <div className="p-16 text-center">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="font-medium text-gray-600">
-                {tr(lang, "لا يوجد مستخدمون", "No users found")}
+                {tr(lang, "Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ†", "No users found")}
               </p>
             </div>
           ) : (
@@ -592,35 +592,35 @@ const UsersList = () => {
               <thead>
                 <tr className="border-b border-gray-100">
                   <SortHeader
-                    label={tr(lang, "الاسم الكامل", "Full Name")}
+                    label={tr(lang, "Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„", "Full Name")}
                     field="name"
                     sortField={sortField}
                     sortDir={sortDir}
                     onSort={handleSort}
                   />
                   <SortHeader
-                    label={tr(lang, "البريد الإلكتروني", "Email")}
+                    label={tr(lang, "Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ", "Email")}
                     field="email"
                     sortField={sortField}
                     sortDir={sortDir}
                     onSort={handleSort}
                   />
                   <SortHeader
-                    label={tr(lang, "الدور", "Role")}
+                    label={tr(lang, "Ø§Ù„Ø¯ÙˆØ±", "Role")}
                     field="role"
                     sortField={sortField}
                     sortDir={sortDir}
                     onSort={handleSort}
                   />
                   <SortHeader
-                    label={tr(lang, "الحالة", "Status")}
+                    label={tr(lang, "Ø§Ù„Ø­Ø§Ù„Ø©", "Status")}
                     field="isActive"
                     sortField={sortField}
                     sortDir={sortDir}
                     onSort={handleSort}
                   />
                   <SortHeader
-                    label={tr(lang, "تاريخ الإنشاء", "Created")}
+                    label={tr(lang, "ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥Ù†Ø´Ø§Ø¡", "Created")}
                     field="createdAt"
                     sortField={sortField}
                     sortDir={sortDir}
@@ -691,7 +691,7 @@ const UsersList = () => {
           type="delete"
           lang={lang}
           entityLabelEn="user"
-          entityLabelAr="مستخدم"
+          entityLabelAr="Ù…Ø³ØªØ®Ø¯Ù…"
           itemName={deleteModal.user?.name}
           itemSubtitle={deleteModal.user?.email}
           onConfirm={handleDelete}
@@ -704,7 +704,7 @@ const UsersList = () => {
           type="activate"
           lang={lang}
           entityLabelEn="user"
-          entityLabelAr="مستخدم"
+          entityLabelAr="Ù…Ø³ØªØ®Ø¯Ù…"
           itemName={activateModal.user?.name}
           itemSubtitle={activateModal.user?.email}
           onConfirm={handleActivate}
@@ -716,3 +716,4 @@ const UsersList = () => {
 };
 
 export default UsersList;
+

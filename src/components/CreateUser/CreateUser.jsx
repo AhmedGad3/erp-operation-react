@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+﻿import { useContext, useState } from "react";
 import { ArrowLeft, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -40,7 +40,7 @@ const CreateUser = () => {
     if (!validateForm()) {
       toast.error(
         lang === "ar"
-          ? "يرجى إصلاح الأخطاء قبل الإرسال"
+          ? "ÙŠØ±Ø¬Ù‰ Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ø£Ø®Ø·Ø§Ø¡ Ù‚Ø¨Ù„ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„"
           : "Please fix errors before submitting"
       );
       return;
@@ -56,14 +56,14 @@ const CreateUser = () => {
       });
       toast.success(
         lang === "ar"
-          ? "تم إنشاء المستخدم بنجاح!"
+          ? "ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ù†Ø¬Ø§Ø­!"
           : "User created successfully!"
       );
       setTimeout(() => navigate("/users"), 1500);
     } catch (error) {
       const message = getErrorMessage(
         error,
-        lang === "ar" ? "فشل إنشاء المستخدم" : "Failed to create user"
+        lang === "ar" ? "ÙØ´Ù„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…" : "Failed to create user"
       );
       toast.error(message);
     } finally {
@@ -74,7 +74,7 @@ const CreateUser = () => {
   if (submitting) {
     return (
       <FullPageLoader
-        text={lang === "ar" ? "جاري المعالجة..." : "Processing..."}
+        text={lang === "ar" ? "Ø¬Ø§Ø±ÙŠ Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©..." : "Processing..."}
       />
     );
   }
@@ -90,11 +90,11 @@ const CreateUser = () => {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {lang === "ar" ? "إضافة مستخدم جديد" : "Add New User"}
+              {lang === "ar" ? "Ø¥Ø¶Ø§ÙØ© Ù…Ø³ØªØ®Ø¯Ù… Ø¬Ø¯ÙŠØ¯" : "Add New User"}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               {lang === "ar"
-                ? "إنشاء حساب مستخدم جديد للنظام"
+                ? "Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨ Ù…Ø³ØªØ®Ø¯Ù… Ø¬Ø¯ÙŠØ¯ Ù„Ù„Ù†Ø¸Ø§Ù…"
                 : "Create a new user account for the system."}
             </p>
           </div>
@@ -103,7 +103,7 @@ const CreateUser = () => {
             className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-100 transition font-medium text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
-            {lang === "ar" ? "رجوع" : "Back"}
+            {lang === "ar" ? "Ø±Ø¬ÙˆØ¹" : "Back"}
           </button>
         </div>
 
@@ -111,15 +111,14 @@ const CreateUser = () => {
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {lang === "ar" ? "الاسم الكامل" : "Full Name"}{" "}
-                <span className="text-red-500">*</span>
+                {lang === "ar" ? "Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„" : "Full Name"}{" "}
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 className={inputClass("name")}
-                placeholder={lang === "ar" ? "أدخل الاسم الكامل" : "John Doe"}
+                placeholder={lang === "ar" ? "Ø£Ø¯Ø®Ù„ Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„" : "John Doe"}
               />
               {errors.name && (
                 <p className="mt-1 text-xs text-red-500">{errors.name}</p>
@@ -128,7 +127,7 @@ const CreateUser = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {lang === "ar" ? "البريد الإلكتروني" : "Email"}{" "}
+                {lang === "ar" ? "Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ" : "Email"}{" "}
                 <span className="text-red-500">*</span>
               </label>
               <input
@@ -138,7 +137,7 @@ const CreateUser = () => {
                 className={inputClass("email")}
                 placeholder={
                   lang === "ar"
-                    ? "أدخل البريد الإلكتروني"
+                    ? "Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ"
                     : "john@company.com"
                 }
               />
@@ -149,8 +148,8 @@ const CreateUser = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {lang === "ar" ? "الدور" : "Role"}{" "}
-                <span className="text-red-500">*</span>
+                {lang === "ar" ? "Ø§Ù„Ø¯ÙˆØ±" : "Role"}{" "}
+                
               </label>
               <select
                 value={formData.role}
@@ -158,13 +157,13 @@ const CreateUser = () => {
                 className={inputClass("role")}
               >
                 <option value="accountant">
-                  {lang === "ar" ? "محاسب" : "Accountant"}
+                  {lang === "ar" ? "Ù…Ø­Ø§Ø³Ø¨" : "Accountant"}
                 </option>
                 <option value="manager">
-                  {lang === "ar" ? "مدير قسم" : "Manager"}
+                  {lang === "ar" ? "Ù…Ø¯ÙŠØ± Ù‚Ø³Ù…" : "Manager"}
                 </option>
                 <option value="admin">
-                  {lang === "ar" ? "مدير" : "Admin"}
+                  {lang === "ar" ? "Ù…Ø¯ÙŠØ±" : "Admin"}
                 </option>
               </select>
               {errors.role && (
@@ -175,7 +174,7 @@ const CreateUser = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === "ar" ? "كلمة المرور" : "Password"}{" "}
+                  {lang === "ar" ? "ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±" : "Password"}{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -192,7 +191,7 @@ const CreateUser = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === "ar" ? "تأكيد كلمة المرور" : "Confirm Password"}{" "}
+                  {lang === "ar" ? "ØªØ£ÙƒÙŠØ¯ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±" : "Confirm Password"}{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -218,7 +217,7 @@ const CreateUser = () => {
                 onClick={() => navigate("/users")}
                 className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm"
               >
-                {lang === "ar" ? "إلغاء" : "Cancel"}
+                {lang === "ar" ? "Ø¥Ù„ØºØ§Ø¡" : "Cancel"}
               </button>
               <button
                 type="submit"
@@ -226,7 +225,7 @@ const CreateUser = () => {
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm disabled:opacity-50"
               >
                 <UserPlus className="w-4 h-4" />
-                {lang === "ar" ? "إنشاء مستخدم" : "Create User"}
+                {lang === "ar" ? "Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø³ØªØ®Ø¯Ù…" : "Create User"}
               </button>
             </div>
           </form>
@@ -237,3 +236,5 @@ const CreateUser = () => {
 };
 
 export default CreateUser;
+
+

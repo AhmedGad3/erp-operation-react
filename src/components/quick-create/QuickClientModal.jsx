@@ -48,38 +48,16 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.nameAr || formData.nameAr.length < 2) {
-      newErrors.nameAr =
-        lang === 'ar'
-          ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø­Ø±ÙÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„'
-          : 'Arabic name must be at least 2 characters';
+    if (!formData.nameAr.trim()) {
+      newErrors.nameAr = lang === 'ar' ? 'الاسم بالعربية مطلوب' : 'Arabic name is required';
     }
 
-    if (!formData.nameEn || formData.nameEn.length < 2) {
-      newErrors.nameEn =
-        lang === 'ar'
-          ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø­Ø±ÙÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„'
-          : 'English name must be at least 2 characters';
+    if (!formData.nameEn.trim()) {
+      newErrors.nameEn = lang === 'ar' ? 'الاسم بالإنجليزية مطلوب' : 'English name is required';
     }
 
-    if (!formData.code || formData.code.length < 2) {
-      newErrors.code =
-        lang === 'ar'
-          ? 'Ø§Ù„ÙƒÙˆØ¯ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø­Ø±ÙÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„'
-          : 'Code must be at least 2 characters';
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
-      newErrors.email =
-        lang === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ØºÙŠØ± ØµØ­ÙŠØ­' : 'Invalid email format';
-    }
-
-    if (formData.phone && formData.phone.length < 7) {
-      newErrors.phone =
-        lang === 'ar'
-          ? 'Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† 7 Ø£Ø±Ù‚Ø§Ù… Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„'
-          : 'Phone must be at least 7 digits';
+    if (!formData.code.trim()) {
+      newErrors.code = lang === 'ar' ? 'الكود مطلوب' : 'Code is required';
     }
 
     setErrors(newErrors);
@@ -399,4 +377,5 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
     </div>
   );
 }
+
 

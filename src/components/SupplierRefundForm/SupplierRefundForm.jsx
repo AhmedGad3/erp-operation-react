@@ -253,8 +253,7 @@ const SupplierRefundForm = () => {
                   disabled={submitting}
                 >
                   <option value="CASH">{lang === 'ar' ? 'نقدي' : 'Cash'}</option>
-                  <option value="BANK">{lang === 'ar' ? 'تحويل بنكي' : 'Bank Transfer'}</option>
-                  <option value="CHECK">{lang === 'ar' ? 'شيك' : 'Check'}</option>
+                  <option value="TRANSFER">{lang === 'ar' ? 'تحويل بنكي' : 'Bank Transfer'}</option>
                 </select>
               </Field>
             </div>

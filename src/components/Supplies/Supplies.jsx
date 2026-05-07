@@ -427,8 +427,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
           {/* Sub Category + Base Unit */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙØ¦Ø© Ø§Ù„ÙØ±Ø¹ÙŠØ©' : 'Sub Category'}</label>
-              <span className="text-red-500 text-sm">*</span>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙØ¦Ø© Ø§Ù„ÙØ±Ø¹ÙŠØ©' : 'Sub Category'} <span className="text-red-500">*</span></label>
               <input type="text" dir={lang === 'ar' ? 'rtl' : 'ltr'} value={form.subCategory} onChange={e => setForm(f => ({ ...f, subCategory: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
@@ -884,4 +883,5 @@ export default function Supplies() {
     </div>
   );
 }
+
 

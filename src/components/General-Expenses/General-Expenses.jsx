@@ -170,7 +170,7 @@ export default function GeneralExpenses() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title?.trim()) { toast.error(lang === 'ar' ? 'العنوان مطلوب' : 'Title is required'); return; }
-    if (formData.amount <= 0)    { toast.error(lang === 'ar' ? 'المبلغ يجب أن يكون أكبر من صفر' : 'Amount must be greater than zero'); return; }
+    if (Number(formData.amount) < 0) { toast.error(lang === 'ar' ? 'المبلغ لا يمكن أن يكون أقل من صفر' : 'Amount cannot be less than zero'); return; }
     setSaving(true);
     try {
       const payload = Object.fromEntries(

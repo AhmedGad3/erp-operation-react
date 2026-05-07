@@ -506,7 +506,7 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onS
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                       {/* Material */}
                       <div className="md:col-span-4">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "المادة" : "Material"}</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "المادة" : "Material"} <span className="text-red-400">*</span></label>
                         <select
                           value={item.materialId}
                           onChange={e => handleItemChange(index, "materialId", e.target.value)}
@@ -520,7 +520,7 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onS
 
                       {/* Unit — ✅ مفلترة على الوحدات المتاحة للمادة */}
                       <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الوحدة" : "Unit"}</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الوحدة" : "Unit"} <span className="text-red-400">*</span></label>
                         <select
                           value={item.unitId}
                           onChange={e => handleItemChange(index, "unitId", e.target.value)}
@@ -539,13 +539,13 @@ function PurchaseModal({ formData, setFormData, suppliers, materials, units, onS
 
                       {/* Quantity */}
                       <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الكمية" : "Quantity"}</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "الكمية" : "Quantity"} <span className="text-red-400">*</span></label>
                         <Input type="number" value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} min="0.01" step="0.01" className="text-sm rounded-xl border-gray-200" dir={lang === "ar" ? "rtl" : "ltr"} />
                       </div>
 
                       {/* Unit Price */}
                       <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "سعر الوحدة" : "Unit Price"}</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{lang === "ar" ? "سعر الوحدة" : "Unit Price"} <span className="text-red-400">*</span></label>
                         <Input type="number" value={item.unitPrice} onChange={e => handleItemChange(index, "unitPrice", e.target.value)} min="0" step="0.01" className="text-sm rounded-xl border-gray-200" dir={lang === "ar" ? "rtl" : "ltr"} />
                       </div>
 
