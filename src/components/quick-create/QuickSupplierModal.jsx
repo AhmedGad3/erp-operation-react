@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, UserPlus, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../utils/axiosInstance';
@@ -42,17 +42,17 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
     e.preventDefault();
 
     if (!form.nameAr.trim()) {
-      toast.error(lang === 'ar' ? 'الاسم بالعربية مطلوب' : 'Arabic name is required');
+      toast.error(lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© Ù…Ø·Ù„ÙˆØ¨' : 'Arabic name is required');
       return;
     }
 
     if (!form.nameEn.trim()) {
-      toast.error(lang === 'ar' ? 'الاسم بالإنجليزية مطلوب' : 'English name is required');
+      toast.error(lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© Ù…Ø·Ù„ÙˆØ¨' : 'English name is required');
       return;
     }
 
     if (!form.code.trim()) {
-      toast.error(lang === 'ar' ? 'الكود مطلوب' : 'Code is required');
+      toast.error(lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨' : 'Code is required');
       return;
     }
 
@@ -68,14 +68,14 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
         notes: form.notes.trim(),
       });
       const created = data?.result || data;
-      toast.success(lang === 'ar' ? 'تم إنشاء المورد' : 'Supplier created');
+      toast.success(lang === 'ar' ? 'ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…ÙˆØ±Ø¯' : 'Supplier created');
       onCreated?.(created);
       onClose();
     } catch (error) {
       toast.error(
         getErrorMessage(
           error,
-          lang === 'ar' ? 'فشل إنشاء المورد' : 'Failed to create supplier',
+          lang === 'ar' ? 'ÙØ´Ù„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…ÙˆØ±Ø¯' : 'Failed to create supplier',
         ),
       );
     } finally {
@@ -89,11 +89,11 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
-              {lang === 'ar' ? 'إضافة مورد جديد' : 'Add New Supplier'}
+              {lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ù…ÙˆØ±Ø¯ Ø¬Ø¯ÙŠØ¯' : 'Add New Supplier'}
             </h3>
             <p className="text-sm text-gray-500 mt-1">
               {lang === 'ar'
-                ? 'نفس فورم إنشاء المورد الكامل داخل نفس العملية'
+                ? 'Ù†ÙØ³ ÙÙˆØ±Ù… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…ÙˆØ±Ø¯ Ø§Ù„ÙƒØ§Ù…Ù„ Ø¯Ø§Ø®Ù„ Ù†ÙØ³ Ø§Ù„Ø¹Ù…Ù„ÙŠØ©'
                 : 'The full supplier creation form inside the current flow'}
             </p>
           </div>
@@ -109,12 +109,12 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <h4 className="text-sm font-semibold text-gray-700 mb-4">
-              {lang === 'ar' ? 'البيانات الأساسية' : 'Core Details'}
+              {lang === 'ar' ? 'Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©' : 'Core Details'}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم بالعربية' : 'Name (Arabic)'}{' '}
+                  {lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©' : 'Name (Arabic)'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -129,7 +129,7 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)'}{' '}
+                  {lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©' : 'Name (English)'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -143,7 +143,7 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الكود' : 'Code'}{' '}
+                  {lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -157,7 +157,7 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الهاتف' : 'Phone'}
+                  {lang === 'ar' ? 'Ø§Ù„Ù‡Ø§ØªÙ' : 'Phone'}
                 </label>
                 <input
                   type="text"
@@ -171,32 +171,12 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <button
-              type="button"
-              onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="hidden"
-            >
-              <span>
-                {showMoreDetails
-                  ? lang === 'ar'
-                    ? 'إخفاء التفاصيل الاختيارية'
-                    : 'Hide optional details'
-                  : lang === 'ar'
-                    ? 'إضافة تفاصيل اختيارية'
-                    : 'Add optional details'}
-              </span>
-              {showMoreDetails ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
 
             {showMoreDetails && (
               <div className="mt-4 grid grid-cols-1 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                    {lang === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Email'}
                   </label>
                   <input
                     type="email"
@@ -209,7 +189,7 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {lang === 'ar' ? 'العنوان' : 'Address'}
+                    {lang === 'ar' ? 'Ø§Ù„Ø¹Ù†ÙˆØ§Ù†' : 'Address'}
                   </label>
                   <input
                     type="text"
@@ -223,7 +203,7 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {lang === 'ar' ? 'ملاحظات' : 'Notes'}
+                    {lang === 'ar' ? 'Ù…Ù„Ø§Ø­Ø¸Ø§Øª' : 'Notes'}
                   </label>
                   <textarea
                     value={form.notes}
@@ -245,7 +225,7 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
               disabled={submitting}
               className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold text-sm"
             >
-              {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+              {lang === 'ar' ? 'Ø¥Ù„ØºØ§Ø¡' : 'Cancel'}
             </button>
             <button
               type="submit"
@@ -255,10 +235,10 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
               <UserPlus className="w-4 h-4" />
               {submitting
                 ? lang === 'ar'
-                  ? 'جاري الحفظ...'
+                  ? 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸...'
                   : 'Saving...'
                 : lang === 'ar'
-                  ? 'إنشاء المورد'
+                  ? 'Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…ÙˆØ±Ø¯'
                   : 'Create Supplier'}
             </button>
           </div>
@@ -267,3 +247,4 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
     </div>
   );
 }
+

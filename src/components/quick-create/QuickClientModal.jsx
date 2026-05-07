@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, UserPlus, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../utils/axiosInstance';
@@ -51,34 +51,34 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
     if (!formData.nameAr || formData.nameAr.length < 2) {
       newErrors.nameAr =
         lang === 'ar'
-          ? 'الاسم بالعربية يجب أن يكون حرفين على الأقل'
+          ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø­Ø±ÙÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„'
           : 'Arabic name must be at least 2 characters';
     }
 
     if (!formData.nameEn || formData.nameEn.length < 2) {
       newErrors.nameEn =
         lang === 'ar'
-          ? 'الاسم بالإنجليزية يجب أن يكون حرفين على الأقل'
+          ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø­Ø±ÙÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„'
           : 'English name must be at least 2 characters';
     }
 
     if (!formData.code || formData.code.length < 2) {
       newErrors.code =
         lang === 'ar'
-          ? 'الكود يجب أن يكون حرفين على الأقل'
+          ? 'Ø§Ù„ÙƒÙˆØ¯ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø­Ø±ÙÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„'
           : 'Code must be at least 2 characters';
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
       newErrors.email =
-        lang === 'ar' ? 'البريد الإلكتروني غير صحيح' : 'Invalid email format';
+        lang === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ØºÙŠØ± ØµØ­ÙŠØ­' : 'Invalid email format';
     }
 
     if (formData.phone && formData.phone.length < 7) {
       newErrors.phone =
         lang === 'ar'
-          ? 'رقم الهاتف يجب أن يكون 7 أرقام على الأقل'
+          ? 'Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† 7 Ø£Ø±Ù‚Ø§Ù… Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„'
           : 'Phone must be at least 7 digits';
     }
 
@@ -92,7 +92,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
     if (!validateForm()) {
       toast.error(
         lang === 'ar'
-          ? 'يرجى إصلاح الأخطاء قبل الإرسال'
+          ? 'ÙŠØ±Ø¬Ù‰ Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ø£Ø®Ø·Ø§Ø¡ Ù‚Ø¨Ù„ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„'
           : 'Please fix errors before submitting',
       );
       return;
@@ -114,7 +114,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
       });
       const created = data?.result || data;
       toast.success(
-        lang === 'ar' ? 'تم إنشاء العميل بنجاح!' : 'Client created successfully!',
+        lang === 'ar' ? 'ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø¨Ù†Ø¬Ø§Ø­!' : 'Client created successfully!',
       );
       onCreated?.(created);
       onClose();
@@ -122,7 +122,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
       toast.error(
         getErrorMessage(
           error,
-          lang === 'ar' ? 'فشل إنشاء العميل' : 'Failed to create client',
+          lang === 'ar' ? 'ÙØ´Ù„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¹Ù…ÙŠÙ„' : 'Failed to create client',
         ),
       );
     } finally {
@@ -136,11 +136,11 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
-              {lang === 'ar' ? 'إضافة عميل جديد' : 'Add New Client'}
+              {lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ø¹Ù…ÙŠÙ„ Ø¬Ø¯ÙŠØ¯' : 'Add New Client'}
             </h3>
             <p className="text-sm text-gray-500 mt-1">
               {lang === 'ar'
-                ? 'نفس فورم إنشاء العميل الكامل داخل نفس العملية'
+                ? 'Ù†ÙØ³ ÙÙˆØ±Ù… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø§Ù„ÙƒØ§Ù…Ù„ Ø¯Ø§Ø®Ù„ Ù†ÙØ³ Ø§Ù„Ø¹Ù…Ù„ÙŠØ©'
                 : 'The full client creation form inside the current flow'}
             </p>
           </div>
@@ -156,12 +156,12 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <h4 className="text-sm font-semibold text-gray-700 mb-4">
-              {lang === 'ar' ? 'البيانات الأساسية' : 'Core Details'}
+              {lang === 'ar' ? 'Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©' : 'Core Details'}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'}{' '}
+                  {lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… (Ø¹Ø±Ø¨ÙŠ)' : 'Name (Arabic)'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -171,7 +171,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                   className={inputCls(errors.nameAr)}
                   placeholder={
                     lang === 'ar'
-                      ? 'أدخل اسم العميل بالعربية'
+                      ? 'Ø£Ø¯Ø®Ù„ Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©'
                       : 'Enter client name in Arabic'
                   }
                   dir="rtl"
@@ -184,7 +184,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'}{' '}
+                  {lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)' : 'Name (English)'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -194,7 +194,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                   className={inputCls(errors.nameEn)}
                   placeholder={
                     lang === 'ar'
-                      ? 'أدخل اسم العميل بالإنجليزية'
+                      ? 'Ø£Ø¯Ø®Ù„ Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©'
                       : 'Enter client name in English'
                   }
                   disabled={submitting}
@@ -206,7 +206,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الكود' : 'Code'}{' '}
+                  {lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -224,7 +224,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الهاتف' : 'Phone'}
+                  {lang === 'ar' ? 'Ø§Ù„Ù‡Ø§ØªÙ' : 'Phone'}
                 </label>
                 <input
                   type="tel"
@@ -232,7 +232,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                   onChange={(e) => set('phone', e.target.value)}
                   className={inputCls(errors.phone)}
                   placeholder={
-                    lang === 'ar' ? 'أدخل رقم الهاتف' : 'Enter phone number'
+                    lang === 'ar' ? 'Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ' : 'Enter phone number'
                   }
                   disabled={submitting}
                 />
@@ -244,33 +244,13 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <button
-              type="button"
-              onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="hidden"
-            >
-              <span>
-                {showMoreDetails
-                  ? lang === 'ar'
-                    ? 'إخفاء التفاصيل الإضافية'
-                    : 'Hide optional details'
-                  : lang === 'ar'
-                    ? 'إضافة تفاصيل اختيارية'
-                    : 'Add optional details'}
-              </span>
-              {showMoreDetails ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
 
             {showMoreDetails && (
               <div className="mt-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                      {lang === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Email'}
                     </label>
                     <input
                       type="email"
@@ -279,7 +259,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                       className={inputCls(errors.email)}
                       placeholder={
                         lang === 'ar'
-                          ? 'أدخل البريد الإلكتروني'
+                          ? 'Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ'
                           : 'Enter email address'
                       }
                       disabled={submitting}
@@ -291,7 +271,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {lang === 'ar' ? 'النوع' : 'Type'}
+                      {lang === 'ar' ? 'Ø§Ù„Ù†ÙˆØ¹' : 'Type'}
                     </label>
                     <select
                       value={formData.type}
@@ -300,17 +280,17 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                       disabled={submitting}
                     >
                       <option value="INDIVIDUAL">
-                        {lang === 'ar' ? 'فرد' : 'Individual'}
+                        {lang === 'ar' ? 'ÙØ±Ø¯' : 'Individual'}
                       </option>
                       <option value="COMPANY">
-                        {lang === 'ar' ? 'شركة' : 'Company'}
+                        {lang === 'ar' ? 'Ø´Ø±ÙƒØ©' : 'Company'}
                       </option>
                     </select>
                   </div>
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {lang === 'ar' ? 'العنوان' : 'Address'}
+                      {lang === 'ar' ? 'Ø§Ù„Ø¹Ù†ÙˆØ§Ù†' : 'Address'}
                     </label>
                     <input
                       type="text"
@@ -318,7 +298,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                       onChange={(e) => set('address', e.target.value)}
                       className={inputCls(false)}
                       placeholder={
-                        lang === 'ar' ? 'أدخل العنوان' : 'Enter address'
+                        lang === 'ar' ? 'Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¹Ù†ÙˆØ§Ù†' : 'Enter address'
                       }
                       dir={lang === 'ar' ? 'rtl' : 'ltr'}
                       disabled={submitting}
@@ -330,7 +310,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {lang === 'ar'
-                        ? 'رقم التعريف الضريبي'
+                        ? 'Ø±Ù‚Ù… Ø§Ù„ØªØ¹Ø±ÙŠÙ Ø§Ù„Ø¶Ø±ÙŠØ¨ÙŠ'
                         : 'Tax Number'}
                     </label>
                     <input
@@ -340,7 +320,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                       className={inputCls(false)}
                       placeholder={
                         lang === 'ar'
-                          ? 'أدخل رقم التعريف الضريبي'
+                          ? 'Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„ØªØ¹Ø±ÙŠÙ Ø§Ù„Ø¶Ø±ÙŠØ¨ÙŠ'
                           : 'Enter tax number'
                       }
                       disabled={submitting}
@@ -350,7 +330,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {lang === 'ar'
-                        ? 'رقم السجل التجاري'
+                        ? 'Ø±Ù‚Ù… Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ'
                         : 'Commercial Register'}
                     </label>
                     <input
@@ -360,7 +340,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                       className={inputCls(false)}
                       placeholder={
                         lang === 'ar'
-                          ? 'أدخل رقم السجل التجاري'
+                          ? 'Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ'
                           : 'Enter commercial register'
                       }
                       disabled={submitting}
@@ -370,7 +350,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {lang === 'ar' ? 'ملاحظات' : 'Notes'}
+                    {lang === 'ar' ? 'Ù…Ù„Ø§Ø­Ø¸Ø§Øª' : 'Notes'}
                   </label>
                   <textarea
                     value={formData.notes}
@@ -378,7 +358,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 resize-none"
                     placeholder={
                       lang === 'ar'
-                        ? 'أدخل أي ملاحظات إضافية'
+                        ? 'Ø£Ø¯Ø®Ù„ Ø£ÙŠ Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø¥Ø¶Ø§ÙÙŠØ©'
                         : 'Enter any additional notes'
                     }
                     rows={3}
@@ -397,7 +377,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
               disabled={submitting}
               className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold text-sm"
             >
-              {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+              {lang === 'ar' ? 'Ø¥Ù„ØºØ§Ø¡' : 'Cancel'}
             </button>
             <button
               type="submit"
@@ -407,10 +387,10 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
               <UserPlus className="w-4 h-4" />
               {submitting
                 ? lang === 'ar'
-                  ? 'جاري الحفظ...'
+                  ? 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸...'
                   : 'Saving...'
                 : lang === 'ar'
-                  ? 'إنشاء العميل'
+                  ? 'Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¹Ù…ÙŠÙ„'
                   : 'Create Client'}
             </button>
           </div>
@@ -419,3 +399,4 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
     </div>
   );
 }
+

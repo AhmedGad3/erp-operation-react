@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+﻿import { useContext, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/button';
@@ -48,7 +48,7 @@ export default function SupplierModal({
     e.preventDefault();
 
     if (!formData.nameAr?.trim()) {
-      toast.error(lang === 'ar' ? 'الاسم بالعربية مطلوب' : 'Arabic name is required', {
+      toast.error(lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© Ù…Ø·Ù„ÙˆØ¨' : 'Arabic name is required', {
         position: 'top-right',
         autoClose: 3000,
       });
@@ -56,7 +56,7 @@ export default function SupplierModal({
     }
 
     if (!formData.nameEn?.trim()) {
-      toast.error(lang === 'ar' ? 'الاسم بالإنجليزية مطلوب' : 'English name is required', {
+      toast.error(lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© Ù…Ø·Ù„ÙˆØ¨' : 'English name is required', {
         position: 'top-right',
         autoClose: 3000,
       });
@@ -64,7 +64,7 @@ export default function SupplierModal({
     }
 
     if (!formData.code?.trim()) {
-      toast.error(lang === 'ar' ? 'الكود مطلوب' : 'Code is required', {
+      toast.error(lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨' : 'Code is required', {
         position: 'top-right',
         autoClose: 3000,
       });
@@ -105,7 +105,7 @@ export default function SupplierModal({
       toast.error(
         getErrorMessage(
           err,
-          lang === 'ar' ? 'فشل حفظ المورد' : 'Error saving supplier',
+          lang === 'ar' ? 'ÙØ´Ù„ Ø­ÙØ¸ Ø§Ù„Ù…ÙˆØ±Ø¯' : 'Error saving supplier',
         ),
         {
           position: 'top-right',
@@ -126,7 +126,7 @@ export default function SupplierModal({
               <h3 className="text-xl font-bold text-gray-900">{title}</h3>
               <p className="text-sm text-gray-500 mt-1">
                 {lang === 'ar'
-                  ? 'الحقول الأساسية مطلوبة، والباقي اختياري حسب عقد الباك'
+                  ? 'Ø§Ù„Ø­Ù‚ÙˆÙ„ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ù…Ø·Ù„ÙˆØ¨Ø©ØŒ ÙˆØ§Ù„Ø¨Ø§Ù‚ÙŠ Ø§Ø®ØªÙŠØ§Ø±ÙŠ Ø­Ø³Ø¨ Ø¹Ù‚Ø¯ Ø§Ù„Ø¨Ø§Ùƒ'
                   : 'Core fields are required, the rest is optional per the backend contract'}
               </p>
             </div>
@@ -200,27 +200,6 @@ export default function SupplierModal({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="hidden"
-            >
-              <span>
-                {showMoreDetails
-                  ? lang === 'ar'
-                    ? 'إخفاء التفاصيل الاختيارية'
-                    : 'Hide optional details'
-                  : lang === 'ar'
-                    ? 'إضافة تفاصيل اختيارية'
-                    : 'Add optional details'}
-              </span>
-              {showMoreDetails ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
-
             {showMoreDetails && (
               <div className="grid grid-cols-1 gap-4">
                 <div>
@@ -288,7 +267,7 @@ export default function SupplierModal({
               {saving ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                  {lang === 'ar' ? 'جاري الحفظ...' : 'Saving...'}
+                  {lang === 'ar' ? 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸...' : 'Saving...'}
                 </div>
               ) : (
                 <>{t?.save || 'Save'}</>
@@ -300,3 +279,4 @@ export default function SupplierModal({
     </div>
   );
 }
+

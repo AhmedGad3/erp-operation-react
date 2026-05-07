@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+﻿import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Save, Wrench } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -8,16 +8,16 @@ import { createAutoCode } from '../../utils/autoCode';
 import QuickSupplierModal from '../quick-create/QuickSupplierModal';
 
 const ASSET_STATUS = [
-  { value: 'AVAILABLE', labelAr: 'متاح', labelEn: 'Available' },
-  { value: 'IN_USE', labelAr: 'قيد الاستخدام', labelEn: 'In Use' },
-  { value: 'MAINTENANCE', labelAr: 'في الصيانة', labelEn: 'Maintenance' },
-  { value: 'RETIRED', labelAr: 'متقاعد', labelEn: 'Retired' },
+  { value: 'AVAILABLE', labelAr: 'Ù…ØªØ§Ø­', labelEn: 'Available' },
+  { value: 'IN_USE', labelAr: 'Ù‚ÙŠØ¯ Ø§Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù…', labelEn: 'In Use' },
+  { value: 'MAINTENANCE', labelAr: 'ÙÙŠ Ø§Ù„ØµÙŠØ§Ù†Ø©', labelEn: 'Maintenance' },
+  { value: 'RETIRED', labelAr: 'Ù…ØªÙ‚Ø§Ø¹Ø¯', labelEn: 'Retired' },
 ];
 
 const PAYMENT_METHODS = [
-  { value: 'CASH', labelAr: 'نقدي', labelEn: 'Cash' },
-  { value: 'TRANSFER', labelAr: 'تحويل بنكي', labelEn: 'Bank Transfer' },
-  { value: 'CHEQUE', labelAr: 'شيك', labelEn: 'Cheque' },
+  { value: 'CASH', labelAr: 'Ù†Ù‚Ø¯ÙŠ', labelEn: 'Cash' },
+  { value: 'TRANSFER', labelAr: 'ØªØ­ÙˆÙŠÙ„ Ø¨Ù†ÙƒÙŠ', labelEn: 'Bank Transfer' },
+  { value: 'CHEQUE', labelAr: 'Ø´ÙŠÙƒ', labelEn: 'Cheque' },
 ];
 
 const inputCls =
@@ -93,32 +93,32 @@ export default function AssetInvoiceForm() {
 
   const validate = () => {
     if (!assetForm.nameAr.trim() || !assetForm.nameEn.trim()) {
-      toast.error(t('اسم الأصل مطلوب', 'Asset name is required'));
+      toast.error(t('Ø§Ø³Ù… Ø§Ù„Ø£ØµÙ„ Ù…Ø·Ù„ÙˆØ¨', 'Asset name is required'));
       return false;
     }
 
     if (!assetForm.code.trim()) {
-      toast.error(t('الكود مطلوب', 'Code is required'));
+      toast.error(t('Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨', 'Code is required'));
       return false;
     }
 
     if (!assetForm.assetTypeAr.trim() || !assetForm.assetTypeEn.trim()) {
-      toast.error(t('نوع الأصل مطلوب', 'Asset type is required'));
+      toast.error(t('Ù†ÙˆØ¹ Ø§Ù„Ø£ØµÙ„ Ù…Ø·Ù„ÙˆØ¨', 'Asset type is required'));
       return false;
     }
 
     if (!invoiceForm.vendorName.trim()) {
-      toast.error(t('اسم المورد مطلوب', 'Vendor name is required'));
+      toast.error(t('Ø§Ø³Ù… Ø§Ù„Ù…ÙˆØ±Ø¯ Ù…Ø·Ù„ÙˆØ¨', 'Vendor name is required'));
       return false;
     }
 
     if (invoiceForm.amount === '' || Number(invoiceForm.amount) < 0) {
-      toast.error(t('المبلغ يجب أن يكون صفر أو أكبر', 'Amount must be zero or greater'));
+      toast.error(t('Ø§Ù„Ù…Ø¨Ù„Øº ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† ØµÙØ± Ø£Ùˆ Ø£ÙƒØ¨Ø±', 'Amount must be zero or greater'));
       return false;
     }
 
     if (!invoiceForm.invoiceDate) {
-      toast.error(t('تاريخ الفاتورة مطلوب', 'Invoice date is required'));
+      toast.error(t('ØªØ§Ø±ÙŠØ® Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ù…Ø·Ù„ÙˆØ¨', 'Invoice date is required'));
       return false;
     }
 
@@ -156,7 +156,7 @@ export default function AssetInvoiceForm() {
       });
 
       toast.success(
-        t('تم إنشاء الأصل والفاتورة بنجاح', 'Asset and invoice created successfully')
+        t('ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø£ØµÙ„ ÙˆØ§Ù„ÙØ§ØªÙˆØ±Ø© Ø¨Ù†Ø¬Ø§Ø­', 'Asset and invoice created successfully')
       );
       navigate(`/assets/${createdAssetId}`);
     } catch (err) {
@@ -187,11 +187,11 @@ export default function AssetInvoiceForm() {
 
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {t('شراء أصل جديد', 'Buy New Asset')}
+              {t('Ø´Ø±Ø§Ø¡ Ø£ØµÙ„ Ø¬Ø¯ÙŠØ¯', 'Buy New Asset')}
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
               {t(
-                'أدخل البيانات الأساسية أولًا ثم أضف التفاصيل الإضافية عند الحاجة',
+                'Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ø£ÙˆÙ„Ù‹Ø§ Ø«Ù… Ø£Ø¶Ù Ø§Ù„ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¥Ø¶Ø§ÙÙŠØ© Ø¹Ù†Ø¯ Ø§Ù„Ø­Ø§Ø¬Ø©',
                 'Start with the essentials and add extra details only when needed'
               )}
             </p>
@@ -205,13 +205,13 @@ export default function AssetInvoiceForm() {
                 <Wrench className="w-4 h-4 text-indigo-600" />
               </div>
               <h2 className="text-base font-semibold text-gray-900">
-                {t('بيانات الأصل', 'Asset Details')}
+                {t('Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£ØµÙ„', 'Asset Details')}
               </h2>
             </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <Field label={t('الاسم بالعربية', 'Name (Arabic)')} required>
+                <Field label={t('Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©', 'Name (Arabic)')} required>
                   <input
                     type="text"
                     dir="rtl"
@@ -221,7 +221,7 @@ export default function AssetInvoiceForm() {
                   />
                 </Field>
 
-                <Field label={t('الاسم بالإنجليزية', 'Name (English)')} required>
+                <Field label={t('Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©', 'Name (English)')} required>
                   <input
                     type="text"
                     dir="ltr"
@@ -232,7 +232,7 @@ export default function AssetInvoiceForm() {
                 </Field>
               </div>
 
-              <Field label={t('الكود', 'Code')} required>
+              <Field label={t('Ø§Ù„ÙƒÙˆØ¯', 'Code')} required>
                 <input
                   type="text"
                   placeholder="AST-EXCAVATOR"
@@ -243,18 +243,18 @@ export default function AssetInvoiceForm() {
               </Field>
 
               <div className="grid grid-cols-2 gap-4">
-                <Field label={t('النوع بالعربية', 'Type (Arabic)')} required>
+                <Field label={t('Ø§Ù„Ù†ÙˆØ¹ Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©', 'Type (Arabic)')} required>
                   <input
                     type="text"
                     dir="rtl"
-                    placeholder="حفار"
+                    placeholder="Ø­ÙØ§Ø±"
                     value={assetForm.assetTypeAr}
                     onChange={(e) => setAssetField('assetTypeAr', e.target.value)}
                     className={inputCls}
                   />
                 </Field>
 
-                <Field label={t('النوع بالإنجليزية', 'Type (English)')} required>
+                <Field label={t('Ø§Ù„Ù†ÙˆØ¹ Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©', 'Type (English)')} required>
                   <input
                     type="text"
                     dir="ltr"
@@ -266,19 +266,9 @@ export default function AssetInvoiceForm() {
                 </Field>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowAssetDetails((prev) => !prev)}
-                className="hidden"
-              >
-                {showAssetDetails
-                  ? t('إخفاء تفاصيل الأصل الإضافية', 'Hide optional asset details')
-                  : t('إضافة تفاصيل أصل اختيارية', 'Add optional asset details')}
-              </button>
-
               {showAssetDetails && (
                 <div className="space-y-4">
-                  <Field label={t('الحالة', 'Status')}>
+                  <Field label={t('Ø§Ù„Ø­Ø§Ù„Ø©', 'Status')}>
                     <select
                       value={assetForm.status}
                       onChange={(e) => setAssetField('status', e.target.value)}
@@ -292,13 +282,13 @@ export default function AssetInvoiceForm() {
                     </select>
                   </Field>
 
-                  <Field label={t('ملاحظات', 'Notes')}>
+                  <Field label={t('Ù…Ù„Ø§Ø­Ø¸Ø§Øª', 'Notes')}>
                     <textarea
                       rows={2}
                       value={assetForm.notes}
                       onChange={(e) => setAssetField('notes', e.target.value)}
                       dir={isAr ? 'rtl' : 'ltr'}
-                      placeholder={t('أضف ملاحظات...', 'Add notes...')}
+                      placeholder={t('Ø£Ø¶Ù Ù…Ù„Ø§Ø­Ø¸Ø§Øª...', 'Add notes...')}
                       className={`${inputCls} resize-none`}
                     />
                   </Field>
@@ -313,18 +303,18 @@ export default function AssetInvoiceForm() {
                 <FileText className="w-4 h-4 text-emerald-600" />
               </div>
               <h2 className="text-base font-semibold text-gray-900">
-                {t('بيانات الفاتورة', 'Invoice Details')}
+                {t('Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙØ§ØªÙˆØ±Ø©', 'Invoice Details')}
               </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <Field label={t('اسم المورد', 'Vendor Name')} required>
+                <Field label={t('Ø§Ø³Ù… Ø§Ù„Ù…ÙˆØ±Ø¯', 'Vendor Name')} required>
                   <input
                     type="text"
                     value={invoiceForm.vendorName}
                     onChange={(e) => setInvoiceField('vendorName', e.target.value)}
-                    placeholder={t('مثال: شركة المعدات الحديثة', 'e.g., Modern Equipment Co.')}
+                    placeholder={t('Ù…Ø«Ø§Ù„: Ø´Ø±ÙƒØ© Ø§Ù„Ù…Ø¹Ø¯Ø§Øª Ø§Ù„Ø­Ø¯ÙŠØ«Ø©', 'e.g., Modern Equipment Co.')}
                     className={inputCls}
                   />
                 </Field>
@@ -334,11 +324,11 @@ export default function AssetInvoiceForm() {
                   onClick={() => setShowQuickSupplierModal(true)}
                   className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700"
                 >
-                  {t('إضافة مورد سريعًا', 'Quick Add Supplier')}
+                  {t('Ø¥Ø¶Ø§ÙØ© Ù…ÙˆØ±Ø¯ Ø³Ø±ÙŠØ¹Ù‹Ø§', 'Quick Add Supplier')}
                 </button>
               </div>
 
-              <Field label={t('المبلغ', 'Amount')} required>
+              <Field label={t('Ø§Ù„Ù…Ø¨Ù„Øº', 'Amount')} required>
                 <input
                   type="number"
                   min="0"
@@ -349,7 +339,7 @@ export default function AssetInvoiceForm() {
                 />
               </Field>
 
-              <Field label={t('تاريخ الفاتورة', 'Invoice Date')} required>
+              <Field label={t('ØªØ§Ø±ÙŠØ® Ø§Ù„ÙØ§ØªÙˆØ±Ø©', 'Invoice Date')} required>
                 <input
                   type="date"
                   value={invoiceForm.invoiceDate}
@@ -358,7 +348,7 @@ export default function AssetInvoiceForm() {
                 />
               </Field>
 
-              <Field label={t('طريقة الدفع', 'Payment Method')} required>
+              <Field label={t('Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹', 'Payment Method')} required>
                 <select
                   value={invoiceForm.paymentMethod}
                   onChange={(e) => setInvoiceField('paymentMethod', e.target.value)}
@@ -376,12 +366,12 @@ export default function AssetInvoiceForm() {
             {(invoiceForm.paymentMethod === 'TRANSFER' ||
               invoiceForm.paymentMethod === 'CHEQUE') && (
               <div className="mt-4">
-                <Field label={t('رقم المرجع', 'Reference No')}>
+                <Field label={t('Ø±Ù‚Ù… Ø§Ù„Ù…Ø±Ø¬Ø¹', 'Reference No')}>
                   <input
                     type="text"
                     value={invoiceForm.referenceNo}
                     onChange={(e) => setInvoiceField('referenceNo', e.target.value)}
-                    placeholder={t('رقم الفاتورة أو الإيصال', 'Invoice or receipt number')}
+                    placeholder={t('Ø±Ù‚Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø£Ùˆ Ø§Ù„Ø¥ÙŠØµØ§Ù„', 'Invoice or receipt number')}
                     className={inputCls}
                   />
                 </Field>
@@ -389,25 +379,16 @@ export default function AssetInvoiceForm() {
             )}
 
             <div className="mt-4">
-              <button
-                type="button"
-                onClick={() => setShowInvoiceDetails((prev) => !prev)}
-                className="hidden"
-              >
-                {showInvoiceDetails
-                  ? t('إخفاء ملاحظات الفاتورة', 'Hide invoice notes')
-                  : t('إضافة ملاحظات اختيارية', 'Add optional notes')}
-              </button>
             </div>
 
             {showInvoiceDetails && (
               <div className="mt-4">
-                <Field label={t('ملاحظات', 'Notes')}>
+                <Field label={t('Ù…Ù„Ø§Ø­Ø¸Ø§Øª', 'Notes')}>
                   <textarea
                     rows={3}
                     value={invoiceForm.notes}
                     onChange={(e) => setInvoiceField('notes', e.target.value)}
-                    placeholder={t('أضف ملاحظات...', 'Add notes...')}
+                    placeholder={t('Ø£Ø¶Ù Ù…Ù„Ø§Ø­Ø¸Ø§Øª...', 'Add notes...')}
                     className={`${inputCls} resize-none`}
                   />
                 </Field>
@@ -420,7 +401,7 @@ export default function AssetInvoiceForm() {
               onClick={() => navigate('/assets')}
               className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm bg-white"
             >
-              {t('إلغاء', 'Cancel')}
+              {t('Ø¥Ù„ØºØ§Ø¡', 'Cancel')}
             </button>
 
             <button
@@ -434,8 +415,8 @@ export default function AssetInvoiceForm() {
                 <Save className="w-4 h-4" />
               )}
               {saving
-                ? t('جاري الحفظ...', 'Saving...')
-                : t('حفظ الأصل والفاتورة', 'Save Asset & Invoice')}
+                ? t('Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸...', 'Saving...')
+                : t('Ø­ÙØ¸ Ø§Ù„Ø£ØµÙ„ ÙˆØ§Ù„ÙØ§ØªÙˆØ±Ø©', 'Save Asset & Invoice')}
             </button>
           </div>
         </div>
@@ -451,3 +432,4 @@ export default function AssetInvoiceForm() {
     </div>
   );
 }
+

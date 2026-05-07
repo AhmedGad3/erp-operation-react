@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+﻿import React, { useState, useContext } from 'react';
 import { UserPlus, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
@@ -51,16 +51,16 @@ const CreateClient = () => {
 
     if (!formData.nameAr.trim()) {
       newErrors.nameAr =
-        lang === 'ar' ? 'الاسم بالعربية مطلوب' : 'Arabic name is required';
+        lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© Ù…Ø·Ù„ÙˆØ¨' : 'Arabic name is required';
     }
 
     if (!formData.nameEn.trim()) {
       newErrors.nameEn =
-        lang === 'ar' ? 'الاسم بالإنجليزية مطلوب' : 'English name is required';
+        lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© Ù…Ø·Ù„ÙˆØ¨' : 'English name is required';
     }
 
     if (!formData.code.trim()) {
-      newErrors.code = lang === 'ar' ? 'الكود مطلوب' : 'Code is required';
+      newErrors.code = lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨' : 'Code is required';
     }
 
     setErrors(newErrors);
@@ -72,7 +72,7 @@ const CreateClient = () => {
     if (!validateForm()) {
       toast.error(
         lang === 'ar'
-          ? 'يرجى إصلاح الأخطاء قبل الإرسال'
+          ? 'ÙŠØ±Ø¬Ù‰ Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ø£Ø®Ø·Ø§Ø¡ Ù‚Ø¨Ù„ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„'
           : 'Please fix errors before submitting',
       );
       return;
@@ -95,7 +95,7 @@ const CreateClient = () => {
 
       toast.success(
         lang === 'ar'
-          ? 'تم إنشاء العميل بنجاح!'
+          ? 'ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø¨Ù†Ø¬Ø§Ø­!'
           : 'Client created successfully!',
       );
       setTimeout(() => navigate('/clients'), 1500);
@@ -103,7 +103,7 @@ const CreateClient = () => {
       toast.error(
         getErrorMessage(
           error,
-          lang === 'ar' ? 'فشل إنشاء العميل' : 'Failed to create client',
+          lang === 'ar' ? 'ÙØ´Ù„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¹Ù…ÙŠÙ„' : 'Failed to create client',
         ),
       );
     } finally {
@@ -118,7 +118,7 @@ const CreateClient = () => {
 
   if (submitting) {
     return (
-      <FullPageLoader text={lang === 'ar' ? 'جاري المعالجة...' : 'Processing...'} />
+      <FullPageLoader text={lang === 'ar' ? 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©...' : 'Processing...'} />
     );
   }
 
@@ -128,11 +128,11 @@ const CreateClient = () => {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {lang === 'ar' ? 'إضافة عميل جديد' : 'Add New Client'}
+              {lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ø¹Ù…ÙŠÙ„ Ø¬Ø¯ÙŠØ¯' : 'Add New Client'}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               {lang === 'ar'
-                ? 'الحقول الأساسية مطلوبة، والتفاصيل الباقية اختيارية حسب عقد الباك'
+                ? 'Ø§Ù„Ø­Ù‚ÙˆÙ„ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ù…Ø·Ù„ÙˆØ¨Ø©ØŒ ÙˆØ§Ù„ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¨Ø§Ù‚ÙŠØ© Ø§Ø®ØªÙŠØ§Ø±ÙŠØ© Ø­Ø³Ø¨ Ø¹Ù‚Ø¯ Ø§Ù„Ø¨Ø§Ùƒ'
                 : 'Core fields are required, the rest is optional per the backend contract'}
             </p>
           </div>
@@ -141,19 +141,19 @@ const CreateClient = () => {
             className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
-            {lang === 'ar' ? 'رجوع' : 'Back'}
+            {lang === 'ar' ? 'Ø±Ø¬ÙˆØ¹' : 'Back'}
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <h2 className="text-sm font-semibold text-gray-700 mb-4">
-              {lang === 'ar' ? 'البيانات الأساسية' : 'Core Details'}
+              {lang === 'ar' ? 'Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©' : 'Core Details'}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'}{' '}
+                  {lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… (Ø¹Ø±Ø¨ÙŠ)' : 'Name (Arabic)'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -163,7 +163,7 @@ const CreateClient = () => {
                   className={inputCls(errors.nameAr)}
                   placeholder={
                     lang === 'ar'
-                      ? 'أدخل اسم العميل بالعربية'
+                      ? 'Ø£Ø¯Ø®Ù„ Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©'
                       : 'Enter client name in Arabic'
                   }
                   dir="rtl"
@@ -176,7 +176,7 @@ const CreateClient = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'}{' '}
+                  {lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)' : 'Name (English)'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -186,7 +186,7 @@ const CreateClient = () => {
                   className={inputCls(errors.nameEn)}
                   placeholder={
                     lang === 'ar'
-                      ? 'أدخل اسم العميل بالإنجليزية'
+                      ? 'Ø£Ø¯Ø®Ù„ Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©'
                       : 'Enter client name in English'
                   }
                   disabled={submitting}
@@ -198,7 +198,7 @@ const CreateClient = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الكود' : 'Code'}{' '}
+                  {lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'}{' '}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -216,7 +216,7 @@ const CreateClient = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'الهاتف' : 'Phone'}
+                  {lang === 'ar' ? 'Ø§Ù„Ù‡Ø§ØªÙ' : 'Phone'}
                 </label>
                 <input
                   type="tel"
@@ -224,7 +224,7 @@ const CreateClient = () => {
                   onChange={(e) => set('phone', e.target.value)}
                   className={inputCls(false)}
                   placeholder={
-                    lang === 'ar' ? 'أدخل رقم الهاتف' : 'Enter phone number'
+                    lang === 'ar' ? 'Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ' : 'Enter phone number'
                   }
                   disabled={submitting}
                 />
@@ -233,33 +233,13 @@ const CreateClient = () => {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <button
-              type="button"
-              onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="hidden"
-            >
-              <span>
-                {showMoreDetails
-                  ? lang === 'ar'
-                    ? 'إخفاء التفاصيل الاختيارية'
-                    : 'Hide optional details'
-                  : lang === 'ar'
-                    ? 'إضافة تفاصيل اختيارية'
-                    : 'Add optional details'}
-              </span>
-              {showMoreDetails ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
 
             {showMoreDetails && (
               <div className="mt-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                      {lang === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Email'}
                     </label>
                     <input
                       type="email"
@@ -268,7 +248,7 @@ const CreateClient = () => {
                       className={inputCls(false)}
                       placeholder={
                         lang === 'ar'
-                          ? 'أدخل البريد الإلكتروني'
+                          ? 'Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ'
                           : 'Enter email address'
                       }
                       disabled={submitting}
@@ -277,7 +257,7 @@ const CreateClient = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {lang === 'ar' ? 'النوع' : 'Type'}
+                      {lang === 'ar' ? 'Ø§Ù„Ù†ÙˆØ¹' : 'Type'}
                     </label>
                     <select
                       value={formData.type}
@@ -286,17 +266,17 @@ const CreateClient = () => {
                       disabled={submitting}
                     >
                       <option value="INDIVIDUAL">
-                        {lang === 'ar' ? 'فرد' : 'Individual'}
+                        {lang === 'ar' ? 'ÙØ±Ø¯' : 'Individual'}
                       </option>
                       <option value="COMPANY">
-                        {lang === 'ar' ? 'شركة' : 'Company'}
+                        {lang === 'ar' ? 'Ø´Ø±ÙƒØ©' : 'Company'}
                       </option>
                     </select>
                   </div>
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {lang === 'ar' ? 'العنوان' : 'Address'}
+                      {lang === 'ar' ? 'Ø§Ù„Ø¹Ù†ÙˆØ§Ù†' : 'Address'}
                     </label>
                     <input
                       type="text"
@@ -304,7 +284,7 @@ const CreateClient = () => {
                       onChange={(e) => set('address', e.target.value)}
                       className={inputCls(false)}
                       placeholder={
-                        lang === 'ar' ? 'أدخل العنوان' : 'Enter address'
+                        lang === 'ar' ? 'Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¹Ù†ÙˆØ§Ù†' : 'Enter address'
                       }
                       dir={lang === 'ar' ? 'rtl' : 'ltr'}
                       disabled={submitting}
@@ -316,7 +296,7 @@ const CreateClient = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {lang === 'ar'
-                        ? 'رقم التعريف الضريبي'
+                        ? 'Ø±Ù‚Ù… Ø§Ù„ØªØ¹Ø±ÙŠÙ Ø§Ù„Ø¶Ø±ÙŠØ¨ÙŠ'
                         : 'Tax Number'}
                     </label>
                     <input
@@ -326,7 +306,7 @@ const CreateClient = () => {
                       className={inputCls(false)}
                       placeholder={
                         lang === 'ar'
-                          ? 'أدخل رقم التعريف الضريبي'
+                          ? 'Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„ØªØ¹Ø±ÙŠÙ Ø§Ù„Ø¶Ø±ÙŠØ¨ÙŠ'
                           : 'Enter tax number'
                       }
                       disabled={submitting}
@@ -336,7 +316,7 @@ const CreateClient = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {lang === 'ar'
-                        ? 'رقم السجل التجاري'
+                        ? 'Ø±Ù‚Ù… Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ'
                         : 'Commercial Register'}
                     </label>
                     <input
@@ -348,7 +328,7 @@ const CreateClient = () => {
                       className={inputCls(false)}
                       placeholder={
                         lang === 'ar'
-                          ? 'أدخل رقم السجل التجاري'
+                          ? 'Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ'
                           : 'Enter commercial register'
                       }
                       disabled={submitting}
@@ -358,7 +338,7 @@ const CreateClient = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {lang === 'ar' ? 'ملاحظات' : 'Notes'}
+                    {lang === 'ar' ? 'Ù…Ù„Ø§Ø­Ø¸Ø§Øª' : 'Notes'}
                   </label>
                   <textarea
                     value={formData.notes}
@@ -366,7 +346,7 @@ const CreateClient = () => {
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 resize-none"
                     placeholder={
                       lang === 'ar'
-                        ? 'أدخل أي ملاحظات إضافية'
+                        ? 'Ø£Ø¯Ø®Ù„ Ø£ÙŠ Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø¥Ø¶Ø§ÙÙŠØ©'
                         : 'Enter any additional notes'
                     }
                     rows={3}
@@ -385,7 +365,7 @@ const CreateClient = () => {
               disabled={submitting}
               className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold text-sm"
             >
-              {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+              {lang === 'ar' ? 'Ø¥Ù„ØºØ§Ø¡' : 'Cancel'}
             </button>
             <button
               type="submit"
@@ -393,7 +373,7 @@ const CreateClient = () => {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold text-sm disabled:opacity-50"
             >
               <UserPlus className="w-4 h-4" />
-              {lang === 'ar' ? 'إنشاء العميل' : 'Create Client'}
+              {lang === 'ar' ? 'Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¹Ù…ÙŠÙ„' : 'Create Client'}
             </button>
           </div>
         </form>
@@ -403,3 +383,4 @@ const CreateClient = () => {
 };
 
 export default CreateClient;
+
