@@ -31,7 +31,8 @@ const CreateProject = () => {
   const [clients, setClients] = useState([]);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const showMoreDetails = true;
+  const setShowMoreDetails = () => {};
   const [codeTouched, setCodeTouched] = useState(false);
   const [showQuickClientModal, setShowQuickClientModal] = useState(false);
 
@@ -348,7 +349,7 @@ const CreateProject = () => {
             <button
               type="button"
               onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="w-full flex items-center justify-between text-sm font-medium text-green-700 hover:text-green-800"
+              className="hidden"
             >
               <span>
                 {showMoreDetails

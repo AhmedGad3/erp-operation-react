@@ -123,7 +123,8 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
     notes:   editSupplier?.notes   || "",
   });
   const [submitting, setSubmitting] = useState(false);
-  const [showMoreDetails, setShowMoreDetails] = useState(Boolean(editSupplier?.email || editSupplier?.address || editSupplier?.notes));
+  const showMoreDetails = true;
+  const setShowMoreDetails = () => {};
   const [codeTouched, setCodeTouched] = useState(Boolean(editSupplier?.code));
 
   useEffect(() => {
@@ -220,7 +221,7 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
           <button
             type="button"
             onClick={() => setShowMoreDetails(v => !v)}
-            className="text-sm font-medium text-indigo-700 hover:text-indigo-800"
+            className="hidden"
           >
             {showMoreDetails
               ? (lang === 'ar' ? 'إخفاء التفاصيل الإضافية' : 'Hide optional details')

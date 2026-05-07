@@ -17,7 +17,8 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [codeTouched, setCodeTouched] = useState(false);
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const showMoreDetails = true;
+  const setShowMoreDetails = () => {};
 
   React.useEffect(() => {
     if (codeTouched) return;
@@ -173,7 +174,7 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
             <button
               type="button"
               onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="w-full flex items-center justify-between text-sm font-medium text-indigo-700 hover:text-indigo-800"
+              className="hidden"
             >
               <span>
                 {showMoreDetails

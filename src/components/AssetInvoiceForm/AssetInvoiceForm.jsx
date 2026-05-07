@@ -40,8 +40,8 @@ export default function AssetInvoiceForm() {
   const t = (ar, en) => (isAr ? ar : en);
 
   const [saving, setSaving] = useState(false);
-  const [showAssetDetails, setShowAssetDetails] = useState(false);
-  const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
+  const [showAssetDetails, setShowAssetDetails] = useState(true);
+  const [showInvoiceDetails, setShowInvoiceDetails] = useState(true);
   const [codeTouched, setCodeTouched] = useState(false);
   const [showQuickSupplierModal, setShowQuickSupplierModal] = useState(false);
 
@@ -269,7 +269,7 @@ export default function AssetInvoiceForm() {
               <button
                 type="button"
                 onClick={() => setShowAssetDetails((prev) => !prev)}
-                className="text-sm font-medium text-indigo-700 hover:text-indigo-800"
+                className="hidden"
               >
                 {showAssetDetails
                   ? t('إخفاء تفاصيل الأصل الإضافية', 'Hide optional asset details')
@@ -392,7 +392,7 @@ export default function AssetInvoiceForm() {
               <button
                 type="button"
                 onClick={() => setShowInvoiceDetails((prev) => !prev)}
-                className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
+                className="hidden"
               >
                 {showInvoiceDetails
                   ? t('إخفاء ملاحظات الفاتورة', 'Hide invoice notes')

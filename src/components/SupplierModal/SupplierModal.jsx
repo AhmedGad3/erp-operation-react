@@ -16,9 +16,8 @@ export default function SupplierModal({
   const { lang, t } = useContext(LanguageContext);
   const [saving, setSaving] = useState(false);
   const [codeTouched, setCodeTouched] = useState(Boolean(formData.code));
-  const [showMoreDetails, setShowMoreDetails] = useState(
-    Boolean(formData.email || formData.address || formData.notes),
-  );
+  const showMoreDetails = true;
+  const setShowMoreDetails = () => {};
 
   useEffect(() => {
     if (codeTouched) return;
@@ -204,7 +203,7 @@ export default function SupplierModal({
             <button
               type="button"
               onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-dashed border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              className="hidden"
             >
               <span>
                 {showMoreDetails

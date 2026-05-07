@@ -20,7 +20,8 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const showMoreDetails = true;
+  const setShowMoreDetails = () => {};
   const [codeTouched, setCodeTouched] = useState(false);
 
   React.useEffect(() => {
@@ -246,7 +247,7 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
             <button
               type="button"
               onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="w-full flex items-center justify-between text-sm font-medium text-blue-700 hover:text-blue-800"
+              className="hidden"
             >
               <span>
                 {showMoreDetails

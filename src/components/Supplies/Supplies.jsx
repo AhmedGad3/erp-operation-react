@@ -267,7 +267,8 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
   });
   const [submitting, setSubmitting] = useState(false);
   const [showQuickUnitModal, setShowQuickUnitModal] = useState(false);
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(Boolean(editMaterial?.subCategory || editMaterial?.description || editMaterial?.alternativeUnits?.length || editMaterial?.lastPurchasePrice));
+  const showAdvancedSettings = true;
+  const setShowAdvancedSettings = () => {};
   const [codeTouched, setCodeTouched] = useState(Boolean(editMaterial?.code));
 
   const activeUnits = units.filter(u => u.isActive !== false);
@@ -427,6 +428,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الفئة الفرعية' : 'Sub Category'}</label>
+              <span className="text-red-500 text-sm">*</span>
               <input type="text" dir={lang === 'ar' ? 'rtl' : 'ltr'} value={form.subCategory} onChange={e => setForm(f => ({ ...f, subCategory: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
             <div>
@@ -445,7 +447,7 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
           <button
             type="button"
             onClick={() => setShowAdvancedSettings(v => !v)}
-            className="text-sm font-medium text-indigo-700 hover:text-indigo-800"
+            className="hidden"
           >
             {showAdvancedSettings
               ? (lang === 'ar' ? 'إخفاء إعدادات المخزون والوحدات الإضافية' : 'Hide stock and unit settings')
