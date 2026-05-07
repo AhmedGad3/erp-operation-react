@@ -3,13 +3,11 @@ import { ChevronDown, ChevronUp, UserPlus, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../utils/axiosInstance';
 import { getErrorMessage } from '../../utils/errorHandler';
-import { createAutoCode } from '../../utils/autoCode';
 
 export default function QuickClientModal({ lang, onClose, onCreated }) {
   const [formData, setFormData] = useState({
     nameAr: '',
     nameEn: '',
-    code: '',
     phone: '',
     email: '',
     address: '',
@@ -22,23 +20,9 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
   const [submitting, setSubmitting] = useState(false);
   const showMoreDetails = true;
   const setShowMoreDetails = () => {};
-  const [codeTouched, setCodeTouched] = useState(false);
-
-  React.useEffect(() => {
-    if (codeTouched) return;
-    setFormData((prev) => ({
-      ...prev,
-      code: createAutoCode(prev.nameEn || prev.nameAr, 'CLT'),
-    }));
-  }, [formData.nameAr, formData.nameEn, codeTouched]);
 
   const set = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
-
-  const setCode = (value) => {
-    setCodeTouched(true);
-    set('code', value.toUpperCase());
-  };
 
   const inputCls = (hasError) =>
     `w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 ${
@@ -54,10 +38,6 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
 
     if (!formData.nameEn.trim()) {
       newErrors.nameEn = lang === 'ar' ? 'الاسم بالإنجليزية مطلوب' : 'English name is required';
-    }
-
-    if (!formData.code.trim()) {
-      newErrors.code = lang === 'ar' ? 'الكود مطلوب' : 'Code is required';
     }
 
     setErrors(newErrors);
@@ -81,7 +61,6 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
       const { data } = await axiosInstance.post('/clients', {
         nameAr: formData.nameAr.trim(),
         nameEn: formData.nameEn.trim(),
-        code: formData.code.trim(),
         phone: formData.phone.trim(),
         email: formData.email.trim(),
         address: formData.address.trim(),
@@ -179,24 +158,6 @@ export default function QuickClientModal({ lang, onClose, onCreated }) {
                 />
                 {errors.nameEn && (
                   <p className="mt-1 text-xs text-red-500">{errors.nameEn}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'}{' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className={inputCls(errors.code)}
-                  placeholder="CLT-ALFA-TRADING"
-                  disabled={submitting}
-                />
-                {errors.code && (
-                  <p className="mt-1 text-xs text-red-500">{errors.code}</p>
                 )}
               </div>
 

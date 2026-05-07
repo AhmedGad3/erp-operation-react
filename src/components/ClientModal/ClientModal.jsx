@@ -5,7 +5,6 @@ import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
-import { createAutoCode } from '../../utils/autoCode';
 
 const CreateClient = () => {
   const { lang } = useContext(LanguageContext);
@@ -14,7 +13,6 @@ const CreateClient = () => {
   const [formData, setFormData] = useState({
     nameAr: '',
     nameEn: '',
-    code: '',
     phone: '',
     email: '',
     address: '',
@@ -28,23 +26,9 @@ const CreateClient = () => {
   const [submitting, setSubmitting] = useState(false);
   const showMoreDetails = true;
   const setShowMoreDetails = () => {};
-  const [codeTouched, setCodeTouched] = useState(false);
-
-  React.useEffect(() => {
-    if (codeTouched) return;
-    setFormData((prev) => ({
-      ...prev,
-      code: createAutoCode(prev.nameEn || prev.nameAr, 'CLT'),
-    }));
-  }, [formData.nameAr, formData.nameEn, codeTouched]);
 
   const set = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
-
-  const setCode = (value) => {
-    setCodeTouched(true);
-    set('code', value.toUpperCase());
-  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -57,10 +41,6 @@ const CreateClient = () => {
     if (!formData.nameEn.trim()) {
       newErrors.nameEn =
         lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© Ù…Ø·Ù„ÙˆØ¨' : 'English name is required';
-    }
-
-    if (!formData.code.trim()) {
-      newErrors.code = lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨' : 'Code is required';
     }
 
     setErrors(newErrors);
@@ -83,7 +63,6 @@ const CreateClient = () => {
       await axiosInstance.post('/clients', {
         nameAr: formData.nameAr.trim(),
         nameEn: formData.nameEn.trim(),
-        code: formData.code.trim(),
         phone: formData.phone.trim(),
         email: formData.email.trim(),
         address: formData.address.trim(),
@@ -193,24 +172,6 @@ const CreateClient = () => {
                 />
                 {errors.nameEn && (
                   <p className="mt-1 text-xs text-red-500">{errors.nameEn}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'}{' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className={inputCls(errors.code)}
-                  placeholder="CLT-ALFA-TRADING"
-                  disabled={submitting}
-                />
-                {errors.code && (
-                  <p className="mt-1 text-xs text-red-500">{errors.code}</p>
                 )}
               </div>
 
