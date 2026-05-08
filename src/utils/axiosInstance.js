@@ -46,8 +46,12 @@ axiosInstance.interceptors.response.use(
         localStorage.removeItem("token");
         localStorage.removeItem("user_profile");
         toast.info("Session expired, please login again");
+
         setTimeout(() => {
-          window.location.href = "/login";
+          // replace بدل href عشان منضيفش صفحة للـ history
+          window.location.replace("/#/login");
+          // reset الـ flag بعد الـ redirect عشان يشتغل تاني لو المستخدم رجع ودخل
+          isRedirectingToLogin = false;
         }, 1200);
       }
     }

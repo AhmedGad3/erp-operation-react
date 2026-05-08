@@ -1,10 +1,9 @@
-﻿import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/button';
 import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
 import { LanguageContext } from '../../context/LanguageContext';
-import { createAutoCode } from '../../utils/autoCode';
 
 export default function SupplierModal({
   formData,
@@ -15,17 +14,8 @@ export default function SupplierModal({
 }) {
   const { lang, t } = useContext(LanguageContext);
   const [saving, setSaving] = useState(false);
-  const [codeTouched, setCodeTouched] = useState(Boolean(formData.code));
   const showMoreDetails = true;
   const setShowMoreDetails = () => {};
-
-  useEffect(() => {
-    if (codeTouched) return;
-    setFormData((prev) => ({
-      ...prev,
-      code: createAutoCode(prev.nameEn || prev.nameAr, 'SUP'),
-    }));
-  }, [codeTouched, formData.nameAr, formData.nameEn, setFormData]);
 
   const title = useMemo(
     () =>
@@ -37,11 +27,6 @@ export default function SupplierModal({
 
   const handleChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleCodeChange = (value) => {
-    setCodeTouched(true);
-    handleChange('code', value.toUpperCase());
   };
 
   const handleSubmit = async (e) => {
@@ -63,21 +48,12 @@ export default function SupplierModal({
       return;
     }
 
-    if (!formData.code?.trim()) {
-      toast.error(lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨' : 'Code is required', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-      return;
-    }
-
     setSaving(true);
 
     try {
       const payload = {
         nameAr: formData.nameAr?.trim() || '',
         nameEn: formData.nameEn?.trim() || '',
-        code: formData.code?.trim() || '',
         phone: formData.phone?.trim() || '',
         email: formData.email?.trim() || '',
         address: formData.address?.trim() || '',
@@ -166,20 +142,6 @@ export default function SupplierModal({
                   placeholder={t?.nameEn || 'Name (English)'}
                   value={formData.nameEn || ''}
                   onChange={(e) => handleChange('nameEn', e.target.value)}
-                  className="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50"
-                  disabled={saving}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-gray-700">
-                  {t?.code || 'Code'} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder={t?.code || 'Code'}
-                  value={formData.code || ''}
-                  onChange={(e) => handleCodeChange(e.target.value)}
                   className="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50"
                   disabled={saving}
                 />

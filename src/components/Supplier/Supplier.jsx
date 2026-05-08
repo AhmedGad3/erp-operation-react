@@ -10,7 +10,6 @@ import { getErrorMessage } from "../../utils/errorHandler";
 import { LanguageContext } from "../../context/LanguageContext";
 import * as XLSX from "xlsx";
 import AdminActionModal from "../modals/AdminActionModal";
-import { createAutoCode } from "../../utils/autoCode";
 
 //  Sortable column header 
 const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
@@ -116,7 +115,6 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
   const [form, setForm] = useState({
     nameAr:  editSupplier?.nameAr  || "",
     nameEn:  editSupplier?.nameEn  || "",
-    code:    editSupplier?.code    || "",
     phone:   editSupplier?.phone   || "",
     email:   editSupplier?.email   || "",
     address: editSupplier?.address || "",
@@ -125,15 +123,6 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
   const [submitting, setSubmitting] = useState(false);
   const showMoreDetails = true;
   const setShowMoreDetails = () => {};
-  const [codeTouched, setCodeTouched] = useState(Boolean(editSupplier?.code));
-
-  useEffect(() => {
-    if (codeTouched) return;
-    setForm((prev) => ({
-      ...prev,
-      code: createAutoCode(prev.nameEn || prev.nameAr, 'SUP'),
-    }));
-  }, [form.nameAr, form.nameEn, codeTouched]);
 
   const handleSubmit = async () => {
     if (!form.nameAr.trim()) {
@@ -142,15 +131,11 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
     if (!form.nameEn.trim()) {
       toast.error(lang === "ar" ? "Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© Ù…Ø·Ù„ÙˆØ¨" : "English name is required"); return;
     }
-    if (!form.code.trim()) {
-      toast.error(lang === "ar" ? "Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨" : "Code is required"); return;
-    }
     try {
       setSubmitting(true);
       const payload = {
         nameAr:  form.nameAr.trim()  || "",
         nameEn:  form.nameEn.trim()  || "",
-        code:    form.code.trim()    || "",
         phone:   form.phone.trim()   || "",
         email:   form.email.trim()   || "",
         address: form.address.trim() || "",
@@ -168,11 +153,6 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleCodeChange = (value) => {
-    setCodeTouched(true);
-    setForm((prev) => ({ ...prev, code: value.toUpperCase() }));
   };
 
   return (
@@ -204,12 +184,6 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'}
-              </label>
-              <input type="text" value={form.code} onChange={e => handleCodeChange(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {lang === 'ar' ? 'Ø§Ù„Ù‡Ø§ØªÙ' : 'Phone'}

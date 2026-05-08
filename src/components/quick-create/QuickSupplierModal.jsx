@@ -3,37 +3,21 @@ import { ChevronDown, ChevronUp, UserPlus, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../utils/axiosInstance';
 import { getErrorMessage } from '../../utils/errorHandler';
-import { createAutoCode } from '../../utils/autoCode';
 
 export default function QuickSupplierModal({ lang, onClose, onCreated }) {
   const [form, setForm] = useState({
     nameAr: '',
     nameEn: '',
-    code: '',
     phone: '',
     email: '',
     address: '',
     notes: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [codeTouched, setCodeTouched] = useState(false);
   const showMoreDetails = true;
   const setShowMoreDetails = () => {};
 
-  React.useEffect(() => {
-    if (codeTouched) return;
-    setForm((prev) => ({
-      ...prev,
-      code: createAutoCode(prev.nameEn || prev.nameAr, 'SUP'),
-    }));
-  }, [form.nameAr, form.nameEn, codeTouched]);
-
   const set = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
-
-  const handleCodeChange = (value) => {
-    setCodeTouched(true);
-    set('code', value.toUpperCase());
-  };
 
   const inputCls =
     'w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50';
@@ -51,17 +35,11 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
       return;
     }
 
-    if (!form.code.trim()) {
-      toast.error(lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨' : 'Code is required');
-      return;
-    }
-
     try {
       setSubmitting(true);
       const { data } = await axiosInstance.post('/suppliers', {
         nameAr: form.nameAr.trim(),
         nameEn: form.nameEn.trim(),
-        code: form.code.trim().toUpperCase(),
         phone: form.phone.trim(),
         email: form.email.trim(),
         address: form.address.trim(),
@@ -136,20 +114,6 @@ export default function QuickSupplierModal({ lang, onClose, onCreated }) {
                   type="text"
                   value={form.nameEn}
                   onChange={(e) => set('nameEn', e.target.value)}
-                  className={inputCls}
-                  disabled={submitting}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'}{' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.code}
-                  onChange={(e) => handleCodeChange(e.target.value)}
                   className={inputCls}
                   disabled={submitting}
                 />

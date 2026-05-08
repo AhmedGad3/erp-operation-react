@@ -1,10 +1,9 @@
-﻿import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Save, Wrench } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../utils/axiosInstance';
 import { LanguageContext } from '../../context/LanguageContext';
-import { createAutoCode } from '../../utils/autoCode';
 import QuickSupplierModal from '../quick-create/QuickSupplierModal';
 
 const ASSET_STATUS = [
@@ -42,13 +41,11 @@ export default function AssetInvoiceForm() {
   const [saving, setSaving] = useState(false);
   const [showAssetDetails, setShowAssetDetails] = useState(true);
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(true);
-  const [codeTouched, setCodeTouched] = useState(false);
   const [showQuickSupplierModal, setShowQuickSupplierModal] = useState(false);
 
   const [assetForm, setAssetForm] = useState({
     nameAr: '',
     nameEn: '',
-    code: '',
     assetTypeAr: '',
     assetTypeEn: '',
     status: 'AVAILABLE',
@@ -64,23 +61,10 @@ export default function AssetInvoiceForm() {
     notes: '',
   });
 
-  useEffect(() => {
-    if (codeTouched) return;
-    setAssetForm((prev) => ({
-      ...prev,
-      code: createAutoCode(prev.nameEn || prev.nameAr, 'AST'),
-    }));
-  }, [assetForm.nameAr, assetForm.nameEn, codeTouched]);
-
   const setAssetField = (key, value) =>
     setAssetForm((prev) => ({ ...prev, [key]: value }));
   const setInvoiceField = (key, value) =>
     setInvoiceForm((prev) => ({ ...prev, [key]: value }));
-
-  const setAssetCode = (value) => {
-    setCodeTouched(true);
-    setAssetField('code', value.toUpperCase());
-  };
 
   const handleQuickSupplierCreated = (createdSupplier) => {
     const supplierName = isAr
@@ -94,11 +78,6 @@ export default function AssetInvoiceForm() {
   const validate = () => {
     if (!assetForm.nameAr.trim() || !assetForm.nameEn.trim()) {
       toast.error(t('Ø§Ø³Ù… Ø§Ù„Ø£ØµÙ„ Ù…Ø·Ù„ÙˆØ¨', 'Asset name is required'));
-      return false;
-    }
-
-    if (!assetForm.code.trim()) {
-      toast.error(t('Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨', 'Code is required'));
       return false;
     }
 
@@ -136,7 +115,6 @@ export default function AssetInvoiceForm() {
       const assetRes = await axiosInstance.post('/assets', {
         nameAr: assetForm.nameAr.trim(),
         nameEn: assetForm.nameEn.trim(),
-        code: assetForm.code.trim().toUpperCase(),
         assetTypeAr: assetForm.assetTypeAr.trim(),
         assetTypeEn: assetForm.assetTypeEn.trim(),
         status: assetForm.status,
@@ -231,16 +209,6 @@ export default function AssetInvoiceForm() {
                   />
                 </Field>
               </div>
-
-              <Field label={t('Ø§Ù„ÙƒÙˆØ¯', 'Code')} required>
-                <input
-                  type="text"
-                  placeholder="AST-EXCAVATOR"
-                  value={assetForm.code}
-                  onChange={(e) => setAssetCode(e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label={t('Ø§Ù„Ù†ÙˆØ¹ Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©', 'Type (Arabic)')} required>

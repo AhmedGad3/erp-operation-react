@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo, useContext, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useContext, useRef, useCallback } from 'react';
 import {
   Package, Search, Plus, Edit, Trash2, CheckCircle,
   ChevronUp, ChevronDown, MoreHorizontal, X, Download, AlertTriangle
@@ -9,7 +9,6 @@ import axiosInstance from '../../utils/axiosInstance';
 import { getErrorMessage } from '../../utils/errorHandler';
 import { LanguageContext } from '../../context/LanguageContext';
 import * as XLSX from 'xlsx';
-import { createAutoCode } from '../../utils/autoCode';
 
 // Fallback hardcoded categories (used if API fails)
 const FALLBACK_CATEGORIES = [
@@ -112,7 +111,6 @@ const QuickUnitModal = ({ lang, units, onClose, onSaved }) => {
   const [form, setForm] = useState({
     nameAr: '',
     nameEn: '',
-    code: '',
     symbol: '',
     category: '',
     description: '',
@@ -132,19 +130,12 @@ const QuickUnitModal = ({ lang, units, onClose, onSaved }) => {
   };
 
   const handleSubmit = async () => {
-    if (!form.nameAr.trim() || !form.nameEn.trim() || !form.code.trim() || !form.symbol.trim() || !form.category) {
+    if (!form.nameAr.trim() || !form.nameEn.trim() || !form.symbol.trim() || !form.category) {
       toast.error(lang === 'ar' ? 'ÙŠØ±Ø¬Ù‰ Ù…Ù„Ø¡ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ„ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©' : 'Please fill all required fields');
       return;
     }
 
-    const normalizedCode = form.code.trim().toUpperCase();
     const normalizedSymbol = form.symbol.trim();
-
-    const isDuplicateCode = units.some(u => u.code?.toLowerCase() === normalizedCode.toLowerCase());
-    if (isDuplicateCode) {
-      toast.error(lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…ÙˆØ¬ÙˆØ¯ Ù…Ø³Ø¨Ù‚Ø§Ù‹' : 'Code already exists');
-      return;
-    }
 
     const isDuplicateSymbol = units.some(u => u.symbol?.toLowerCase() === normalizedSymbol.toLowerCase());
     if (isDuplicateSymbol) {
@@ -157,7 +148,6 @@ const QuickUnitModal = ({ lang, units, onClose, onSaved }) => {
       const payload = {
         nameAr: form.nameAr.trim(),
         nameEn: form.nameEn.trim(),
-        code: normalizedCode,
         symbol: normalizedSymbol,
         category: form.category,
         description: form.description.trim() || undefined,
@@ -203,10 +193,6 @@ const QuickUnitModal = ({ lang, units, onClose, onSaved }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'} <span className="text-red-500">*</span></label>
-              <input type="text" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
-            </div>
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„Ø±Ù…Ø²' : 'Symbol'} <span className="text-red-500">*</span></label>
               <input type="text" value={form.symbol} onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
@@ -243,7 +229,6 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
   const [form, setForm] = useState({
     nameAr:             editMaterial?.nameAr             || '',
     nameEn:             editMaterial?.nameEn             || '',
-    code:               editMaterial?.code               || '',
     mainCategory:       editMaterial?.mainCategory       || (categories[0]?.value || 'Construction-Materials'),
     subCategory:        editMaterial?.subCategory        || '',
     baseUnit:           editMaterial?.baseUnit?._id || editMaterial?.baseUnit || '',
@@ -269,17 +254,8 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
   const [showQuickUnitModal, setShowQuickUnitModal] = useState(false);
   const showAdvancedSettings = true;
   const setShowAdvancedSettings = () => {};
-  const [codeTouched, setCodeTouched] = useState(Boolean(editMaterial?.code));
 
   const activeUnits = units.filter(u => u.isActive !== false);
-
-  useEffect(() => {
-    if (codeTouched) return;
-    setForm((prev) => ({
-      ...prev,
-      code: createAutoCode(prev.nameEn || prev.nameAr, 'MAT'),
-    }));
-  }, [form.nameAr, form.nameEn, codeTouched]);
 
   // Ø§Ù„ÙˆØ­Ø¯Ø§Øª Ø§Ù„Ù…ØªØ§Ø­Ø© Ù„Ù€ alternativeUnits (ØºÙŠØ± Ø§Ù„Ù€ baseUnit)
   const altUnitOptions = activeUnits.filter(u => u._id !== form.baseUnit);
@@ -332,14 +308,8 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
     setShowQuickUnitModal(false);
   };
 
-  const handleCodeChange = (value) => {
-    setCodeTouched(true);
-    setForm((prev) => ({ ...prev, code: value.toUpperCase() }));
-  };
-
   const handleSubmit = async () => {
     if (!form.nameAr.trim() || !form.nameEn.trim()) { toast.error(lang === 'ar' ? 'Ø§Ø³Ù… Ø§Ù„Ù…Ø§Ø¯Ø© Ù…Ø·Ù„ÙˆØ¨' : 'Material name is required'); return; }
-    if (!form.code.trim())   { toast.error(lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨' : 'Code is required'); return; }
     if (!form.baseUnit)      { toast.error(lang === 'ar' ? 'Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ù…Ø·Ù„ÙˆØ¨Ø©' : 'Base unit is required'); return; }
 
     if (!form.subCategory.trim()) { toast.error(lang === 'ar' ? 'Ø§Ù„ÙØ¦Ø© Ø§Ù„ÙØ±Ø¹ÙŠØ© Ù…Ø·Ù„ÙˆØ¨Ø©' : 'Sub category is required'); return; }
@@ -351,10 +321,9 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
 
     try {
       setSubmitting(true);
-      const payload = {
+     const payload = {
      nameAr:             form.nameAr.trim(),
   nameEn:             form.nameEn.trim(),
-  code:               form.code.trim().toUpperCase(),
   mainCategory:       form.mainCategory,
   subCategory:        form.subCategory.trim() || undefined,   // âœ… undefined Ù…Ø´ ''
   baseUnit:           form.baseUnit,
@@ -410,12 +379,8 @@ const MaterialModal = ({ lang, mode, material: editMaterial, units, categories, 
             </div>
           </div>
 
-          {/* Code + Category */}
+          {/* Category */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'} <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="MAT-STEEL-14MM" value={form.code} onChange={e => handleCodeChange(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'Ø§Ù„ÙØ¦Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©' : 'Main Category'} <span className="text-red-500">*</span></label>
               <select value={form.mainCategory} onChange={e => setForm(f => ({ ...f, mainCategory: e.target.value }))} disabled={mode === 'edit'} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50 disabled:opacity-60">

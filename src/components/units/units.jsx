@@ -127,7 +127,6 @@ const UnitModal = ({ lang, mode, unit: editUnit, baseUnits, units, onClose, onSa
   const [form, setForm] = useState({
     nameAr:           editUnit?.nameAr || "",
     nameEn:           editUnit?.nameEn || "",
-    code:             editUnit?.code || "",
     symbol:           editUnit?.symbol || "",
     category:         editUnit?.category || "",
     isBase:           editUnit?.isBase || false,
@@ -143,12 +142,10 @@ const UnitModal = ({ lang, mode, unit: editUnit, baseUnits, units, onClose, onSa
   };
 
   const handleSubmit = async () => {
-    if (!form.nameAr.trim() || !form.nameEn.trim() || !form.code.trim() || !form.symbol.trim() || !form.category) {
+    if (!form.nameAr.trim() || !form.nameEn.trim() || !form.symbol.trim() || !form.category) {
       toast.error(lang === "ar" ? "يرجى ملء جميع الحقول المطلوبة" : "Please fill all required fields");
       return;
     }
-    const isDuplicateCode = units.some(u => u.code.toLowerCase() === form.code.toLowerCase() && (mode === "add" || u._id !== editUnit._id));
-    if (isDuplicateCode) { toast.error(lang === "ar" ? "الكود موجود مسبقاً" : "Code already exists"); return; }
 
     const isDuplicateSymbol = units.some(u => u.symbol.toLowerCase() === form.symbol.toLowerCase() && (mode === "add" || u._id !== editUnit._id));
     if (isDuplicateSymbol) { toast.error(lang === "ar" ? "الرمز موجود مسبقاً" : "Symbol already exists"); return; }
@@ -162,7 +159,7 @@ const UnitModal = ({ lang, mode, unit: editUnit, baseUnits, units, onClose, onSa
 
     try {
       setSubmitting(true);
-      const payload = { nameAr: form.nameAr, nameEn: form.nameEn, code: form.code, symbol: form.symbol, category: form.category, isBase: form.isBase, description: form.description };
+      const payload = { nameAr: form.nameAr, nameEn: form.nameEn, symbol: form.symbol, category: form.category, isBase: form.isBase, description: form.description };
       if (!form.isBase) { payload.baseUnitId = form.baseUnitId; payload.conversionFactor = Number(form.conversionFactor) || 1; }
 
       if (mode === "add") await axiosInstance.post(`/units`, payload);
@@ -201,10 +198,6 @@ const UnitModal = ({ lang, mode, unit: editUnit, baseUnits, units, onClose, onSa
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "الكود" : "Code"} <span className="text-red-500">*</span></label>
-              <input type="text" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === "ar" ? "الرمز" : "Symbol"} <span className="text-red-500">*</span></label>
               <input type="text" value={form.symbol} onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />

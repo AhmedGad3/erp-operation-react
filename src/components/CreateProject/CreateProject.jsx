@@ -6,7 +6,6 @@ import { getErrorMessage } from '../../utils/errorHandler';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
 import { toast } from 'react-toastify';
-import { createAutoCode } from '../../utils/autoCode';
 import QuickClientModal from '../quick-create/QuickClientModal';
 
 const CreateProject = () => {
@@ -16,7 +15,6 @@ const CreateProject = () => {
   const [formData, setFormData] = useState({
     nameAr: '',
     nameEn: '',
-    code: '',
     clientId: '',
     projectManager: '',
     siteEngineer: '',
@@ -33,20 +31,11 @@ const CreateProject = () => {
   const [submitting, setSubmitting] = useState(false);
   const showMoreDetails = true;
   const setShowMoreDetails = () => {};
-  const [codeTouched, setCodeTouched] = useState(false);
   const [showQuickClientModal, setShowQuickClientModal] = useState(false);
 
   React.useEffect(() => {
     fetchClients();
   }, []);
-
-  React.useEffect(() => {
-    if (codeTouched) return;
-    setFormData((prev) => ({
-      ...prev,
-      code: createAutoCode(prev.nameEn || prev.nameAr, 'PRJ'),
-    }));
-  }, [formData.nameAr, formData.nameEn, codeTouched]);
 
   const fetchClients = async () => {
     try {
@@ -75,19 +64,6 @@ const CreateProject = () => {
     if (!formData.nameEn.trim()) {
       newErrors.nameEn =
         lang === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© Ù…Ø·Ù„ÙˆØ¨' : 'English name is required';
-    }
-
-    if (!formData.code.trim()) {
-      newErrors.code = lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯ Ù…Ø·Ù„ÙˆØ¨' : 'Code is required';
-    } else if (
-      formData.code.trim().length < 3 ||
-      formData.code.trim().length > 20 ||
-      !/^[A-Z0-9-]+$/.test(formData.code.trim().toUpperCase())
-    ) {
-      newErrors.code =
-        lang === 'ar'
-          ? 'Ø§Ù„ÙƒÙˆØ¯ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ù…Ù† 3 Ø¥Ù„Ù‰ 20 ÙˆÙŠØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø­Ø±ÙˆÙ ÙƒØ¨ÙŠØ±Ø© Ø£Ùˆ Ø£Ø±Ù‚Ø§Ù… Ø£Ùˆ Ø´Ø±Ø·Ø©'
-          : 'Code must be 3-20 characters and contain only uppercase letters, numbers, and hyphens';
     }
 
     if (!formData.clientId) {
@@ -127,7 +103,6 @@ const CreateProject = () => {
       await axiosInstance.post('/projects', {
         nameAr: formData.nameAr.trim(),
         nameEn: formData.nameEn.trim(),
-        code: formData.code.trim().toUpperCase(),
         clientId: formData.clientId,
         projectManager: formData.projectManager.trim(),
         siteEngineer: formData.siteEngineer.trim(),
@@ -158,11 +133,6 @@ const CreateProject = () => {
 
   const handleChange = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
-
-  const handleCodeChange = (value) => {
-    setCodeTouched(true);
-    handleChange('code', value.toUpperCase());
-  };
 
   const handleQuickClientCreated = (createdClient) => {
     if (!createdClient?._id) return;
@@ -252,24 +222,6 @@ const CreateProject = () => {
                 />
                 {errors.nameEn && (
                   <p className="mt-1 text-xs text-red-500">{errors.nameEn}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {lang === 'ar' ? 'Ø§Ù„ÙƒÙˆØ¯' : 'Code'}{' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.code}
-                  onChange={(e) => handleCodeChange(e.target.value)}
-                  className={inputCls(errors.code)}
-                  placeholder="PRJ-MEGA-TOWER"
-                  disabled={submitting}
-                />
-                {errors.code && (
-                  <p className="mt-1 text-xs text-red-500">{errors.code}</p>
                 )}
               </div>
 

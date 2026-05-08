@@ -117,7 +117,6 @@ const AssetModal = ({ lang, mode, asset: editAsset, onClose, onSaved }) => {
   const [form, setForm] = useState({
     nameAr:      editAsset?.nameAr      || '',
     nameEn:      editAsset?.nameEn      || '',
-    code:        editAsset?.code        || '',
     assetTypeAr: editAsset?.assetTypeAr || '',
     assetTypeEn: editAsset?.assetTypeEn || '',
     status:      editAsset?.status      || 'AVAILABLE',
@@ -129,9 +128,6 @@ const AssetModal = ({ lang, mode, asset: editAsset, onClose, onSaved }) => {
     if (!form.nameAr.trim() || !form.nameEn.trim()) {
       toast.error((lang === 'ar' ? 'اسم الأصل مطلوب' : 'Asset name is required')); return;
     }
-    if (!form.code.trim()) {
-      toast.error((lang === 'ar' ? 'الكود مطلوب' : 'Code is required')); return;
-    }
     if (!form.assetTypeAr.trim() || !form.assetTypeEn.trim()) {
       toast.error((lang === 'ar' ? 'نوع الأصل مطلوب' : 'Asset type is required')); return;
     }
@@ -140,7 +136,6 @@ const AssetModal = ({ lang, mode, asset: editAsset, onClose, onSaved }) => {
       const payload = {
         nameAr:      form.nameAr.trim(),
         nameEn:      form.nameEn.trim(),
-        code:        form.code.trim().toUpperCase(),
         assetTypeAr: form.assetTypeAr.trim(),
         assetTypeEn: form.assetTypeEn.trim(),
         status:      form.status,
@@ -185,10 +180,6 @@ const AssetModal = ({ lang, mode, asset: editAsset, onClose, onSaved }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الاسم بالإنجليزية' : 'Name (English)'} <span className="text-red-500">*</span></label>
               <input type="text" dir="ltr" value={form.nameEn} onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ar' ? 'الكود' : 'Code'} <span className="text-red-500">*</span></label>
-            <input type="text" placeholder="EXCAVATOR-001" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm bg-gray-50" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
