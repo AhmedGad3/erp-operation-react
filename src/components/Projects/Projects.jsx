@@ -8,6 +8,8 @@ import axiosInstance from '../../utils/axiosInstance';
 import { getErrorMessage } from '../../utils/errorHandler';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
+import { AuthContext } from '../../context/AuthContext';
+import { isAdminUser } from '../../utils/permissions';
 import EditProjectModal from '../ProjectModal/ProjectModal';
 import { exportToExcel } from '../../utils/excelExport';
 import { toast } from 'react-toastify';
@@ -150,6 +152,8 @@ const DeleteModal = ({ project, lang, onConfirm, onClose }) => (
 // ── Main Component ─────────────────────────────────────────
 const ProjectsList = () => {
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
   const navigate  = useNavigate();
 
   const [projects,      setProjects]      = useState([]);
@@ -277,6 +281,7 @@ const ProjectsList = () => {
               <Download className="w-4 h-4" />
               {lang === 'ar' ? 'تصدير' : 'Export'}
             </button>
+            {canManage && (
             <button
               onClick={() => navigate('/projects/create')}
               className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-semibold text-sm shadow-sm"
@@ -284,6 +289,7 @@ const ProjectsList = () => {
               <Plus className="w-4 h-4" />
               {lang === 'ar' ? 'إضافة مشروع' : 'Add Project'}
             </button>
+            )}
           </div>
         </div>
 
@@ -411,6 +417,7 @@ const ProjectsList = () => {
 
                     {/* Actions */}
                     <td className="px-4 py-3.5 text-right">
+                      {canManage && (
                       <ActionsMenu
                         project={project}
                         lang={lang}
@@ -418,6 +425,7 @@ const ProjectsList = () => {
                         onDelete={(p) => setDeleteModal({ show: true, project: p })}
                         onActivate={handleActivate}
                       />
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -428,7 +436,7 @@ const ProjectsList = () => {
       </div>
 
       {/* ── Edit Modal ── */}
-      {showEditModal && editingProject && (
+      {canManage && showEditModal && editingProject && (
         <EditProjectModal
           project={editingProject}
           onClose={() => { setShowEditModal(false); setEditingProject(null); }}
@@ -437,7 +445,7 @@ const ProjectsList = () => {
       )}
 
       {/* ── Delete Modal ── */}
-      {deleteModal.show && (
+      {canManage && deleteModal.show && (
         <DeleteModal
           project={deleteModal.project}
           lang={lang}

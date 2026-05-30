@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
+import { AuthContext } from '../../context/AuthContext';
+import { isAdminUser } from '../../utils/permissions';
 import { exportToExcel } from '../../utils/excelExport';
 import { toast } from 'react-toastify';
 
@@ -52,6 +54,8 @@ const StatCard = ({ label, value, color = 'text-gray-900' }) => (
 // ── Main ──────────────────────────────────────────────────
 const SupplierRefundsList = () => {
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
   const navigate  = useNavigate();
 
   const [refunds,      setRefunds]      = useState([]);
@@ -162,6 +166,7 @@ const SupplierRefundsList = () => {
               <Download className="w-4 h-4" />
               {lang === 'ar' ? 'تصدير' : 'Export'}
             </button>
+            {canManage && (
             <button
               onClick={() => navigate('/finance/supplier-refunds/create')}
               className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold text-sm shadow-sm"
@@ -169,6 +174,7 @@ const SupplierRefundsList = () => {
               <Plus className="w-4 h-4" />
               {lang === 'ar' ? 'إنشاء مرتجع' : 'Create Refund'}
             </button>
+            )}
           </div>
         </div>
 
@@ -226,6 +232,7 @@ const SupplierRefundsList = () => {
               <p className="font-medium text-gray-600 mb-4">
                 {lang === 'ar' ? 'لا توجد مرتجعات' : 'No refunds found'}
               </p>
+              {canManage && (
               <button
                 onClick={() => navigate('/finance/supplier-refunds/create')}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm"
@@ -233,6 +240,7 @@ const SupplierRefundsList = () => {
                 <Plus className="w-4 h-4" />
                 {lang === 'ar' ? 'إنشاء مرتجع جديد' : 'Create First Refund'}
               </button>
+              )}
             </div>
           ) : (
             <table className="w-full">

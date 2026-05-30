@@ -10,6 +10,8 @@ import axiosInstance from "../../utils/axiosInstance";
 import { exportToExcel } from "../../utils/excelExport";
 import FullPageLoader from "../Loader/Loader";
 import { LanguageContext } from "../../context/LanguageContext";
+import { AuthContext } from "../../context/AuthContext";
+import { isAdminUser } from "../../utils/permissions";
 
 // ── Sortable column header ─────────────────────────────────
 const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
@@ -62,6 +64,8 @@ const StatCard = ({ label, value, color }) => (
 // ── Main Component ─────────────────────────────────────────
 export default function SupplierPayments() {
   const { lang, t } = useContext(LanguageContext);
+  const { user }    = useContext(AuthContext);
+  const canManage   = isAdminUser(user);
   const navigate    = useNavigate();
 
   const [suppliers,  setSuppliers]  = useState([]);
@@ -335,6 +339,7 @@ export default function SupplierPayments() {
 
                     {/* Action */}
                     <td className="px-4 py-3.5 text-right">
+                      {canManage && (
                       <button
                         onClick={() =>
                           navigate(`/finance/supplier-payments/create?supplierId=${supplier._id}`)
@@ -344,6 +349,7 @@ export default function SupplierPayments() {
                         <Plus className="w-3.5 h-3.5" />
                         {lang === "ar" ? "إضافة دفعة" : "Add Payment"}
                       </button>
+                      )}
                     </td>
                   </tr>
                 ))}

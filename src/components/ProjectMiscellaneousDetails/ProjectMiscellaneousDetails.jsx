@@ -18,6 +18,8 @@ import {
 import { formatCurrency, formatDateShort } from "../../utils/dateFormat";
 import axiosInstance from "../../utils/axiosInstance";
 import { LanguageContext } from "../../context/LanguageContext";
+import { AuthContext } from "../../context/AuthContext";
+import { isAdminUser } from "../../utils/permissions";
 import FullPageLoader from "../Loader/Loader";
 import { toast } from "react-toastify";
 import { exportToPDF } from "../../utils/pdfExport";
@@ -26,6 +28,8 @@ export default function ProjectMiscellaneousDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { lang, t } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
   
   const [project, setProject] = useState(null);
   const [miscellaneousRecords, setMiscellaneousRecords] = useState([]);
@@ -210,6 +214,7 @@ export default function ProjectMiscellaneousDetails() {
               </div>
             </div>
             
+            {canManage && (
             <button
               onClick={() => !isLocked && setShowAddModal(true)}
               disabled={isLocked}
@@ -219,6 +224,7 @@ export default function ProjectMiscellaneousDetails() {
               <Plus size={20} />
               {lang === 'ar' ? 'إضافة مصروف' : 'Add Expense'}
             </button>
+            )}
           </div>
 
           {/* ── Locked Banner ── */}
@@ -382,6 +388,7 @@ export default function ProjectMiscellaneousDetails() {
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {canManage && (
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => { if (!isLocked) { setSelectedMiscellaneous(record); setShowEditModal(true); } }}
@@ -400,6 +407,7 @@ export default function ProjectMiscellaneousDetails() {
                             <Trash2 size={16} />
                           </button>
                         </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -456,7 +464,7 @@ export default function ProjectMiscellaneousDetails() {
       </div>
 
       {/* Delete Modal */}
-      {showDeleteModal && selectedMiscellaneous && (
+      {canManage && showDeleteModal && selectedMiscellaneous && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -499,14 +507,14 @@ export default function ProjectMiscellaneousDetails() {
         </div>
       )}
 
-      {showAddModal && (
+      {canManage && showAddModal && (
         <AddMiscellaneousModal
           projectId={id}
           onClose={() => setShowAddModal(false)}
           onSuccess={() => { fetchData(); setShowAddModal(false); }}
         />
       )}
-      {showEditModal && selectedMiscellaneous && (
+      {canManage && showEditModal && selectedMiscellaneous && (
         <EditMiscellaneousModal 
           projectId={id} 
           miscellaneous={selectedMiscellaneous}

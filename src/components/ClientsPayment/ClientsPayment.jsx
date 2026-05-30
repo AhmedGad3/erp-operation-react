@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance, { getErrorMessage } from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
+import { AuthContext } from '../../context/AuthContext';
+import { isAdminUser } from '../../utils/permissions';
 import { exportToExcel } from '../../utils/excelExport';
 import { toast } from 'react-toastify';
 
@@ -55,6 +57,8 @@ const StatCard = ({ label, value, color = 'text-gray-900' }) => (
 // ── Main ──────────────────────────────────────────────────
 const PaymentsList = () => {
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
   const navigate  = useNavigate();
 
   const [payments,     setPayments]     = useState([]);
@@ -163,6 +167,7 @@ const PaymentsList = () => {
               <Download className="w-4 h-4" />
               {lang === 'ar' ? 'تصدير' : 'Export'}
             </button>
+            {canManage && (
             <button
               onClick={() => navigate('/finance/client-payments/create')}
               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
@@ -170,6 +175,7 @@ const PaymentsList = () => {
               <Plus className="w-4 h-4" />
               {lang === 'ar' ? 'إضافة دفعة' : 'Add Payment'}
             </button>
+            )}
           </div>
         </div>
 
@@ -222,6 +228,7 @@ const PaymentsList = () => {
               <p className="font-medium text-gray-600 mb-4">
                 {lang === 'ar' ? 'لا توجد دفعات' : 'No payments found'}
               </p>
+              {canManage && (
               <button
                 onClick={() => navigate('/finance/client-payments/create')}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm"
@@ -229,6 +236,7 @@ const PaymentsList = () => {
                 <Plus className="w-4 h-4" />
                 {lang === 'ar' ? 'إضافة أول دفعة' : 'Add First Payment'}
               </button>
+              )}
             </div>
           ) : (
             <table className="w-full">

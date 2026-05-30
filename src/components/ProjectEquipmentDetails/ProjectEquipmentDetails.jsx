@@ -20,6 +20,8 @@ import {
 import { formatCurrency, formatDateShort } from "../../utils/dateFormat";
 import axiosInstance from "../../utils/axiosInstance";
 import { LanguageContext } from "../../context/LanguageContext";
+import { AuthContext } from "../../context/AuthContext";
+import { isAdminUser } from "../../utils/permissions";
 import FullPageLoader from "../Loader/Loader";
 import { exportToPDF } from "../../utils/pdfExport";
 import { toast } from "react-toastify";
@@ -494,6 +496,8 @@ export default function ProjectEquipmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
   
   const [project, setProject] = useState(null);
   const [equipmentRecords, setEquipmentRecords] = useState([]);
@@ -645,6 +649,7 @@ export default function ProjectEquipmentDetails() {
                 </div>
               </div>
             </div>
+            {canManage && (
             <button
               onClick={() => !isLocked && setShowAddModal(true)}
               disabled={isLocked}
@@ -654,6 +659,7 @@ export default function ProjectEquipmentDetails() {
               <Plus size={20} />
               {lang === 'ar' ? 'إضافة معدة' : 'Add Equipment'}
             </button>
+            )}
           </div>
 
           {/* ── Locked Banner ── */}
@@ -766,6 +772,7 @@ export default function ProjectEquipmentDetails() {
                         {record.endDate && <div className="text-xs text-gray-400">{lang === 'ar' ? 'إلى' : 'to'} {formatDateShort(record.endDate, lang)}</div>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {canManage && (
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => { if (!isLocked) { setSelectedEquipment(record); setShowEditModal(true); } }}
@@ -780,6 +787,7 @@ export default function ProjectEquipmentDetails() {
                             title={isLocked ? (lang === "ar" ? "المشروع مكتمل" : "Project completed") : (lang === 'ar' ? 'حذف' : 'Delete')}
                           ><Trash2 size={16} /></button>
                         </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -819,7 +827,7 @@ export default function ProjectEquipmentDetails() {
       </div>
 
       {/* Delete Modal */}
-      {showDeleteModal && selectedEquipment && (
+      {canManage && showDeleteModal && selectedEquipment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -853,14 +861,14 @@ export default function ProjectEquipmentDetails() {
         </div>
       )}
 
-      {showAddModal && (
+      {canManage && showAddModal && (
         <AddEquipmentModal
           projectId={id} lang={lang}
           onClose={() => setShowAddModal(false)}
           onSuccess={() => { fetchData(); setShowAddModal(false); }}
         />
       )}
-      {showEditModal && selectedEquipment && (
+      {canManage && showEditModal && selectedEquipment && (
         <EditEquipmentModal
           projectId={id} lang={lang} equipment={selectedEquipment}
           onClose={() => { setShowEditModal(false); setSelectedEquipment(null); }}

@@ -88,6 +88,7 @@ const router = createHashRouter([
           { path: "suppliers", element: <Suppliers /> },
           { path: "materials", element: <Supplies /> },
           { path: "assets", element: <Assets /> },
+          { path: "assets/:id", element: <AssetDetails /> },
           { path: "units", element: <Units /> },
 
           { path: "purchases", element: <PurchaseOrders /> },
@@ -124,7 +125,6 @@ const router = createHashRouter([
             ),
             children: [
               { path: "assets/invoice/create", element: <AssetInvoiceForm /> },
-              { path: "assets/:id", element: <AssetDetails /> },
               { path: "adjustments", element: <StockAdjustment /> },
               { path: "purchases/returns/create", element: <CreatePurchaseReturn /> },
               { path: "projects/create", element: <CreateProject /> },

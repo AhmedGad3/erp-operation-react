@@ -18,6 +18,8 @@ import {
 import { formatCurrency, formatDateShort } from "../../utils/dateFormat";
 import axiosInstance from "../../utils/axiosInstance";
 import { LanguageContext } from "../../context/LanguageContext";
+import { AuthContext } from "../../context/AuthContext";
+import { isAdminUser } from "../../utils/permissions";
 import FullPageLoader from "../Loader/Loader";
 import { exportToPDF } from "../../utils/pdfExport";
 import { toast } from "react-toastify";
@@ -27,6 +29,8 @@ export default function ProjectLaborDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { lang, t } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
   
   const [project, setProject] = useState(null);
   const [laborRecords, setLaborRecords] = useState([]);
@@ -211,6 +215,7 @@ export default function ProjectLaborDetails() {
               </div>
             </div>
             
+            {canManage && (
             <button
               onClick={() => !isLocked && setShowAddModal(true)}
               disabled={isLocked}
@@ -220,6 +225,7 @@ export default function ProjectLaborDetails() {
               <Plus size={20} />
               {lang === 'ar' ? 'إضافة عامل' : 'Add Worker'}
             </button>
+            )}
           </div>
 
           {/* ── Locked Banner ── */}
@@ -404,6 +410,7 @@ export default function ProjectLaborDetails() {
 
                       {/* Actions */}
                       <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {canManage && (
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => { if (!isLocked) { setSelectedLabor(record); setShowEditModal(true); } }}
@@ -422,6 +429,7 @@ export default function ProjectLaborDetails() {
                             <Trash2 size={16} />
                           </button>
                         </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -494,7 +502,7 @@ export default function ProjectLaborDetails() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && selectedLabor && (
+      {canManage && showDeleteModal && selectedLabor && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -539,7 +547,7 @@ export default function ProjectLaborDetails() {
       )}
 
       {/* Add Modal */}
-      {showAddModal && (
+      {canManage && showAddModal && (
         <AddLaborModal
           projectId={id}
           onClose={() => setShowAddModal(false)}
@@ -551,7 +559,7 @@ export default function ProjectLaborDetails() {
       )}
 
       {/* Edit Modal */}
-      {showEditModal && selectedLabor && (
+      {canManage && showEditModal && selectedLabor && (
         <EditLaborModal
           projectId={id}
           labor={selectedLabor}

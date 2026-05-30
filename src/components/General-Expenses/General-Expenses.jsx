@@ -9,6 +9,8 @@ import axiosInstance from '../../utils/axiosInstance';
 import * as XLSX from 'xlsx';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
+import { AuthContext } from '../../context/AuthContext';
+import { isAdminUser } from '../../utils/permissions';
 import { useNavigate } from 'react-router-dom';
 
 const EXPENSE_CATEGORIES = [
@@ -72,6 +74,8 @@ const inputCls = 'w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm f
 export default function GeneralExpenses() {
   const navigate       = useNavigate();
   const { lang }       = useContext(LanguageContext);
+  const { user }       = useContext(AuthContext);
+  const canManage      = isAdminUser(user);
 
   const [expenses,           setExpenses]           = useState([]);
   const [loading,            setLoading]            = useState(false);
@@ -253,6 +257,7 @@ export default function GeneralExpenses() {
               <Download className="w-4 h-4" />
               {lang === 'ar' ? 'تصدير' : 'Export'}
             </button>
+            {canManage && (
             <button
               onClick={() => { setEditingExpense(null); setFormData(emptyForm); setShowModal(true); }}
               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
@@ -260,6 +265,7 @@ export default function GeneralExpenses() {
               <Plus className="w-4 h-4" />
               {lang === 'ar' ? 'إضافة مصروف' : 'Add Expense'}
             </button>
+            )}
           </div>
         </div>
 
@@ -315,6 +321,7 @@ export default function GeneralExpenses() {
               <p className="font-medium text-gray-600 mb-4">
                 {lang === 'ar' ? 'لا توجد مصاريف' : 'No expenses found'}
               </p>
+              {canManage && (
               <button
                 onClick={() => { setEditingExpense(null); setFormData(emptyForm); setShowModal(true); }}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm"
@@ -322,6 +329,7 @@ export default function GeneralExpenses() {
                 <Plus className="w-4 h-4" />
                 {lang === 'ar' ? 'إضافة أول مصروف' : 'Add First Expense'}
               </button>
+              )}
             </div>
           ) : (
             <table className="w-full">
@@ -390,6 +398,7 @@ export default function GeneralExpenses() {
                     {/* Actions */}
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                        {canManage && (
                         <button
                           onClick={() => handleEdit(expense)}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium text-sm"
@@ -397,6 +406,8 @@ export default function GeneralExpenses() {
                           <Edit className="w-3.5 h-3.5" />
                           {lang === 'ar' ? 'تعديل' : 'Edit'}
                         </button>
+                        )}
+                        {canManage && (
                         <button
                           onClick={() => setConfirmDelete(expense)}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium text-sm"
@@ -404,6 +415,7 @@ export default function GeneralExpenses() {
                           <Trash2 className="w-3.5 h-3.5" />
                           {lang === 'ar' ? 'حذف' : 'Delete'}
                         </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -415,7 +427,7 @@ export default function GeneralExpenses() {
       </div>
 
       {/* ── Add/Edit Modal ── */}
-      {showModal && (
+      {canManage && showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             {/* Modal header */}
@@ -536,7 +548,7 @@ export default function GeneralExpenses() {
       )}
 
       {/* ── Delete Confirm Modal ── */}
-      {confirmDelete && (
+      {canManage && confirmDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">

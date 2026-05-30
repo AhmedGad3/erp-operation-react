@@ -7,6 +7,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
 import { LanguageContext } from '../../context/LanguageContext';
+import { AuthContext } from '../../context/AuthContext';
+import { isAdminUser } from '../../utils/permissions';
 import FullPageLoader from '../Loader/Loader';
 import { exportToExcel } from '../../utils/excelExport';
 import { exportToPDF } from '../../utils/pdfExport';
@@ -56,6 +58,8 @@ const SortHeader = ({ label, field, sortField, sortDir, onSort }) => (
 // ── Main Component ─────────────────────────────────────────
 const PurchaseReturns = () => {
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
   const navigate  = useNavigate();
 
   const [returns,       setReturns]       = useState([]);
@@ -167,6 +171,7 @@ const PurchaseReturns = () => {
               <Download className="w-4 h-4" />
               {lang === 'ar' ? 'تصدير' : 'Export'}
             </button>
+            {canManage && (
             <button
               onClick={() => navigate('/purchases/returns/create')}
               className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition font-semibold text-sm shadow-sm"
@@ -174,6 +179,7 @@ const PurchaseReturns = () => {
               <Plus className="w-4 h-4" />
               {lang === 'ar' ? 'مرتجع جديد' : 'New Return'}
             </button>
+            )}
           </div>
         </div>
 

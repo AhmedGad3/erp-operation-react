@@ -18,6 +18,8 @@ import {
 import axiosInstance from '../../utils/axiosInstance';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
+import { AuthContext } from '../../context/AuthContext';
+import { isAdminUser } from '../../utils/permissions';
 import EditProjectModal from '../ProjectModal/ProjectModal';
 import { toast } from 'react-toastify';
 import {
@@ -37,6 +39,8 @@ const ProjectDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { lang, t } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
 
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -157,6 +161,7 @@ const ProjectDetails = () => {
               <ArrowLeft className="w-4 h-4" />
               {lang === 'ar' ? 'رجوع' : 'Back'}
             </button>
+            {canManage && (
             <button
               onClick={() => setShowEditModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-100 transition font-medium text-sm"
@@ -164,6 +169,8 @@ const ProjectDetails = () => {
               <Edit className="w-4 h-4" />
               {lang === 'ar' ? 'تعديل' : 'Edit'}
             </button>
+            )}
+            {canManage && (
             <button
               onClick={() => setDeleteModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium text-sm"
@@ -171,6 +178,7 @@ const ProjectDetails = () => {
               <Trash2 className="w-4 h-4" />
               {lang === 'ar' ? 'حذف' : 'Delete'}
             </button>
+            )}
           </div>
         </div>
 
@@ -413,7 +421,7 @@ const ProjectDetails = () => {
       </div>
 
       {/* Edit Modal */}
-      {showEditModal && (
+      {canManage && showEditModal && (
         <EditProjectModal
           project={project}
           onClose={() => { setShowEditModal(false); fetchProject(); }}
@@ -422,7 +430,7 @@ const ProjectDetails = () => {
       )}
 
       {/* Delete Modal */}
-      {deleteModal && (
+      {canManage && deleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">

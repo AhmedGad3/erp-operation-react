@@ -8,6 +8,8 @@ import { formatCurrency } from "../../utils/dateFormat";
 import axiosInstance from "../../utils/axiosInstance";
 import { getErrorMessage } from "../../utils/errorHandler";
 import { LanguageContext } from "../../context/LanguageContext";
+import { AuthContext } from "../../context/AuthContext";
+import { isAdminUser } from "../../utils/permissions";
 import * as XLSX from "xlsx";
 import AdminActionModal from "../modals/AdminActionModal";
 
@@ -241,6 +243,8 @@ const SupplierModal = ({ lang, t, mode, supplier: editSupplier, onClose, onSaved
 //  Main Component 
 export default function Suppliers() {
   const { lang, t } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
 
   const [suppliers,     setSuppliers]     = useState([]);
   const [balances,      setBalances]      = useState({});
@@ -372,6 +376,7 @@ export default function Suppliers() {
               <Download className="w-4 h-4" />
               {lang === 'ar' ? 'ØªØµØ¯ÙŠØ±' : 'Export'}
             </button>
+            {canManage && (
             <button
               onClick={() => setAddModal(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
@@ -379,6 +384,7 @@ export default function Suppliers() {
               <Plus className="w-4 h-4" />
               {lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ù…ÙˆØ±Ø¯' : 'Add Supplier'}
             </button>
+            )}
           </div>
         </div>
 
@@ -482,12 +488,14 @@ export default function Suppliers() {
 
                     {/* Actions */}
                     <td className="px-4 py-3.5 text-right">
+                      {canManage && (
                       <ActionsMenu
                         supplier={supplier}
                         lang={lang}
                         onEdit={s => setEditTarget(s)}
                         onToggle={s => setToggleModal({ show: true, supplier: s })}
                       />
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -498,17 +506,17 @@ export default function Suppliers() {
       </div>
 
       {/*  Modals  */}
-      {addModal && (
+      {canManage && addModal && (
         <SupplierModal lang={lang} t={t} mode="add"
           onClose={() => setAddModal(false)}
           onSaved={fetchSuppliers} />
       )}
-      {editTarget && (
+      {canManage && editTarget && (
         <SupplierModal lang={lang} t={t} mode="edit" supplier={editTarget}
           onClose={() => setEditTarget(null)}
           onSaved={fetchSuppliers} />
       )}
-      {toggleModal.show && (
+      {canManage && toggleModal.show && (
         <AdminActionModal
           type={toggleModal.supplier?.isActive !== false ? "deactivate" : "activate"}
           lang={lang}

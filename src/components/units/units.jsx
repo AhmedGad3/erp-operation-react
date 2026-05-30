@@ -8,6 +8,8 @@ import axiosInstance from "../../utils/axiosInstance";
 import { getErrorMessage } from "../../utils/errorHandler";
 import FullPageLoader from "../Loader/Loader";
 import { LanguageContext } from "../../context/LanguageContext";
+import { AuthContext } from "../../context/AuthContext";
+import { isAdminUser } from "../../utils/permissions";
 import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
 
@@ -485,6 +487,8 @@ const ConfirmModal = ({ type, unit, lang, onConfirm, onClose }) => {
 // ── Main Component ─────────────────────────────────────────
 export default function Units() {
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
 
   const [units,          setUnits]          = useState([]);
   const [baseUnits,      setBaseUnits]      = useState([]);
@@ -651,6 +655,7 @@ export default function Units() {
           </div>
           <div className="flex items-center gap-2">
             {/* ✅ زرار Convert Units جديد */}
+            {canManage && (
             <button
               onClick={() => setConvertModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
@@ -658,6 +663,7 @@ export default function Units() {
               <ArrowLeftRight className="w-4 h-4" />
               {lang === "ar" ? "تحويل" : "Convert"}
             </button>
+            )}
             <button
               onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm"
@@ -665,6 +671,7 @@ export default function Units() {
               <Download className="w-4 h-4" />
               {lang === "ar" ? "تصدير" : "Export"}
             </button>
+            {canManage && (
             <button
               onClick={() => setAddModal(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm"
@@ -672,6 +679,7 @@ export default function Units() {
               <Plus className="w-4 h-4" />
               {lang === "ar" ? "إضافة وحدة" : "Add Unit"}
             </button>
+            )}
           </div>
         </div>
 
@@ -763,6 +771,7 @@ export default function Units() {
                     <td className="px-4 py-3.5"><TypeBadge isBase={unit.isBase} lang={lang} /></td>
                     <td className="px-4 py-3.5"><StatusBadge isActive={unit.isActive} lang={lang} /></td>
                     <td className="px-4 py-3.5 text-right">
+                      {canManage && (
                       <ActionsMenu
                         unit={unit}
                         lang={lang}
@@ -770,6 +779,7 @@ export default function Units() {
                         onDelete={u => setDeleteModal({ show: true, unit: u })}
                         onActivate={u => setActivateModal({ show: true, unit: u })}
                       />
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -780,26 +790,26 @@ export default function Units() {
       </div>
 
       {/* ── Modals ── */}
-      {addModal && (
+      {canManage && addModal && (
         <UnitModal lang={lang} mode="add" baseUnits={baseUnits} units={units}
           onClose={() => setAddModal(false)}
           onSaved={() => { fetchUnits(); fetchBaseUnits(); }} />
       )}
-      {editTarget && (
+      {canManage && editTarget && (
         <UnitModal lang={lang} mode="edit" unit={editTarget} baseUnits={baseUnits} units={units}
           onClose={() => setEditTarget(null)}
           onSaved={() => { fetchUnits(); fetchBaseUnits(); }} />
       )}
       {/* ✅ Convert Modal جديد */}
-      {convertModal && (
+      {canManage && convertModal && (
         <ConvertModal lang={lang} units={units} onClose={() => setConvertModal(false)} />
       )}
-      {deleteModal.show && (
+      {canManage && deleteModal.show && (
         <ConfirmModal type="delete" unit={deleteModal.unit} lang={lang}
           onConfirm={handleDelete}
           onClose={() => setDeleteModal({ show: false, unit: null })} />
       )}
-      {activateModal.show && (
+      {canManage && activateModal.show && (
         <ConfirmModal type="activate" unit={activateModal.unit} lang={lang}
           onConfirm={handleActivate}
           onClose={() => setActivateModal({ show: false, unit: null })} />

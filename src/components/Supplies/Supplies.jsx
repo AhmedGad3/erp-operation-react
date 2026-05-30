@@ -8,6 +8,8 @@ import { formatCurrency } from '../../utils/dateFormat';
 import axiosInstance from '../../utils/axiosInstance';
 import { getErrorMessage } from '../../utils/errorHandler';
 import { LanguageContext } from '../../context/LanguageContext';
+import { AuthContext } from '../../context/AuthContext';
+import { isAdminUser } from '../../utils/permissions';
 import * as XLSX from 'xlsx';
 
 // Fallback hardcoded categories (used if API fails)
@@ -588,6 +590,8 @@ const ConfirmModal = ({ material, lang, onConfirm, onClose }) => (
 // â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function Supplies() {
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
 
   const [materials,     setMaterials]     = useState([]);
   const [units,         setUnits]         = useState([]);
@@ -748,9 +752,11 @@ export default function Supplies() {
             <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-semibold text-sm shadow-sm">
               <Download className="w-4 h-4" />{lang === 'ar' ? 'ØªØµØ¯ÙŠØ±' : 'Export'}
             </button>
+            {canManage && (
             <button onClick={() => setAddModal(true)} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm">
               <Plus className="w-4 h-4" />{lang === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ù…Ø§Ø¯Ø©' : 'Add Material'}
             </button>
+            )}
           </div>
         </div>
 
@@ -831,7 +837,7 @@ export default function Supplies() {
                       <td className="px-4 py-3.5 text-sm text-gray-700 font-medium">{material.lastPurchasePrice ? formatCurrency(material.lastPurchasePrice, lang) : '-'}</td>
                       <td className="px-4 py-3.5"><StatusBadge isActive={material.isActive} lang={lang} /></td>
                       <td className="px-4 py-3.5 text-right">
-                        <ActionsMenu material={material} lang={lang} onEdit={m => setEditTarget(m)} onDelete={m => setDeleteModal({ show: true, material: m })} onActivate={handleActivate} />
+                        {canManage && <ActionsMenu material={material} lang={lang} onEdit={m => setEditTarget(m)} onDelete={m => setDeleteModal({ show: true, material: m })} onActivate={handleActivate} />}
                       </td>
                     </tr>
                   );
@@ -842,9 +848,9 @@ export default function Supplies() {
         </div>
       </div>
 
-      {addModal && <MaterialModal lang={lang} mode="add" units={units} categories={categories} refreshUnits={fetchUnits} onClose={() => setAddModal(false)} onSaved={fetchMaterials} />}
-      {editTarget && <MaterialModal lang={lang} mode="edit" material={editTarget} units={units} categories={categories} refreshUnits={fetchUnits} onClose={() => setEditTarget(null)} onSaved={fetchMaterials} />}
-      {deleteModal.show && <ConfirmModal material={deleteModal.material} lang={lang} onConfirm={handleDelete} onClose={() => setDeleteModal({ show: false, material: null })} />}
+      {canManage && addModal && <MaterialModal lang={lang} mode="add" units={units} categories={categories} refreshUnits={fetchUnits} onClose={() => setAddModal(false)} onSaved={fetchMaterials} />}
+      {canManage && editTarget && <MaterialModal lang={lang} mode="edit" material={editTarget} units={units} categories={categories} refreshUnits={fetchUnits} onClose={() => setEditTarget(null)} onSaved={fetchMaterials} />}
+      {canManage && deleteModal.show && <ConfirmModal material={deleteModal.material} lang={lang} onConfirm={handleDelete} onClose={() => setDeleteModal({ show: false, material: null })} />}
     </div>
   );
 }

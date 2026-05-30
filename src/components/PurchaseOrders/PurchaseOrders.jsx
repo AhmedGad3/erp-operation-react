@@ -13,6 +13,8 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import axiosInstance from "../../utils/axiosInstance";
 import { LanguageContext } from "../../context/LanguageContext";
+import { AuthContext } from "../../context/AuthContext";
+import { isAdminUser } from "../../utils/permissions";
 import megabuildLogo from "../../assets/megabuild1.svg";
 import QuickSupplierModal from "../quick-create/QuickSupplierModal";
 
@@ -74,6 +76,8 @@ function isOverrideAllowed(material, unitId) {
 // ── Main Component ─────────────────────────────────────────
 export default function PurchaseOrders() {
   const { lang, t } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
 
   const [purchases,       setPurchases]       = useState([]);
   const [suppliers,       setSuppliers]       = useState([]);
@@ -253,10 +257,12 @@ export default function PurchaseOrders() {
               <Download className="w-4 h-4" />
               {t?.export || (lang === "ar" ? "تصدير" : "Export")}
             </button>
+            {canManage && (
             <button onClick={() => { setEditingPurchase(null); resetForm(); setShowModal(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold text-sm shadow-sm">
               <Plus className="w-4 h-4" />
               {t?.addPurchaseOrder || (lang === "ar" ? "إضافة أمر شراء" : "Add Purchase Order")}
             </button>
+            )}
           </div>
         </div>
 
@@ -365,7 +371,7 @@ export default function PurchaseOrders() {
       </div>
 
       {/* ── Modals ── */}
-      {showModal && (
+      {canManage && showModal && (
         <PurchaseModal
           formData={formData} setFormData={setFormData}
           suppliers={suppliers} materials={materials} units={units}

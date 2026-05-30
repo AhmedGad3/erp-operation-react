@@ -8,6 +8,8 @@ import axiosInstance from '../../utils/axiosInstance';
 import { getErrorMessage } from '../../utils/errorHandler';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
+import { AuthContext } from '../../context/AuthContext';
+import { isAdminUser } from '../../utils/permissions';
 import EditClientModal from '../EditClient/EditClient';
 import { exportToExcel } from '../../utils/excelExport';
 import { toast } from 'react-toastify';
@@ -114,6 +116,8 @@ const ActionsMenu = ({ client, lang, onEdit, onDelete, onActivate }) => {
 //  Confirm Modal (shared for delete + activate) 
 const ClientsList = () => {
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
   const navigate  = useNavigate();
 
   const [clients,        setClients]        = useState([]);
@@ -243,6 +247,7 @@ const ClientsList = () => {
               <Download className="w-4 h-4" />
               {'Export'}
             </button>
+            {canManage && (
             <button
               onClick={() => navigate('/clients/create')}
               className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold text-sm shadow-sm"
@@ -250,6 +255,7 @@ const ClientsList = () => {
               <Plus className="w-4 h-4" />
               {'Add Client'}
             </button>
+            )}
           </div>
         </div>
 
@@ -372,6 +378,7 @@ const ClientsList = () => {
 
                     {/* Actions */}
                     <td className="px-4 py-3.5 text-right">
+                      {canManage && (
                       <ActionsMenu
                         client={client}
                         lang={lang}
@@ -379,6 +386,7 @@ const ClientsList = () => {
                         onDelete={(c) => setDeleteModal({ show: true, client: c })}
                         onActivate={(c) => setActivateModal({ show: true, client: c })}
                       />
+                      )}
                     </td>
 
                   </tr>
@@ -391,7 +399,7 @@ const ClientsList = () => {
       </div>
 
       {/*  Edit Modal  */}
-      {showEditModal && editingClient && (
+      {canManage && showEditModal && editingClient && (
         <EditClientModal
           client={editingClient}
           onClose={() => { setShowEditModal(false); setEditingClient(null); }}
@@ -400,7 +408,7 @@ const ClientsList = () => {
       )}
 
       {/*  Delete Modal  */}
-      {deleteModal.show && (
+      {canManage && deleteModal.show && (
         <AdminActionModal
           type="delete"
           lang={lang}
@@ -414,7 +422,7 @@ const ClientsList = () => {
       )}
 
       {/*  Activate Modal  */}
-      {activateModal.show && (
+      {canManage && activateModal.show && (
         <AdminActionModal
           type="activate"
           lang={lang}

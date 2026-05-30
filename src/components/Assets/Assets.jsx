@@ -8,6 +8,8 @@ import axiosInstance from '../../utils/axiosInstance';
 import * as XLSX from 'xlsx';
 import FullPageLoader from '../Loader/Loader';
 import { LanguageContext } from '../../context/LanguageContext';
+import { AuthContext } from '../../context/AuthContext';
+import { isAdminUser } from '../../utils/permissions';
 import { useNavigate } from 'react-router-dom';
 import AdminActionModal from '../modals/AdminActionModal';
 
@@ -217,6 +219,8 @@ const AssetModal = ({ lang, mode, asset: editAsset, onClose, onSaved }) => {
 
 export default function Assets() {
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
   const navigate = useNavigate();
 
   const [assets,        setAssets]        = useState([]);
@@ -342,6 +346,8 @@ export default function Assets() {
               <Download className="w-4 h-4" />
               {lang === 'ar' ? 'تصدير' : 'Export'}
             </button>
+            {canManage && (
+              <>
             <button onClick={() => navigate('/assets/invoice/create')}
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition font-semibold text-sm shadow-sm">
               <ShoppingCart className="w-4 h-4" />
@@ -352,6 +358,8 @@ export default function Assets() {
               <Plus className="w-4 h-4" />
               {lang === 'ar' ? 'إضافة أصل' : 'Add Asset'}
             </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -428,10 +436,12 @@ export default function Assets() {
                       <ActiveBadge isActive={asset.isActive} lang={lang} />
                     </td>
                     <td className="px-4 py-3.5 text-right" onClick={e => e.stopPropagation()}>
+                      {canManage && (
                       <ActionsMenu asset={asset} lang={lang}
                         onEdit={a => setEditTarget(a)}
                         onDelete={a => setDeleteModal({ show: true, asset: a })}
                         onActivate={a => setActivateModal({ show: true, asset: a })} />
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -441,8 +451,8 @@ export default function Assets() {
         </div>
       </div>
 
-      {addModal && <AssetModal lang={lang} mode="add" onClose={() => setAddModal(false)} onSaved={fetchAssets} />}
-      {editTarget && <AssetModal lang={lang} mode="edit" asset={editTarget} onClose={() => setEditTarget(null)} onSaved={fetchAssets} />}
+      {canManage && addModal && <AssetModal lang={lang} mode="add" onClose={() => setAddModal(false)} onSaved={fetchAssets} />}
+      {canManage && editTarget && <AssetModal lang={lang} mode="edit" asset={editTarget} onClose={() => setEditTarget(null)} onSaved={fetchAssets} />}
       {deleteModal.show && (
         <AdminActionModal
           type="delete"

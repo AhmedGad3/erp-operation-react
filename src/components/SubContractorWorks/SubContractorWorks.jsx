@@ -15,6 +15,8 @@ import {
 import { formatCurrency, formatDateShort } from "../../utils/dateFormat";
 import axiosInstance from "../../utils/axiosInstance";
 import { LanguageContext } from "../../context/LanguageContext";
+import { AuthContext } from "../../context/AuthContext";
+import { isAdminUser } from "../../utils/permissions";
 import FullPageLoader from "../Loader/Loader";
 import { exportToPDF } from "../../utils/pdfExport";
 import { toast } from "react-toastify";
@@ -49,6 +51,8 @@ export default function ProjectSubcontractorWork() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { lang } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
+  const canManage = isAdminUser(user);
 
   const [project, setProject] = useState(null);
   const [records, setRecords] = useState([]);
@@ -232,6 +236,7 @@ export default function ProjectSubcontractorWork() {
                 </div>
               </div>
             </div>
+            {canManage && (
             <button
               onClick={() => !isLocked && setShowAddModal(true)}
               disabled={isLocked}
@@ -241,6 +246,7 @@ export default function ProjectSubcontractorWork() {
               <Plus size={20} />
               {lang === "ar" ? "إضافة بند" : "Add Item"}
             </button>
+            )}
           </div>
 
           {/* ── Locked Banner ── */}
@@ -395,6 +401,7 @@ export default function ProjectSubcontractorWork() {
 
                       {/* Actions */}
                       <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {canManage && (
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => { if (!isLocked) { setSelectedRecord(record); setShowEditModal(true); } }}
@@ -413,6 +420,7 @@ export default function ProjectSubcontractorWork() {
                             <Trash2 size={16} />
                           </button>
                         </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -454,7 +462,7 @@ export default function ProjectSubcontractorWork() {
       </div>
 
       {/* ── Delete Modal ── */}
-      {showDeleteModal && selectedRecord && (
+      {canManage && showDeleteModal && selectedRecord && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -498,7 +506,7 @@ export default function ProjectSubcontractorWork() {
       )}
 
       {/* ── Add Modal ── */}
-      {showAddModal && (
+      {canManage && showAddModal && (
         <SubcontractorWorkModal
           projectId={id}
           onClose={() => setShowAddModal(false)}
@@ -507,7 +515,7 @@ export default function ProjectSubcontractorWork() {
       )}
 
       {/* ── Edit Modal ── */}
-      {showEditModal && selectedRecord && (
+      {canManage && showEditModal && selectedRecord && (
         <SubcontractorWorkModal
           projectId={id}
           record={selectedRecord}
