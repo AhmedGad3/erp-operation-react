@@ -127,7 +127,7 @@ export default function AssetDetails() {
         headers,
         `Asset_Invoice_${asset?.code || id}`,
         lang,
-        t('فاتورة شراء أصل', 'ASSET PURCHASE INVOICE')
+        'ASSET PURCHASE INVOICE'
       );
       toast.success(t('تم تحميل الفاتورة', 'Invoice downloaded'));
     } catch {
@@ -221,10 +221,10 @@ export default function AssetDetails() {
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-gray-900">
-                    {t('فاتورة الشراء', 'Purchase Invoice')}
+                    Purchase Invoice
                   </h2>
                   <p className="text-xs text-gray-400">
-                    {t(`رقم الفاتورة: ${invoice.invoiceNo}`, `Invoice No: ${invoice.invoiceNo}`)}
+                    {`Invoice No: ${invoice.invoiceNo}`}
                   </p>
                 </div>
               </div>
@@ -234,7 +234,7 @@ export default function AssetDetails() {
                 {downloading
                   ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   : <Download className="w-4 h-4" />}
-                {t('تحميل PDF', 'Download PDF')}
+                Download PDF
               </button>
             </div>
 
@@ -248,25 +248,25 @@ export default function AssetDetails() {
             }}>
 
               {/* ── HEADER ── */}
-              <div style={{ padding: '24px 36px 18px', borderBottom: '1px solid #eee' }}>
+              <div style={{ padding: '24px 36px 18px', borderBottom: '1px solid #eee', direction: 'ltr' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
 
                   {/* Logo */}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                     <MegaBuildLogo size={68} />
                     <p style={{ fontSize: 8, color: '#aaa', marginTop: 3, letterSpacing: 0.8 }}>
-                      {t('نبني القيمة', 'We Build Value')}
+                      We Build Value
                     </p>
                   </div>
 
                   {/* Company info + badge */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap: 5 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
                       <span style={{ fontSize: 26, fontWeight: 900, color: RED,  letterSpacing: 2, lineHeight: 1 }}>MEGA</span>
                       <span style={{ fontSize: 26, fontWeight: 900, color: BLUE, letterSpacing: 2, lineHeight: 1 }}>BUILD</span>
                     </div>
                     <p style={{ fontSize: 10, color: '#999', fontStyle: 'italic', margin: 0 }}>We Build Value</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: isAr ? 'flex-start' : 'flex-end', marginTop: 4 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end', marginTop: 4 }}>
                       {[
                         '23 RD Of July St, Suez – Suez P.O. Box: 43511',
                         'C.R: 59034    T.C: 454-990-006',
@@ -278,19 +278,19 @@ export default function AssetDetails() {
                       ))}
                     </div>
                     {/* Badge */}
-                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap: 4 }}>
+                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                       <div style={{ background: BLUE, color: '#fff', padding: '5px 16px', borderRadius: 5 }}>
                         <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: 1 }}>
-                          {t('فاتورة شراء أصل', 'ASSET PURCHASE INVOICE')}
+                          ASSET PURCHASE INVOICE
                         </span>
                       </div>
                       <p style={{ fontSize: 12, color: '#555', margin: 0 }}>
-                        <span style={{ fontWeight: 700, color: BLUE }}>{t('رقم:', 'No:')}</span>{' '}
+                        <span style={{ fontWeight: 700, color: BLUE }}>No:</span>{' '}
                         AST-{invoice.invoiceNo}
                       </p>
                       {invoice.createdBy?.name && (
                         <p style={{ fontSize: 12, color: '#555', margin: 0 }}>
-                          <span style={{ fontWeight: 700, color: BLUE }}>{t('بواسطة:', 'By:')}</span>{' '}
+                          <span style={{ fontWeight: 700, color: BLUE }}>By:</span>{' '}
                           {invoice.createdBy.name}
                         </p>
                       )}
@@ -425,12 +425,12 @@ export default function AssetDetails() {
               {/* ── SIGNATURES ── */}
               <div style={{ padding: '28px 36px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48 }}>
                 <div>
-                  <p style={{ fontSize: 12, color: '#666', marginBottom: 48 }}>{t('التوقيع المصرح', 'Authorized Signature')}</p>
+                  <p style={{ fontSize: 12, color: '#666', marginBottom: 48 }}>Authorized Signature</p>
                   <div style={{ borderTop: '1.5px solid #bbb' }} />
                   <p style={{ fontSize: 11, color: '#888', marginTop: 6 }}>{invoice.createdBy?.name || ''}</p>
                 </div>
                 <div style={{ textAlign: isAr ? 'left' : 'right' }}>
-                  <p style={{ fontSize: 12, color: '#666', marginBottom: 48 }}>{t('توقيع المورد', 'Vendor Signature')}</p>
+                  <p style={{ fontSize: 12, color: '#666', marginBottom: 48 }}>Vendor Signature</p>
                   <div style={{ borderTop: '1.5px solid #bbb' }} />
                   <p style={{ fontSize: 11, color: '#888', marginTop: 6 }}>{invoice.vendorName || t('غير محدد', 'Not specified')}</p>
                 </div>
@@ -438,12 +438,9 @@ export default function AssetDetails() {
 
               {/* ── FOOTER TEXT ── */}
               <div style={{ padding: '12px 36px', borderTop: '1px solid #eee', textAlign: 'center', background: '#fafafa' }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: BLUE, marginBottom: 4 }}>{t('شكراً لكم!', 'Thank you!')}</p>
+                <p style={{ fontSize: 12, fontWeight: 700, color: BLUE, marginBottom: 4 }}>Thank you!</p>
                 <p style={{ fontSize: 11, color: '#888', margin: 0 }}>
-                  {t(
-                    'هذه الفاتورة من إنتاج الكمبيوتر ولا تتطلب توقيعاً فعلياً',
-                    'This is a computer-generated invoice and does not require a physical signature.'
-                  )}
+                  This is a computer-generated invoice and does not require a physical signature.
                 </p>
               </div>
 

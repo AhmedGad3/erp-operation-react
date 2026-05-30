@@ -83,7 +83,7 @@ const SupplierRefundDetails = () => {
       headers,
       `refund-receipt-${refund.refundNo}`,
       lang,
-      t('إيصال مرتجع مورد', 'SUPPLIER REFUND RECEIPT')
+      'SUPPLIER REFUND RECEIPT'
     );
   };
 
@@ -110,7 +110,7 @@ const SupplierRefundDetails = () => {
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <button onClick={() => navigate('/finance/supplier-refunds')}
           style={{ display:'flex', alignItems:'center', gap:8, color:BLUE, background:'none', border:'none', cursor:'pointer', fontWeight:700, fontSize:14, marginBottom:16 }}>
-          <ArrowLeft size={16} /> {t('رجوع', 'Back')}
+          <ArrowLeft size={16} /> Back
         </button>
         <div style={{ background:'#fff', borderRadius:8, padding:40, textAlign:'center', color:'#888' }}>
           {t('المرتجع غير موجود', 'Refund not found')}
@@ -136,11 +136,11 @@ const SupplierRefundDetails = () => {
       <div className="print:hidden" style={{ maxWidth:760, margin:'0 auto 24px', display:'flex', gap:12 }}>
         <button onClick={() => navigate('/finance/supplier-refunds')}
           style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 20px', background:BLUE, color:'#fff', border:'none', borderRadius:8, fontWeight:700, cursor:'pointer', fontSize:14 }}>
-          <ArrowLeft size={16} /> {t('رجوع', 'Back')}
+          <ArrowLeft size={16} /> Back
         </button>
         <button onClick={handlePDF}
           style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 20px', background:RED, color:'#fff', border:'none', borderRadius:8, fontWeight:700, cursor:'pointer', fontSize:14 }}>
-          <Download size={16} /> {t('تحميل PDF', 'Download PDF')}
+          <Download size={16} /> Download PDF
         </button>
       </div>
 
@@ -157,16 +157,16 @@ const SupplierRefundDetails = () => {
             <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start' }}>
               <MegaBuildLogo size={68} />
               <p style={{ fontSize:8, color:'#aaa', marginTop:3, letterSpacing:0.8 }}>
-                {t('نبني القيمة', 'We Build Value')}
+                We Build Value
               </p>
             </div>
-            <div style={{ display:'flex', flexDirection:'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap:5 }}>
+            <div style={{ display:'flex', flexDirection:'column', alignItems: 'flex-end', gap:5 }}>
               <div style={{ display:'flex', alignItems:'baseline', gap:7 }}>
                 <span style={{ fontSize:26, fontWeight:900, color:RED,  letterSpacing:2, lineHeight:1 }}>MEGA</span>
                 <span style={{ fontSize:26, fontWeight:900, color:BLUE, letterSpacing:2, lineHeight:1 }}>BUILD</span>
               </div>
               <p style={{ fontSize:10, color:'#999', fontStyle:'italic', margin:0 }}>We Build Value</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:2, alignItems: isAr ? 'flex-start' : 'flex-end', marginTop:4 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:2, alignItems: 'flex-end', marginTop:4 }}>
                 {[
                   '23 RD Of July St, Suez – Suez P.O. Box: 43511',
                   'C.R: 59034    T.C: 454-990-006',
@@ -177,19 +177,19 @@ const SupplierRefundDetails = () => {
                   <p key={i} style={{ fontSize:10.5, color:'#444', margin:0 }}>{line}</p>
                 ))}
               </div>
-              <div style={{ marginTop:8, display:'flex', flexDirection:'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap:4 }}>
+              <div style={{ marginTop:8, display:'flex', flexDirection:'column', alignItems: 'flex-end', gap:4 }}>
                 <div style={{ background:RED, color:'#fff', padding:'5px 16px', borderRadius:5 }}>
                   <span style={{ fontSize:14, fontWeight:800, letterSpacing:1 }}>
-                    {t('إيصال مرتجع مورد', 'SUPPLIER REFUND RECEIPT')}
+                    SUPPLIER REFUND RECEIPT
                   </span>
                 </div>
                 <p style={{ fontSize:12, color:'#555', margin:0 }}>
-                  <span style={{ fontWeight:700, color:RED }}>{t('رقم:', 'No:')}</span>{' '}
+                  <span style={{ fontWeight:700, color:RED }}>No:</span>{' '}
                   RFD-{refund.refundNo}
                 </p>
                 {creator?.email && (
                   <p style={{ fontSize:12, color:'#555', margin:0 }}>
-                    <span style={{ fontWeight:700, color:RED }}>{t('بواسطة:', 'By:')}</span>{' '}
+                    <span style={{ fontWeight:700, color:RED }}>By:</span>{' '}
                     {creator.email}
                   </p>
                 )}
@@ -276,12 +276,12 @@ const SupplierRefundDetails = () => {
         {/* ══ SIGNATURES ══ */}
         <div style={{ padding:'28px 36px 24px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:48 }}>
           <div>
-            <p style={{ fontSize:12, color:'#666', marginBottom:48 }}>{t('التوقيع المصرح', 'Authorized Signature')}</p>
+            <p style={{ fontSize:12, color:'#666', marginBottom:48 }}>Authorized Signature</p>
             <div style={{ borderTop:'1.5px solid #bbb' }} />
             <p style={{ fontSize:11, color:'#888', marginTop:6 }}>{creator?.name || ''}</p>
           </div>
           <div style={{ textAlign: isAr ? 'left' : 'right' }}>
-            <p style={{ fontSize:12, color:'#666', marginBottom:48 }}>{t('توقيع المورد', 'Supplier Signature')}</p>
+            <p style={{ fontSize:12, color:'#666', marginBottom:48 }}>Supplier Signature</p>
             <div style={{ borderTop:'1.5px solid #bbb' }} />
             <p style={{ fontSize:11, color:'#888', marginTop:6 }}>
               {isAr ? supplier?.nameAr : supplier?.nameEn}
@@ -292,13 +292,10 @@ const SupplierRefundDetails = () => {
         {/* ══ FOOTER TEXT ══ */}
         <div style={{ padding:'12px 36px', borderTop:'1px solid #eee', textAlign:'center', background:'#fafafa' }}>
           <p style={{ fontSize:12, fontWeight:700, color:RED, marginBottom:4 }}>
-            {t('شكراً للتعامل معنا!', 'Thank you for your business!')}
+            Thank you for your business!
           </p>
           <p style={{ fontSize:11, color:'#888', margin:0 }}>
-            {t(
-              'هذا إيصال من إنتاج الكمبيوتر ولا يتطلب توقيعاً فعلياً',
-              'This is a computer-generated receipt and does not require a physical signature.'
-            )}
+            This is a computer-generated receipt and does not require a physical signature.
           </p>
         </div>
 

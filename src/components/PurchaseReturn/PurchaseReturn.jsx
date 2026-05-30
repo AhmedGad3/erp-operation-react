@@ -377,7 +377,7 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
       <html dir="${isAr ? 'rtl' : 'ltr'}">
       <head>
         <meta charset="UTF-8"/>
-        <title>${tr('مرتجع مشتريات', 'Purchase Return')} #${returnDoc.returnNo}</title>
+        <title>Purchase Return #${returnDoc.returnNo}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: ${isAr ? 'Tahoma,Arial,sans-serif' : 'Segoe UI,Arial,sans-serif'}; }
@@ -423,7 +423,7 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
         headers,
         `${tr('مرتجع', 'Return')}_${returnDoc.returnNo}`,
         lang,
-        tr('مرتجع مشتريات', 'PURCHASE RETURN')
+        'PURCHASE RETURN'
       );
       toast.success(tr('تم تحميل PDF بنجاح', 'PDF downloaded successfully'));
     } catch (err) {
@@ -436,30 +436,30 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
 
   const InvoiceContent = () => (
     <div ref={invoiceRef} style={{ background: '#fff', fontFamily: isAr ? 'Tahoma,Arial,sans-serif' : 'Segoe UI,Arial,sans-serif', direction: isAr ? 'rtl' : 'ltr', width: '100%' }}>
-      <div style={{ padding: '24px 36px 18px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ padding: '24px 36px 18px', borderBottom: '1px solid #eee', direction: 'ltr', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           {logoSrc
             ? <img src={logoSrc} alt="Mega Build" style={{ width: 70, height: 70, objectFit: 'contain' }} />
             : <div style={{ width: 70, height: 70, background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#999' }}>LOGO</div>
           }
-          <p style={{ fontSize: 8, color: '#aaa', marginTop: 3, letterSpacing: 0.8 }}>{tr('نبني القيمة', 'We Build Value')}</p>
+          <p style={{ fontSize: 8, color: '#aaa', marginTop: 3, letterSpacing: 0.8 }}>We Build Value</p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: isAr ? 'flex-start' : 'flex-end', gap: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
             <span style={{ fontSize: 26, fontWeight: 900, color: RED,  letterSpacing: 2, lineHeight: 1 }}>MEGA</span>
             <span style={{ fontSize: 26, fontWeight: 900, color: BLUE, letterSpacing: 2, lineHeight: 1 }}>BUILD</span>
           </div>
           <p style={{ fontSize: 10, color: '#999', fontStyle: 'italic', margin: 0 }}>We Build Value</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: isAr ? 'flex-start' : 'flex-end', marginTop: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end', marginTop: 4 }}>
             {['23 RD Of July St, Suez – Suez P.O. Box: 43511','C.R: 59034    T.C: 454-990-006','Tel: 062 3456452    Mob: 01111696211','Meegabuild@gmail.com','www.Megbuild.com'].map((line, i) => (
               <p key={i} style={{ fontSize: 10.5, color: '#444', margin: 0 }}>{line}</p>
             ))}
           </div>
           <div style={{ marginTop: 8, background: RED, color: '#fff', padding: '5px 16px', borderRadius: 5 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>{tr('مرتجع مشتريات', 'PURCHASE RETURN')}</span>
+            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>PURCHASE RETURN</span>
           </div>
           <p style={{ fontSize: 12, color: '#555', margin: 0 }}>
-            <strong style={{ color: BLUE }}>{tr('رقم:', 'No:')}</strong>{' '}{returnDoc.returnNo || tr('غير محدد', 'N/A')}
+            <strong style={{ color: BLUE }}>No:</strong>{' '}{returnDoc.returnNo || 'N/A'}
           </p>
         </div>
       </div>
@@ -477,7 +477,7 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
           {[
             [tr('تاريخ المرتجع', 'Return Date'),  formatDateShort(returnDoc.returnDate, lang)],
             [tr('تاريخ الإنشاء', 'Created At'),   formatDateShort(returnDoc.createdAt, lang)],
-            [tr('أنشئ بواسطة',  'Created By'),   returnDoc.createdBy?.name || tr('غير محدد', 'N/A')],
+            [tr('أنشئ بواسطة',  'Created By'),   returnDoc.createdBy?.name || 'N/A'],
             ...(returnDoc.createdBy?.email ? [[tr('البريد', 'Email'), returnDoc.createdBy.email]] : []),
           ].map(([label, value], i) => (
             <div key={i} style={{ textAlign: isAr ? 'left' : 'right' }}>
@@ -522,7 +522,7 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
       )}
       <div style={{ padding: '12px 36px', borderTop: '1px solid #eee', textAlign: 'center', background: '#fafafa' }}>
         <p style={{ fontSize: 11, color: '#888', margin: 0 }}>
-          {tr('هذا مستند من إنتاج الكمبيوتر', 'This is a computer-generated document')} — {new Date().toLocaleDateString(isAr ? 'ar-EG' : 'en-US')}
+          This is a computer-generated document - {new Date().toLocaleDateString('en-US')}
         </p>
       </div>
       <div style={{ display: 'flex', height: 24 }}>
@@ -545,7 +545,7 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
             </div>
             <div>
               <h3 className="text-base font-semibold text-gray-900">
-                {tr('تفاصيل مرتجع الشراء', 'Purchase Return Details')}
+                Purchase Return Details
               </h3>
               <p className="text-xs text-gray-500">#{returnDoc.returnNo}</p>
             </div>
@@ -564,18 +564,18 @@ function ReturnDetailsModal({ returnDoc, onClose, lang }) {
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
           <button onClick={onClose}
             className="px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
-            {tr('إغلاق', 'Close')}
+            Close
           </button>
           <button onClick={handlePrint} disabled={isPrinting}
             className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition font-medium text-sm disabled:opacity-50">
             <Printer className="w-4 h-4" />
-            {tr('طباعة', 'Print')}
+            Print
           </button>
           <button onClick={handleDownloadPDF} disabled={isExporting}
             className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition font-medium text-sm disabled:opacity-50">
             {isExporting
-              ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />{tr('جاري التحميل...', 'Exporting...')}</>
-              : <><Download className="w-4 h-4" />{tr('تحميل PDF', 'Download PDF')}</>
+              ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />Exporting...</>
+              : <><Download className="w-4 h-4" />Download PDF</>
             }
           </button>
         </div>

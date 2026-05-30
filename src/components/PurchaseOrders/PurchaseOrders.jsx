@@ -716,7 +716,7 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal, units = [] })
           <div className="bg-gradient-to-r from-red-700 to-blue-900 text-white p-2 no-print flex items-center justify-between">
             <div className="flex items-center gap-3">
               <FileText size={24} />
-              <h3 className="text-xl font-bold">{tr("تفاصيل أمر الشراء", "Purchase Order Details")}</h3>
+              <h3 className="text-xl font-bold">Purchase Order Details</h3>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors"><X size={22} /></button>
           </div>
@@ -724,28 +724,28 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal, units = [] })
           <div id="printable-invoice" className="overflow-y-auto max-h-[calc(90vh-130px)]">
             <div style={{ background: "#fff", fontFamily: isAr ? "Tahoma,Arial,sans-serif" : "Segoe UI,Arial,sans-serif", direction: isAr ? "rtl" : "ltr" }}>
 
-              <div style={{ padding: "24px 36px 18px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ padding: "24px 36px 18px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "flex-start", direction: "ltr" }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                   <img src={megabuildLogo} alt="Mega Build" style={{ width: 70, height: 70, objectFit: "contain" }} />
-                  <p style={{ fontSize: 8, color: "#aaa", marginTop: 3, letterSpacing: 0.8 }}>{tr("نبني القيمة", "We Build Value")}</p>
+                  <p style={{ fontSize: 8, color: "#aaa", marginTop: 3, letterSpacing: 0.8 }}>We Build Value</p>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: isAr ? "flex-start" : "flex-end", gap: 4 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
                     <span style={{ fontSize: 26, fontWeight: 900, color: RED,  letterSpacing: 2, lineHeight: 1 }}>MEGA</span>
                     <span style={{ fontSize: 26, fontWeight: 900, color: BLUE, letterSpacing: 2, lineHeight: 1 }}>BUILD</span>
                   </div>
                   <p style={{ fontSize: 10, color: "#999", fontStyle: "italic", margin: 0 }}>We Build Value</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: isAr ? "flex-start" : "flex-end", marginTop: 4 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end", marginTop: 4 }}>
                     {["23 RD Of July St, Suez – Suez P.O. Box: 43511","C.R: 59034    T.C: 454-990-006","Tel: 062 3456452    Mob: 01111696211","Meegabuild@gmail.com","www.Megbuild.com"].map((line, i) => (
                       <p key={i} style={{ fontSize: 10.5, color: "#444", margin: 0 }}>{line}</p>
                     ))}
                   </div>
                   <div style={{ marginTop: 8, background: BLUE, color: "#fff", padding: "5px 16px", borderRadius: 5 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>{tr("أمر شراء", "PURCHASE ORDER")}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>PURCHASE ORDER</span>
                   </div>
                   <p style={{ fontSize: 12, color: "#555", margin: 0 }}>
-                    <strong style={{ color: BLUE }}>{tr("رقم:", "No:")}</strong>{" "}
-                    {purchase.invoiceNo || purchase.supplierInvoiceNo || tr("غير محدد", "N/A")}
+                    <strong style={{ color: BLUE }}>No:</strong>{" "}
+                    {purchase.invoiceNo || purchase.supplierInvoiceNo || "N/A"}
                   </p>
                 </div>
               </div>
@@ -810,7 +810,7 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal, units = [] })
 
               <div style={{ padding: "12px 36px", borderTop: "1px solid #eee", textAlign: "center", background: "#fafafa" }}>
                 <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
-                  {tr("هذا مستند من إنتاج الكمبيوتر", "This is a computer-generated document")} — {new Date().toLocaleDateString(isAr ? "ar-EG" : "en-US")}
+                  This is a computer-generated document - {new Date().toLocaleDateString("en-US")}
                 </p>
               </div>
 
@@ -824,10 +824,10 @@ function PurchaseDetailsModal({ purchase, onClose, calculateTotal, units = [] })
 
           <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200 no-print">
             <button onClick={handlePrint} disabled={isPrinting} className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
-              <Printer size={18} />{tr("طباعة", "Print")}
+              <Printer size={18} />Print
             </button>
             <button onClick={onClose} className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-semibold">
-              {tr("إغلاق", "Close")}
+              Close
             </button>
           </div>
         </div>
